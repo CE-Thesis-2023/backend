@@ -380,7 +380,7 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 		valueMap[fields[i]] = values[i]
 	}
 
-	q := squirrel.Update("cameras").Where("device_id = ?", camera.CameraId).SetMap(valueMap)
+	q := squirrel.Update("cameras").Where("camera_id = ?", camera.CameraId).SetMap(valueMap)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateCamera: SQL query",
 		zap.String("query", sql),
