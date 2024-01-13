@@ -323,9 +323,9 @@ func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRe
 func (s *WebService) buildStreamUrl(ctx context.Context, camera *db.Camera) string {
 	configs := configs.Get().MediaEngine
 	url := &url.URL{}
-	url.Scheme = "ws"
-	url.Host = fmt.Sprintf("%s:%d", configs.Host, configs.Ports.WebRTC)
-	url = url.JoinPath(configs.ApplicationName, camera.CameraId)
+	url.Scheme = "http"
+	url.Host = fmt.Sprintf("%s:%d", configs.Host, configs.PublishPorts.WebRTC)
+	url = url.JoinPath(camera.CameraId)
 	return url.String()
 }
 

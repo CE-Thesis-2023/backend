@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  mediamtx:
+    container_name: 'mediamtx'
+    image: bluenviron/mediamtx:latest
+    network_mode: host
+    volumes:
+      - $PWD/configs.yml:/mediamtx.yml
+    deploy:
+      resources:
+        limits:
+          cpus: '6'
+          memory: 12288M
+    restart: always

@@ -35,12 +35,12 @@
   },
   "mediaEngine": {
     "host": "103.165.142.44",
-    "virtualHost": "default",
-    "applicationName": "camera",
-    "port": {
-      "api": 7956,
-      "webRtc": 8056,
-      "srt": 7958
-    }
+    "providerPorts": {
+      "srt": 8890
+    },
+    "publishPorts": {
+      "webRtc": 8889
+    },
+    "api": 9997
   }
 }

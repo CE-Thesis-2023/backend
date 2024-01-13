@@ -16,14 +16,14 @@ var once sync.Once
 var globalConfigs *Configs
 
 type Configs struct {
-	Public        HttpConfigs            `json:"public,omitempty" yaml:"public,omitempty"`
-	Private       HttpConfigs            `json:"private,omitempty" yaml:"private,omitempty"`
-	Logger        LoggerConfigs          `json:"logger,omitempty" yaml:"logger,omitempty"`
-	EventStore    EventStoreConfigs      `json:"eventStore,omitempty" yaml:"eventStore,omitempty"`
-	MqttStore     EventStoreConfigs      `json:"mqttStore,omitempty" yaml:"mqttStore,omitempty"`
-	Sqlite        DatabaseConfigs        `json:"sqlite,omitempty" yaml:"sqlite,omitempty"`
-	InfluxConfigs InfluxConfigs          `json:"influx,omitempty" yaml:"influx,omitempty"`
-	MediaEngine   OvenMediaEngineConfigs `json:"mediaEngine,omitempty" yaml:"mediaEngine,omitempty"`
+	Public        HttpConfigs       `json:"public,omitempty" yaml:"public,omitempty"`
+	Private       HttpConfigs       `json:"private,omitempty" yaml:"private,omitempty"`
+	Logger        LoggerConfigs     `json:"logger,omitempty" yaml:"logger,omitempty"`
+	EventStore    EventStoreConfigs `json:"eventStore,omitempty" yaml:"eventStore,omitempty"`
+	MqttStore     EventStoreConfigs `json:"mqttStore,omitempty" yaml:"mqttStore,omitempty"`
+	Sqlite        DatabaseConfigs   `json:"sqlite,omitempty" yaml:"sqlite,omitempty"`
+	InfluxConfigs InfluxConfigs     `json:"influx,omitempty" yaml:"influx,omitempty"`
+	MediaEngine   MediaMtxConfigs   `json:"mediaEngine,omitempty" yaml:"mediaEngine,omitempty"`
 }
 
 func (c Configs) String() string {
@@ -98,15 +98,14 @@ type DatabaseConfigs struct {
 	Connection string `json:"connection,omitempty" yaml:"connection,omitempty"`
 }
 
-type OvenMediaEngineConfigs struct {
-	Host            string   `json:"host,omitempty" yaml:"host,omitempty"`
-	Ports           OmePorts `json:"port,omitempty" yaml:"port,omitempty"`
-	VirtualHost     string   `json:"virtualHost,omitempty" yaml:"virtualHost,omitempty"`
-	ApplicationName string   `json:"applicationName,omitempty" yaml:"applicationName,omitempty"`
+type MediaMtxConfigs struct {
+	Host          string   `json:"host,omitempty" yaml:"host,omitempty"`
+	PublishPorts  MtxPorts `json:"publishPorts,omitempty" yaml:"port,omitempty"`
+	ProviderPorts MtxPorts `json:"providerPorts,omitempty" yaml:"providerPorts,omitempty"`
+	Api           int      `json:"api,omitempty" yaml:"api,omitempty"`
 }
 
-type OmePorts struct {
-	Api    int `json:"api,omitempty" yaml:"api,omitempty"`
+type MtxPorts struct {
 	WebRTC int `json:"webRtc,omitempty" yaml:"webRtc,omitempty"`
 	Srt    int `json:"srt,omitempty" yaml:"srt,omitempty"`
 }
