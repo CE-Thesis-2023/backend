@@ -2,6 +2,7 @@ package publicapi
 
 import (
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
+	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,6 +14,7 @@ func ServiceRegistration() func(app *fiber.App) {
 			handlers.WithChannelSize(128),
 		)
 		communicator := handlers.GetWebsocketCommunicator()
+		app.Use("/", custhttp.SetCors())
 
 		app.Get("/api/devices", GetTranscoderDevices)
 		app.Put("/api/devices", UpdateTranscoder)

@@ -1,9 +1,13 @@
 package privateapi
 
-import "github.com/gofiber/fiber/v2"
+import (
+	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
+	"github.com/gofiber/fiber/v2"
+)
 
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
+		app.Use("/", custhttp.SetCors())
 		priv := app.Group("/api/priv")
 		priv.Post("/registers", RegisterDevice)
 		priv.Get("/transcoders/:id/cameras", GetTranscoderAssignedCameras)

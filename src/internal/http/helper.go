@@ -33,15 +33,10 @@ func CommonPublicMiddlewares(configs *configs.HttpConfigs) []interface{} {
 		}),
 		cors.New(cors.Config{
 			AllowOriginsFunc: func(origin string) bool {
-				switch origin {
-				case "http://*":
-				case "https://*":
-				default:
-					return false
-				}
 				return true
 			},
-			AllowMethods: "GET,HEAD,POST,DELETE,PUT,PATCH",
+			AllowOrigins: "*",
+			AllowMethods: "GET,HEAD,POST,DELETE,PUT,PATCH,OPTIONS",
 			AllowHeaders: "Origin, Content-Type, Accept-Encoding, Host",
 		}),
 		etag.New(),
@@ -86,7 +81,8 @@ func CommonPrivateMiddlewares(configs *configs.HttpConfigs) []interface{} {
 			AllowOriginsFunc: func(origin string) bool {
 				return true
 			},
-			AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
+			AllowOrigins: "*",
+			AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 			AllowHeaders: "Origin, Content-Type, Accept-Encoding, Host, Authorization",
 		}),
 		etag.New(),
@@ -147,5 +143,14 @@ func GlobalErrorHandler() func(c *fiber.Ctx, err error) error {
 		return customError.
 			Parent().
 			Fiber(c)
+	}
+}
+
+func SetCors() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		ctx.Append("Access-Control-Allow-Origin", "*")
+		ctx.Append("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD, PATCH")
+		ctx.Append("Access-Control-Allow-Headers", "Accept, Accept-Language, Content-Type")
+		return ctx.Next()
 	}
 }
