@@ -26,7 +26,7 @@ func GetTranscoderDevices(ctx *fiber.Ctx) error {
 
 	resp, err := service.
 		GetWebService().
-		GetDevices(ctx.Context(), &web.GetTranscodersRequest{
+		GetDevices(ctx.UserContext(), &web.GetTranscodersRequest{
 			Ids: ids,
 		})
 	if err != nil {
@@ -45,7 +45,7 @@ func GetCameras(ctx *fiber.Ctx) error {
 		ids = []string{}
 	}
 
-	resp, err := service.GetWebService().GetCameras(ctx.Context(), &web.GetCamerasRequest{Ids: ids})
+	resp, err := service.GetWebService().GetCameras(ctx.UserContext(), &web.GetCamerasRequest{Ids: ids})
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func CreateCamera(ctx *fiber.Ctx) error {
 		logger.SDebug("CreateCamera: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
-	resp, err := service.GetWebService().AddCamera(ctx.Context(), &msg)
+	resp, err := service.GetWebService().AddCamera(ctx.UserContext(), &msg)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func DeleteCamera(ctx *fiber.Ctx) error {
 		return custerror.ErrorInvalidArgument
 	}
 
-	err := service.GetWebService().DeleteCamera(ctx.Context(), &web.DeleteCameraRequest{
+	err := service.GetWebService().DeleteCamera(ctx.UserContext(), &web.DeleteCameraRequest{
 		CameraId: id,
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func UpdateTranscoder(ctx *fiber.Ctx) error {
 		logger.SDebug("UpdateTranscoder: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
-	resp, err := service.GetWebService().UpdateTranscoder(ctx.Context(), &msg)
+	resp, err := service.GetWebService().UpdateTranscoder(ctx.UserContext(), &msg)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func GetStreamInfo(ctx *fiber.Ctx) error {
 	if cameraId == "" {
 		return custerror.FormatInvalidArgument("cameraId not found")
 	}
-	resp, err := service.GetWebService().GetStreamInfo(ctx.Context(), &web.GetStreamInfoRequest{
+	resp, err := service.GetWebService().GetStreamInfo(ctx.UserContext(), &web.GetStreamInfoRequest{
 		CameraId: cameraId,
 	})
 	if err != nil {
@@ -128,7 +128,7 @@ func ToggleStream(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument("missing cameraId as query string")
 	}
 	enable := ctx.QueryBool("enable")
-	err := service.GetWebService().ToggleStream(ctx.Context(), &web.ToggleStreamRequest{
+	err := service.GetWebService().ToggleStream(ctx.UserContext(), &web.ToggleStreamRequest{
 		CameraId: cameraId,
 		Start:    enable,
 	})
@@ -147,7 +147,7 @@ func RemoteControl(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err := service.GetWebService().RemoteControl(ctx.Context(), &msg)
+	err := service.GetWebService().RemoteControl(ctx.UserContext(), &msg)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument("missing cameraId as parameter")
 	}
 
-	resp, err := service.GetWebService().GetDeviceInfo(ctx.Context(), &web.GetCameraDeviceInfoRequest{
+	resp, err := service.GetWebService().GetDeviceInfo(ctx.UserContext(), &web.GetCameraDeviceInfoRequest{
 		CameraId: cameraId,
 	})
 	if err != nil {

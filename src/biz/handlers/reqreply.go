@@ -20,8 +20,8 @@ type requestReplyContext struct {
 }
 
 type MessageWithId struct {
-	MessageId uint64
-	Request   *ltdEvent.CommandRequest
+	MessageId uint64                   `json:"messageId"`
+	Request   *ltdEvent.CommandRequest `json:"commandRequest"`
 }
 
 type RequestReplyCommunicator struct {

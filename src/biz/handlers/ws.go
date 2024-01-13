@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"sync"
+	"time"
 
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
@@ -104,18 +105,46 @@ func (comm *WebSocketCommunicator) CreateWebsocketHandler() fiber.Handler {
 				conn:     c,
 			}
 			comm.requestReplyCommunicators[id] = rr
-
-			if err := comm.options.handler(&ConnectionInformation{
+			ci := &ConnectionInformation{
 				Id:           id,
 				Version:      version,
 				Connection:   c,
 				RequestReply: rr,
-			}); err != nil {
+			}
+
+			c.SetCloseHandler(comm.createCloseHandler(ci))
+			if err := comm.options.handler(ci); err != nil {
 				logger.SError("CreateWebsocketHandler.handler: error", zap.Error(err))
 				return
 			}
+
+			delete(comm.requestReplyCommunicators, id)
+			logger.SInfo("WebsocketHandler: closed", zap.String("id", id))
 		}
+	}, websocket.Config{
+		HandshakeTimeout:  2 * time.Second,
+		EnableCompression: true,
 	})
+}
+
+func (comm *WebSocketCommunicator) createCloseHandler(i *ConnectionInformation) func(code int, text string) error {
+	return func(code int, text string) error {
+		delete(comm.requestReplyCommunicators, i.Id)
+		logger.SInfo("CloseHandler: closed request reply channel")
+
+		switch code {
+		case websocket.CloseNoStatusReceived:
+			logger.SDebug("CloseHandler: closed by peer",
+				zap.String("text", text),
+				zap.String("id", i.Id))
+			return nil
+		default:
+			logger.SDebug("CloseHandler: closed by other reasons",
+				zap.Int("code", code),
+				zap.String("text", text))
+			return nil
+		}
+	}
 }
 
 func (comm *WebSocketCommunicator) RequestReply(deviceId string) (*RequestReplyCommunicator, error) {

@@ -1,17 +1,19 @@
 package publicapi
 
 import (
+	"time"
+
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
 		handlers.WebsocketInit(
-			handlers.WithAuthorizer(nil),
-			handlers.WithConnectionHandler(nil),
-			handlers.WithChannelSize(128),
+			handlers.WithAuthorizer(WsAuthorizeLtd()),
+			handlers.WithConnectionHandler(WsListenToMessages()),
 		)
 		communicator := handlers.GetWebsocketCommunicator()
 		app.Use("/", custhttp.SetCors())
@@ -26,9 +28,10 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Get("/api/cameras/:id/streams", GetStreamInfo)
 		app.Put("/api/cameras/:id/streams", ToggleStream)
 		app.Post("/api/rc", RemoteControl)
-		app.Get("/api/cameras/:cameraId/info", GetCameraDeviceInfo)
+		app.Get("/api/cameras/:cameraId/info", timeout.NewWithContext(
+			GetCameraDeviceInfo, time.Second*3))
 
-		app.Use("/ws/ltd", communicator.HandleRegisterRequest)
+		app.Use("/ws/ltd/:id", communicator.HandleRegisterRequest)
 		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
 	}
 }

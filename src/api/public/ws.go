@@ -8,6 +8,7 @@ import (
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -18,7 +19,7 @@ func WsAuthorizeLtd() handlers.AuthorizerHandler {
 		if len(deviceId) == 0 {
 			return custerror.FormatPermissionDenied("missing deviceId as parameter")
 		}
-		devices, err := service.GetWebService().GetDevices(ctx.Context(), &web.GetTranscodersRequest{
+		devices, err := service.GetWebService().GetDevices(ctx.UserContext(), &web.GetTranscodersRequest{
 			Ids: []string{deviceId},
 		})
 		if err != nil {
@@ -52,8 +53,12 @@ func WsListenToMessages() handlers.ConnectionHandler {
 		var msg handlers.RequestReplyResponse
 		for {
 			if err := conn.ReadJSON(&msg); err != nil {
+				if websocket.IsCloseError(err) {
+					logger.SDebug("WsListenToMessages: client disconnected")
+					return err
+				}
 				logger.SError("WsListenToMessages: ReadJSON error", zap.Error(err))
-				continue
+				return err
 			}
 			logger.SDebug("WsListenToMessages: message received",
 				zap.String("deviceId", i.Id))

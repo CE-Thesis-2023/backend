@@ -2,10 +2,11 @@ package custhttp
 
 import (
 	"database/sql"
-	"github.com/CE-Thesis-2023/backend/src/internal/configs"
-	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"net/http"
 	"time"
+
+	"github.com/CE-Thesis-2023/backend/src/internal/configs"
+	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
