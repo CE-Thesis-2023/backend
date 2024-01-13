@@ -1,6 +1,7 @@
 package publicapi
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -152,4 +153,25 @@ func RemoteControl(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.SendStatus(200)
+}
+
+func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
+	logger.SDebug("GetCameraDeviceInfo: request")
+
+	cameraId := ctx.Params("cameraId")
+	if len(cameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing cameraId as parameter")
+	}
+
+	resp, err := service.GetWebService().GetDeviceInfo(ctx.Context(), &web.GetCameraDeviceInfoRequest{
+		CameraId: cameraId,
+	})
+	if err != nil {
+		if errors.Is(err, custerror.ErrorFailedPrecondition) {
+			return ctx.SendStatus(http.StatusExpectationFailed)
+		}
+		return err
+	}
+
+	return ctx.JSON(resp)
 }

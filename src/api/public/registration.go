@@ -26,6 +26,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Get("/api/cameras/:id/streams", GetStreamInfo)
 		app.Put("/api/cameras/:id/streams", ToggleStream)
 		app.Post("/api/rc", RemoteControl)
+		app.Get("/api/cameras/:cameraId/info", GetCameraDeviceInfo)
 
 		app.Use("/ws/ltd", communicator.HandleRegisterRequest)
 		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
