@@ -1,7 +1,6 @@
 package publicapi
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -153,24 +152,4 @@ func RemoteControl(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.SendStatus(200)
-}
-
-func HtmlVideoPlayer(ctx *fiber.Ctx) error {
-	logger.SDebug("HtmlVideoPlayer: request")
-
-	cameraId := ctx.Params("id")
-	if len(cameraId) == 0 {
-		return custerror.FormatInvalidArgument("missing cemraId as parameter")
-	}
-
-	info, err := service.GetWebService().GetStreamInfo(ctx.Context(), &web.GetStreamInfoRequest{
-		CameraId: cameraId,
-	})
-	if err != nil {
-		return err
-	}
-	return ctx.Render("player", web.VideoPlayerParameters{
-		Info:     info,
-		Pagename: fmt.Sprintf("Viewer - %s", cameraId),
-	})
 }

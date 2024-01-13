@@ -119,6 +119,11 @@ func (comm *WebSocketCommunicator) CreateWebsocketHandler() fiber.Handler {
 				Id:         id,
 				Version:    version,
 				Connection: c,
+				// message that comes is the output to other functions
+				IncommingMessageChan: outputChannel,
+
+				// message that needs to be sent comes from other functions
+				OutgoingMessageChan: inputChannel,
 			}); err != nil {
 				logger.SError("CreateWebsocketHandler.handler: error", zap.Error(err))
 				return
@@ -155,9 +160,11 @@ func (c *WebSocketCommunicator) WaitForOutput(id string, dest interface{}, timeo
 }
 
 type ConnectionInformation struct {
-	Id         string `json:"id"`
-	Version    string `json:"version"`
-	Connection *websocket.Conn
+	Id                   string `json:"id"`
+	Version              string `json:"version"`
+	IncommingMessageChan chan interface{}
+	OutgoingMessageChan  chan interface{}
+	Connection           *websocket.Conn
 }
 
 type ConnectionHandler func(i *ConnectionInformation) error
