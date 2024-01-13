@@ -41,7 +41,7 @@ func CommonPublicMiddlewares(configs *configs.HttpConfigs) []interface{} {
 				}
 				return true
 			},
-			AllowMethods: "GET,HEAD",
+			AllowMethods: "GET,HEAD,POST,DELETE,PUT,PATCH",
 			AllowHeaders: "Origin, Content-Type, Accept-Encoding, Host",
 		}),
 		etag.New(),
