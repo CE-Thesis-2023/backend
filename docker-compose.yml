@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  backend:
+    image: 'nguyentrantrung/backend:latest'
+    container_name: backend
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048m
+    ports:
+      - 8080:8080
+      - 8081:8081
+      - 8083:8083
+    environment:
+      - CONFIG_FILE_PATH=./configs.json
+    volumes:
+      - ./db:/db
+      - ./configs.json:/configs.json
+    restart: on-failure
+    pull_policy: always

@@ -1,0 +1,46 @@
+{
+  "public": {
+    "port": 8080,
+    "name": "public_api",
+    "tls": {
+      "disable": "true"
+    }
+  },
+  "private": {
+    "port": 8081,
+    "name": "private_api",
+    "tls": {
+      "disable": "true"
+    },
+    "auth": {
+      "username": "dev",
+      "token": "dev"
+    }
+  },
+  "logger": {
+    "level": "debug",
+    "encoding": "console"
+  },
+  "mqttStore": {
+    "host": "",
+    "port": 8083,
+    "enabled": true,
+    "name": "mqtt_store",
+    "username": "",
+    "password": "",
+    "level": "debug"
+  },
+  "sqlite": {
+    "connection": "./db/emb.db"
+  },
+  "mediaEngine": {
+    "host": "103.165.142.44",
+    "virtualHost": "default",
+    "applicationName": "camera",
+    "port": {
+      "api": 7956,
+      "webRtc": 8056,
+      "srt": 7958
+    }
+  }
+}
