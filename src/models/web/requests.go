@@ -74,6 +74,10 @@ type RemoteControlRequest struct {
 	Tilt     int    `json:"tilt"`
 }
 
+type GetCameraDeviceInfoRequest struct {
+	CameraId string `json:"cameraId"`
+}
+
 type GetCameraDeviceInfo struct {
 	CameraId             string             `json:"cameraId"`
 	DeviceName           string             `json:"deviceName"`

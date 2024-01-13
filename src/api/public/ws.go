@@ -7,7 +7,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -50,34 +49,26 @@ func WsListenToMessages() handlers.ConnectionHandler {
 			zap.String("deviceId", i.Id),
 			zap.String("version", i.Version))
 		conn := i.Connection
-		var resp events.CommandResponse
+		var msg handlers.RequestReplyResponse
 		for {
-			if err := conn.ReadJSON(&resp); err != nil {
+			if err := conn.ReadJSON(&msg); err != nil {
 				logger.SError("WsListenToMessages: ReadJSON error", zap.Error(err))
 				continue
 			}
-			if resp.Type != "" {
-				logger.SInfo("WsListenToMessages: message received",
-					zap.Any("message", resp),
-					zap.String("deviceId", i.Id))
-				select {
-				case i.IncommingMessageChan <- resp:
-					logger.SDebug("WsListenToMessages: message sent to channel")
-				default:
-				}
-			}
-			select {
-			case outgoing := <-i.OutgoingMessageChan:
-				logger.SDebug("WsListenToMessages: delivers outgoing messages")
-				if err := conn.WriteJSON(outgoing); err != nil {
-					logger.SDebug("WsListenToMessages: WriteJSON error", zap.Error(err))
+			logger.SDebug("WsListenToMessages: message received",
+				zap.String("deviceId", i.Id))
+
+			if msg.MessageId != 0 {
+				logger.SDebug("WsListenToMessages: message is request reply")
+				if err := i.RequestReply.OnResponse(&msg); err != nil {
+					logger.SError("WsListenToMessages: RRCommunicator.OnResponse error",
+						zap.Error(err))
 					continue
 				}
-				logger.SInfo("WsListenToMessages: message sent to LTD",
-					zap.String("deviceId", i.Id))
-				return nil
-			default:
+				logger.SDebug("WsListenToMessages: RRCommunicator.OnResponse completed")
 			}
+
+			logger.SDebug("WsListenToMessages: RRCommunicator message is not request reply")
 		}
 	}
 }

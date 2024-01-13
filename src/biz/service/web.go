@@ -2,7 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
+
+	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	"github.com/CE-Thesis-2023/backend/src/helper"
 	"github.com/CE-Thesis-2023/backend/src/internal/cache"
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
@@ -13,7 +17,7 @@ import (
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-	"net/url"
+	"github.com/mitchellh/mapstructure"
 
 	events "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
@@ -585,4 +589,61 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 	}
 
 	return nil
+}
+
+func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDeviceInfoRequest) (*web.GetCameraDeviceInfo, error) {
+	logger.SInfo("GetDeviceInfo: request", zap.Any("request", req))
+
+	cameras, err := s.getCameraById(ctx, []string{req.CameraId})
+	if err != nil {
+		if errors.Is(err, custerror.ErrorNotFound) {
+			logger.SError("GetDeviceInfo: cameraId not found")
+			return nil, custerror.ErrorNotFound
+		}
+		logger.SError("GetDeviceInfo: getCameraById error", zap.Error(err))
+		return nil, err
+	}
+
+	if len(cameras) == 0 {
+		logger.SError("GetDeviceInfo: cameraId not found")
+	}
+	cam := cameras[0]
+	msg := s.prepareGetDeviceInfoMessage(req)
+
+	rr, err := handlers.GetWebsocketCommunicator().
+		RequestReply(cam.TranscoderId)
+	if err != nil {
+		if errors.Is(err, custerror.ErrorFailedPrecondition) {
+			logger.SError("GetDeviceInfo: local transcoder device not connected")
+			return nil, err
+		}
+		logger.SError("GetDeviceInfo: error", zap.Error(err))
+		return nil, err
+	}
+
+	resp, err := rr.Request(ctx, &events.CommandRequest{
+		CommandType: events.Command_GetDeviceInfo,
+		Info: map[string]interface{}{
+			"cameraId": msg.CameraId,
+		},
+	})
+	if err != nil {
+		logger.SError("GetDeviceInfo: rr.Request error", zap.Error(err))
+		return nil, err
+	}
+
+	var info web.GetCameraDeviceInfo
+	if err := mapstructure.Decode(resp.Info, &info); err != nil {
+		logger.SError("GetDeviceInfo: mapstructure.Decode error", zap.Error(err))
+		return nil, err
+	}
+
+	logger.SInfo("GetDeviceInfo: info", zap.Any("deviceInfo", info))
+	return &info, nil
+}
+
+func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoRequest) *events.CommandRetrieveDeviceInfo {
+	return &events.CommandRetrieveDeviceInfo{
+		CameraId: req.CameraId,
+	}
 }
