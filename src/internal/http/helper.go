@@ -84,12 +84,6 @@ func CommonPrivateMiddlewares(configs *configs.HttpConfigs) []interface{} {
 		}),
 		cors.New(cors.Config{
 			AllowOriginsFunc: func(origin string) bool {
-				switch origin {
-				case "http://*":
-				case "https://*":
-				default:
-					return false
-				}
 				return true
 			},
 			AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
