@@ -632,6 +632,11 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
+	logger.SDebug("GetDeviceInfo: response", zap.Any("response", resp))
+	if resp == nil {
+		logger.SError("GetDeviceInfo: ltd responsed with null")
+		return nil, custerror.ErrorInternal
+	}
 	var info web.GetCameraDeviceInfo
 	if err := mapstructure.Decode(resp.Info, &info); err != nil {
 		logger.SError("GetDeviceInfo: mapstructure.Decode error", zap.Error(err))
