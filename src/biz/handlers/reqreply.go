@@ -8,6 +8,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	ltdEvent "github.com/CE-Thesis-2023/ltd/src/models/events"
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/contrib/websocket"
 	"go.uber.org/zap"
 )
@@ -68,7 +69,12 @@ func (c *RequestReplyCommunicator) Request(ctx context.Context, req *ltdEvent.Co
 		Error:    nil,
 	}
 	c.pending[id] = rrCtx
-	if err := c.conn.WriteJSON(&msg); err != nil {
+	msgBytes, err := sonic.Marshal(&msg)
+	if err != nil {
+		logger.SError("RRCommunicator.Request: Marshal error", zap.Error(err))
+		return nil, err
+	}
+	if err := c.conn.WriteMessage(websocket.TextMessage, msgBytes); err != nil {
 		logger.SError("RRCommunicator.Request: error",
 			zap.Error(err),
 			zap.String("deviceId", c.deviceId))
