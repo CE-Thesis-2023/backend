@@ -92,17 +92,17 @@ type GetCameraDeviceInfo struct {
 }
 
 type CameraDeviceStatus struct {
-	Status string `json:"status"`
-	CameraDeviceAbnormalStatus
+	Status               string                     `json:"status"`
+	DetailAbnormalStatus CameraDeviceAbnormalStatus `json:"detailAbnormalStatus"`
 }
 
 type CameraDeviceAbnormalStatus struct {
-	HardDiskFull         bool `json:"hardDiskFull,omitempty"`
-	HardDiskError        bool `json:"hardDiskError,omitempty"`
-	EthernetBroken       bool `json:"ethernetBroken,omitempty"`
-	IPAddrConflict       bool `json:"ipaddrConflict,omitempty"`
-	IllegalAccess        bool `json:"illegalAccess,omitempty"`
-	RecordError          bool `json:"recordError,omitempty"`
-	RAIDLogicDiskError   bool `json:"raidLogicDiskError,omitempty"`
-	SpareWorkDeviceError bool `json:"spareWorkDeviceError,omitempty"`
+	HardDiskFull         bool `json:"hardDiskFull"`
+	HardDiskError        bool `json:"hardDiskError"`
+	EthernetBroken       bool `json:"ethernetBroken"`
+	IPAddrConflict       bool `json:"ipaddrConflict"`
+	IllegalAccess        bool `json:"illegalAccess"`
+	RecordError          bool `json:"recordError"`
+	RAIDLogicDiskError   bool `json:"raidLogicDiskError"`
+	SpareWorkDeviceError bool `json:"spareWorkDeviceError"`
 }
