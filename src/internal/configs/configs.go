@@ -141,15 +141,7 @@ func getConfigFilePath() (string, error) {
 }
 
 func readConfigFile(path string) ([]byte, error) {
-	fs, err := os.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, custerror.FormatNotFound("readConfigFile: file not found")
-		}
-		return nil, custerror.FormatInternalError("readConfigFile: err = %s", err)
-	}
-
-	contents, err := os.ReadFile(fs.Name())
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, custerror.FormatInternalError("readConfigFile: err = %s", err)
 	}
