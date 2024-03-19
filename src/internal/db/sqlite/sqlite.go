@@ -8,6 +8,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"go.uber.org/zap"
 
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/jmoiron/sqlx"
@@ -22,18 +23,20 @@ func NewSqlx(ctx context.Context, options ...Optioner) (*sqlx.DB, error) {
 	}
 
 	globalConfigs := opts.globalConfigs
-	log := logger.Sugar()
 
-	log.Infof("db.sqlite.Init: creating database dsn = %s", globalConfigs.Connection)
+	logger.SInfo("db.sqlite.Init: create SQLx connection",
+		zap.String("connection", globalConfigs.Connection))
 
 	if err := createIfNotExists(globalConfigs.Connection); err != nil {
-		log.Fatal(err)
+		logger.SFatal("db.sqlite.createIfNotExists: open error",
+			zap.Error(err))
 		return nil, err
 	}
 
 	client, err := sqlx.Connect("sqlite", globalConfigs.Connection)
 	if err != nil {
-		log.Fatalf("db.sqlite.Init: open err = %s", err)
+		logger.SFatal("db.sqlite.Init: open error",
+			zap.Error(err))
 		return nil, err
 	}
 

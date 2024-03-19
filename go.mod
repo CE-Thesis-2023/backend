@@ -15,13 +15,16 @@ require (
 	github.com/gofiber/template/html/v2 v2.0.5
 	github.com/jinzhu/copier v0.3.5
 	github.com/jmoiron/sqlx v1.3.5
+	github.com/lib/pq v1.2.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mochi-mqtt/server/v2 v2.4.2
 	github.com/motemen/go-loghttp v0.0.0-20231107055348-29ae44b293f4
 	github.com/opus-domini/fast-shot v0.9.0
 	github.com/panjf2000/ants/v2 v2.9.0
 	go.mrchanchal.com/zaphandler v0.0.0-20230611140024-bd4fd80897ad
+	gorm.io/driver/postgres v1.5.7
 	gorm.io/driver/sqlite v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
 
 require (
@@ -36,6 +39,9 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgx/v5 v5.4.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
@@ -43,7 +49,6 @@ require (
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.18 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31 // indirect
 	github.com/nats-io/jwt/v2 v2.5.3 // indirect
 	github.com/nats-io/nkeys v0.4.6 // indirect
@@ -62,6 +67,7 @@ require (
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	modernc.org/libc v1.22.5 // indirect

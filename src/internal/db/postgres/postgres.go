@@ -8,6 +8,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -19,13 +20,14 @@ func NewSqlx(ctx context.Context, options ...Optioner) (*sqlx.DB, error) {
 	}
 
 	globalConfigs := opts.globalConfigs
-	log := logger.Sugar()
 
-	log.Infof("db.postgres.Init: creating database dsn = %s", globalConfigs.Connection)
+	logger.SInfo("db.postgres.Init: create SQLx connection",
+		zap.String("connection", globalConfigs.Connection))
 
 	client, err := sqlx.Connect("postgres", globalConfigs.Connection)
 	if err != nil {
-		log.Fatalf("db.postgres.Init: open err = %s", err)
+		logger.SFatal("db.postgres.Init: open error",
+			zap.Error(err))
 		return nil, err
 	}
 
