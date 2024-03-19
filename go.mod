@@ -23,7 +23,6 @@ require (
 	github.com/panjf2000/ants/v2 v2.9.0
 	go.mrchanchal.com/zaphandler v0.0.0-20230611140024-bd4fd80897ad
 	gorm.io/driver/postgres v1.5.7
-	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
 
@@ -47,7 +46,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.18 // indirect
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31 // indirect
 	github.com/nats-io/jwt/v2 v2.5.3 // indirect

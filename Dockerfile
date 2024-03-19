@@ -1,7 +1,5 @@
 FROM golang:1.21.4-alpine3.18 AS builder
 
-RUN apk add --no-cache --update gcc g++
-
 WORKDIR /build
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -9,12 +7,14 @@ RUN go mod download
 
 COPY src src
 
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
-    go build -a -installsuffix cgo \
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -a \
     -ldflags "-w -s" \
     -o main src/main.go
 
-FROM alpine:3.18 AS runner
+FROM scratch AS runner
+
+ENV CONFIG_FILE_PATH=configs.json
 
 COPY configs.json configs.json
 COPY src/templates templates
