@@ -25,10 +25,6 @@ func main() {
 		time.Second*10,
 		func(configs *configs.Configs, zl *zap.Logger) []app.Optioner {
 			return []app.Optioner{
-				app.WithMqttServer(custmqtt.New(
-					custmqtt.WithGlobalConfigs(&configs.MqttStore),
-					custmqtt.WithZapLogger(zl),
-				)),
 				app.WithHttpServer(custhttp.New(
 					custhttp.WithGlobalConfigs(&configs.Public),
 					custhttp.WithErrorHandler(custhttp.GlobalErrorHandler()),

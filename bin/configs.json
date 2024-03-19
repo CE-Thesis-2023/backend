@@ -23,11 +23,11 @@
   },
   "mqttStore": {
     "host": "mqtt.cluster.ntranlab.com",
-    "port": 1883,
+    "port": 8083,
     "enabled": true,
     "name": "mqtt_store",
-    "username": "",
-    "password": "",
+    "username": "application",
+    "password": "123456Aa@!",
     "level": "debug"
   },
   "database": {

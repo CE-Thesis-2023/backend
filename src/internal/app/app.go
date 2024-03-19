@@ -3,24 +3,32 @@ package app
 import (
 	"context"
 	"errors"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custcron "github.com/CE-Thesis-2023/backend/src/internal/cron"
 	"github.com/CE-Thesis-2023/backend/src/internal/events"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"time"
 
 	"go.uber.org/zap"
 )
 
 func Run(shutdownTimeout time.Duration, registration RegistrationFunc) {
 	ctx := context.Background()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGINT)
+
 	configs.Init(ctx)
 
 	globalConfigs := configs.Get()
@@ -35,59 +43,62 @@ func Run(shutdownTimeout time.Duration, registration RegistrationFunc) {
 		optioner(&opts)
 	}
 
-	logger := zap.L().Sugar()
+	go func() {
+		logger := zap.L().Sugar()
+		logger.Infof("Run: configs = %s", globalConfigs.String())
 
-	logger.Infof("Run: configs = %s", globalConfigs.String())
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-
-	for _, s := range opts.httpServers {
-		s := s
-		go func() {
-			logger.Infof("Run: start HTTP server name = %s", s.Name())
-			if err := s.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logger.Infof("Run: start HTTP server err = %s", err)
+		if opts.factoryHook != nil {
+			if err := opts.factoryHook(); err != nil {
+				logger.Errorf("Run: factoryHook err = %s", err)
+				quit <- syscall.SIGTERM
+				return
 			}
-		}()
-	}
-
-	for _, s := range opts.natsServers {
-		s := s
-		go func() {
-			logger.Infof("Run: start embedded NATS server name = %s", s.Name())
-			if err := s.Start(); err != nil {
-				logger.Infof("Run: start embedded NATS server err = %s", err)
-			}
-		}()
-	}
-
-	for _, s := range opts.mqttServers {
-		s := s
-		go func() {
-			logger.Infof("Run: start embedded MQTT server name = %s", s.Name())
-			if err := s.Start(); err != nil {
-				logger.Infof("Run: start embedded MQTT server err = %s", err)
-			}
-		}()
-	}
-
-	for _, s := range opts.schedulers {
-		s := s
-		go func() {
-			logger.Infof("Run: start scheduler name = %s", s.Name())
-			if err := s.Start(); err != nil {
-				logger.Infof("Run: start scheduler err = %s", err)
-			}
-		}()
-	}
-
-	if opts.factoryHook != nil {
-		if err := opts.factoryHook(); err != nil {
-			logger.Fatalf("Run: factoryHook err = %s", err)
-			return
 		}
-	}
+
+		for _, s := range opts.httpServers {
+			s := s
+			go func() {
+				logger.Infof("Run: start HTTP server name = %s", s.Name())
+				if err := s.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					logger.Infof("Run: start HTTP server err = %s", err)
+					quit <- syscall.SIGTERM
+				}
+			}()
+		}
+
+		for _, s := range opts.natsServers {
+			s := s
+			go func() {
+				logger.Infof("Run: start embedded NATS server name = %s", s.Name())
+				if err := s.Start(); err != nil {
+					logger.Infof("Run: start embedded NATS server err = %s", err)
+					quit <- syscall.SIGTERM
+				}
+			}()
+		}
+
+		for _, s := range opts.mqttServers {
+			s := s
+			go func() {
+				logger.Infof("Run: start embedded MQTT server name = %s", s.Name())
+				if err := s.Start(); err != nil {
+					logger.Infof("Run: start embedded MQTT server err = %s", err)
+					quit <- syscall.SIGTERM
+				}
+			}()
+		}
+
+		for _, s := range opts.schedulers {
+			s := s
+			go func() {
+				logger.Infof("Run: start scheduler name = %s", s.Name())
+				if err := s.Start(); err != nil {
+					logger.Infof("Run: start scheduler err = %s", err)
+					quit <- syscall.SIGTERM
+				}
+			}()
+		}
+	}()
 
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
