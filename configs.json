@@ -22,8 +22,8 @@
     "encoding": "console"
   },
   "mqttStore": {
-    "host": "",
-    "port": 8083,
+    "host": "mqtt.cluster.ntranlab.com",
+    "port": 1883,
     "enabled": true,
     "name": "mqtt_store",
     "username": "",

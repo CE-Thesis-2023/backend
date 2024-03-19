@@ -2,11 +2,13 @@ package eventsapi
 
 import (
 	"github.com/CE-Thesis-2023/backend/src/internal/cache"
+	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"go.uber.org/zap"
 
+	"github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/panjf2000/ants/v2"
-	"github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 )
 
 type StandardEventHandler struct {
@@ -22,5 +24,9 @@ func NewStandardEventHandler() *StandardEventHandler {
 }
 
 func (h *StandardEventHandler) UpdateEventsHandler(p *paho.Publish) error {
+	logger.SDebug("eventsapi.StandardEventHandler.UpdateEventsHandler",
+		zap.String("topic", p.Topic),
+		zap.Any("message", string(p.Payload)),
+	)
 	return nil
 }
