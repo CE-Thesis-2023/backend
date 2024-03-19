@@ -30,8 +30,8 @@
     "password": "",
     "level": "debug"
   },
-  "sqlite": {
-    "connection": "./db/emb.db"
+  "database": {
+    "connection": "user=ps_dev password=123456Aa@! dbname=backend host=localhost port=5432 sslmode=disable"
   },
   "mediaEngine": {
     "host": "103.165.142.44",
