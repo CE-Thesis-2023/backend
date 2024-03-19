@@ -21,7 +21,7 @@ type Configs struct {
 	Logger        LoggerConfigs     `json:"logger,omitempty" yaml:"logger,omitempty"`
 	EventStore    EventStoreConfigs `json:"eventStore,omitempty" yaml:"eventStore,omitempty"`
 	MqttStore     EventStoreConfigs `json:"mqttStore,omitempty" yaml:"mqttStore,omitempty"`
-	Sqlite        DatabaseConfigs   `json:"sqlite,omitempty" yaml:"sqlite,omitempty"`
+	Database      DatabaseConfigs   `json:"database,omitempty" yaml:"sqlite,omitempty"`
 	InfluxConfigs InfluxConfigs     `json:"influx,omitempty" yaml:"influx,omitempty"`
 	MediaEngine   MediaMtxConfigs   `json:"mediaEngine,omitempty" yaml:"mediaEngine,omitempty"`
 }

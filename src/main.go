@@ -46,11 +46,11 @@ func main() {
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer cancel()
 
-					custdb.Init(
-						context.Background(),
-						custdb.WithGlobalConfigs(&configs.Sqlite),
-					)
-					custdb.Migrate(&db.Transcoder{}, &db.Camera{})
+					custdb.Init(ctx, configs)
+
+					custdb.Migrate(custdb.Gorm(),
+						&db.Transcoder{},
+						&db.Camera{})
 
 					cache.Init()
 					custactors.Init()

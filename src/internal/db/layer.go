@@ -4,37 +4,29 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
+	"github.com/CE-Thesis-2023/backend/src/internal/configs"
+	custpg "github.com/CE-Thesis-2023/backend/src/internal/db/postgres"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	"sync"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
-var layeredOnce sync.Once
-
-var layeredDb *LayeredDb
-
 type LayeredDb struct {
 	sqldb *sqlx.DB
 }
 
-func NewLayeredDb() *LayeredDb {
-	return &LayeredDb{
-		sqldb: Db(),
+func NewLayeredDb(ctx context.Context, c *configs.Configs) *LayeredDb {
+	pg, err := custpg.NewSqlx(ctx, custpg.WithConfigs(&c.Database))
+	if err != nil {
+		logger.SFatal("Unable to initialize database", zap.Error(err))
 	}
-}
-
-func LayeredInit() {
-	layeredOnce.Do(func() {
-		layeredDb = NewLayeredDb()
-	})
-}
-
-func Layered() *LayeredDb {
-	return layeredDb
+	return &LayeredDb{
+		sqldb: pg,
+	}
 }
 
 func (db *LayeredDb) Select(ctx context.Context, selectBuilder sq.SelectBuilder, dest interface{}) error {
