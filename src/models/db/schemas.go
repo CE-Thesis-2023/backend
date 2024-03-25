@@ -1,5 +1,7 @@
 package db
 
+import "time"
+
 type Transcoder struct {
 	DeviceId string `json:"deviceId" db:"device_id,primary"`
 	Name     string `json:"name" db:"name"`
@@ -13,8 +15,15 @@ type Camera struct {
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
 	Started  bool   `json:"started" db:"started"`
+	GroupId  string `json:"groupId" db:"group_id"`
 
 	TranscoderId string `json:"transcoderId" db:"transcoder_id"`
+}
+
+type CameraGroup struct {
+	GroupId     string    `json:"groupId" db:"group_id,primary"`
+	Name        string    `json:"name" db:"name"`
+	CreatedDate time.Time `json:"createdDate" db:"created_date"`
 }
 
 func (t *Transcoder) Fields() []string {
@@ -60,6 +69,26 @@ func (t *Camera) Values() []interface{} {
 		t.Password,
 		t.TranscoderId,
 		t.Started,
+	)
+	return vs
+}
+
+func (t *CameraGroup) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"group_id",
+		"name",
+		"created_date",
+	)
+	return fs
+}
+
+func (t *CameraGroup) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.GroupId,
+		t.Name,
+		t.CreatedDate,
 	)
 	return vs
 }

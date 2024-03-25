@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	"github.com/CE-Thesis-2023/backend/src/helper"
@@ -147,6 +148,75 @@ func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequ
 	return nil
 }
 
+func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCameraGroupsRequest) (*web.GetCameraGroupsResponse, error) {
+	logger.SDebug("GetCameraGroups: request", zap.Any("request", req))
+
+	groups, err := s.getCameraGroupById(ctx, req.Ids)
+
+	if err != nil {
+		logger.SError("GetCameraGroups: getCameraGroupById", zap.Error(err))
+		return nil, err
+	}
+
+	logger.SDebug("GetCameraGroups: groups", zap.Any("groups", groups))
+	resp := web.GetCameraGroupsResponse{
+		CameraGroups: groups,
+	}
+	return &resp, nil
+}
+
+func (s *WebService) AddCameraGroup(ctx context.Context, req *web.AddCameraGroupRequest) (*web.AddCameraGroupResponse, error) {
+	logger.SDebug("AddCameraGroup: request", zap.Any("request", req))
+
+	existing, err := s.getCameraGroupByName(ctx, []string{req.Name})
+	if err != nil {
+		logger.SError("AddCameraGroup: getCameraGroupByName", zap.Error(err))
+		return nil, err
+	}
+
+	if len(existing) > 0 {
+		logger.SDebug("AddCameraGroup: group already exists")
+		return nil, custerror.ErrorAlreadyExists
+	}
+
+	var entry db.CameraGroup
+	if err := copier.Copy(&entry, req); err != nil {
+		logger.SError("AddCameraGroup: copier.Copy error", zap.Error(err))
+		return nil, err
+	}
+	entry.GroupId = uuid.NewString()
+	entry.CreatedDate = time.Now()
+
+	if err := s.addCameraGroup(ctx, &entry); err != nil {
+		logger.SError("AddCameraGroup: addCameraGroup error", zap.Error(err))
+		return nil, err
+	}
+
+	logger.SInfo("AddCameraGroup: success", zap.String("id", entry.GroupId))
+	return &web.AddCameraGroupResponse{GroupId: entry.GroupId}, nil
+}
+
+func (s *WebService) DeleteCameraGroup(ctx context.Context, req *web.DeleteCameraGroupRequest) error {
+	logger.SDebug("DeleteCameraGroup: request", zap.Any("request", req))
+
+	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
+	if err != nil {
+		logger.SError("DeleteCameraGroup: getCameraGroupById", zap.Error(err))
+		return err
+	}
+	if len(group) == 0 {
+		logger.SError("DeleteCameraGroup: group not found")
+		return custerror.ErrorNotFound
+	}
+
+	if err := s.deleteCameraGroup(ctx, req.GroupId); err != nil {
+		logger.SError("DeleteCameraGroup: deleteCameraGroup", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
 func (s *WebService) deleteCameraById(ctx context.Context, id string) error {
 	return s.db.Delete(ctx,
 		squirrel.Delete("cameras").
@@ -211,6 +281,85 @@ func (s *WebService) addCamera(ctx context.Context, camera *db.Camera) error {
 	return nil
 }
 
+func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db.CameraGroup, error) {
+	q := squirrel.Select("*").From("camera_groups")
+
+	if len(ids) > 0 {
+		or := squirrel.Or{}
+		for _, i := range ids {
+			or = append(or, squirrel.Eq{"group_id": i})
+		}
+		q = q.Where(squirrel.Eq{"group_id": ids[0]})
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getGroupByIds: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	groups := []db.CameraGroup{}
+	if err := s.db.Select(ctx, q, &groups); err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
+func (s *WebService) getCameraGroupByName(ctx context.Context, names []string) ([]db.CameraGroup, error) {
+	q := squirrel.Select("*").From("camera_groups")
+
+	//if len(names) > 0 {
+	//	or := squirrel.Or{}
+	//	for _, i := range names {
+	//		eq := squirrel.Eq{"name": i}
+	//		or = append(or, eq)
+	//	}
+	//	q = q.Where(or)
+	//}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getGroupByName: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var groups []db.CameraGroup
+	if err := s.db.Select(ctx, q, &groups); err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
+func (s *WebService) addCameraGroup(ctx context.Context, group *db.CameraGroup) error {
+	q := squirrel.Insert("camera_groups").
+		Columns(group.Fields()...).
+		Values(group.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) deleteCameraGroup(ctx context.Context, id string) error {
+	return s.db.Delete(ctx,
+		squirrel.Delete("camera_groups").
+			Where("group_id = ?", id))
+}
+
+func (s *WebService) updateCameraGroup(ctx context.Context, group *db.CameraGroup) error {
+	q := squirrel.Update("camera_groups").Where("group_id = ?", group.GroupId).SetMap(map[string]interface{}{
+		"name": group.Name,
+	})
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateGroup: SQL query",
+		zap.String("query", sql),
+		zap.Any("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Transcoder, error) {
 	query := squirrel.
 		Select("*").
@@ -229,7 +378,7 @@ func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Trans
 		zap.Any("q", sql),
 		zap.Any("args", args))
 
-	transcoders := []db.Transcoder{}
+	var transcoders []db.Transcoder
 	if err := s.db.Select(ctx, query, &transcoders); err != nil {
 		return nil, err
 	}
@@ -430,7 +579,7 @@ func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Cam
 		logger.SError("requestLtdStreamControl: mqtt publish error", zap.Error(err))
 		return err
 	}
-	logger.SDebug("requestLtdStreamControl: message published succesfully")
+	logger.SDebug("requestLtdStreamControl: message published successfully")
 	return nil
 }
 
@@ -634,12 +783,12 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 
 	logger.SDebug("GetDeviceInfo: response", zap.Any("response", resp))
 	if resp == nil {
-		logger.SError("GetDeviceInfo: ltd responsed with null")
+		logger.SError("GetDeviceInfo: ltd responded with null")
 		return nil, custerror.ErrorInternal
 	}
 	var info web.GetCameraDeviceInfo
 	if err := mapstructure.Decode(resp.Info, &info); err != nil {
-		logger.SError("GetDeviceInfo: mapstructure.Decode error", zap.Error(err))
+		logger.SError("GetDeviceInfo: mapStructure.Decode error", zap.Error(err))
 		return nil, err
 	}
 

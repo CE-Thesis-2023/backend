@@ -88,6 +88,58 @@ func DeleteCamera(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusAccepted)
 }
 
+func GetCameraGroups(ctx *fiber.Ctx) error {
+	logger.SDebug("GetCameraGroups: request")
+
+	queries := ctx.Query("ids")
+	ids := strings.Split(queries, ",")
+
+	if ids[0] == "" {
+		ids = []string{}
+	}
+
+	resp, err := service.GetWebService().GetCameraGroupsByIds(ctx.UserContext(), &web.GetCameraGroupsRequest{Ids: ids})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func AddCameraGroup(ctx *fiber.Ctx) error {
+	logger.SDebug("AddCameraGroup: request")
+
+	var msg web.AddCameraGroupRequest
+	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+		logger.SDebug("AddCameraGroup: unmarshal msg error", zap.Error(err))
+		return custerror.ErrorInvalidArgument
+	}
+	resp, err := service.GetWebService().AddCameraGroup(ctx.UserContext(), &msg)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func DeleteCameraGroup(ctx *fiber.Ctx) error {
+	logger.SDebug("DeleteCameraGroup: request")
+
+	id := ctx.Query("id")
+	if len(id) == 0 {
+		return custerror.ErrorInvalidArgument
+	}
+
+	err := service.GetWebService().DeleteCameraGroup(ctx.UserContext(), &web.DeleteCameraGroupRequest{
+		GroupId: id,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.SendStatus(http.StatusAccepted)
+}
+
 func UpdateTranscoder(ctx *fiber.Ctx) error {
 	logger.SDebug("UpdateTranscoder: request")
 
