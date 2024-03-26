@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"time"
+
 	eventsapi "github.com/CE-Thesis-2023/backend/src/api/events"
 	privateapi "github.com/CE-Thesis-2023/backend/src/api/private"
 	publicapi "github.com/CE-Thesis-2023/backend/src/api/public"
@@ -15,7 +17,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -46,7 +47,9 @@ func main() {
 
 					custdb.Migrate(custdb.Gorm(),
 						&db.Transcoder{},
-						&db.Camera{})
+						&db.Camera{},
+						&db.CameraGroup{},
+					)
 
 					cache.Init()
 					custactors.Init()
