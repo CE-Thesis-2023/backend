@@ -28,6 +28,8 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Get("/api/camera-groups", GetCameraGroups)
 		app.Post("/api/camera-groups", AddCameraGroup)
 		app.Delete("/api/camera-groups", DeleteCameraGroup)
+		app.Post("/api/camera-groups/add-cameras", AddCamerasToGroup)
+		app.Post("/api/camera-groups/remove-cameras", RemoveCamerasFromGroup)
 
 		app.Get("/api/cameras/:id/streams", GetStreamInfo)
 		app.Put("/api/cameras/:id/streams", ToggleStream)

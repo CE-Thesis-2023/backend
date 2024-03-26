@@ -55,6 +55,24 @@ type GetStreamInfoRequest struct {
 	CameraId string `json:"cameraId"`
 }
 
+type AddCamerasToGroupRequest struct {
+	CameraIds []string `json:"cameraIds"`
+	GroupId   string   `json:"groupId"`
+}
+
+type RemoveCamerasFromGroupRequest struct {
+	CameraIds []string `json:"cameraIds"`
+	GroupId   string   `json:"groupId"`
+}
+
+type AddCamerasToGroupResponse struct {
+	GroupId string `json:"groupId"`
+}
+
+type RemoveCamerasFromGroupResponse struct {
+	GroupId string `json:"groupId"`
+}
+
 type GetCameraGroupsRequest struct {
 	Ids []string `json:"ids"`
 }

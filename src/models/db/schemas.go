@@ -8,14 +8,14 @@ type Transcoder struct {
 }
 
 type Camera struct {
-	CameraId string `json:"cameraId" db:"camera_id,primary"`
-	Name     string `json:"name" db:"name"`
-	Ip       string `json:"ip" db:"ip"`
-	Port     int    `json:"port" db:"port"`
-	Username string `json:"username" db:"username"`
-	Password string `json:"password" db:"password"`
-	Started  bool   `json:"started" db:"started"`
-	GroupId  string `json:"groupId" db:"group_id"`
+	CameraId string  `json:"cameraId" db:"camera_id,primary"`
+	Name     string  `json:"name" db:"name"`
+	Ip       string  `json:"ip" db:"ip"`
+	Port     int     `json:"port" db:"port"`
+	Username string  `json:"username" db:"username"`
+	Password string  `json:"password" db:"password"`
+	Started  bool    `json:"started" db:"started"`
+	GroupId  *string `json:"groupId" db:"group_id,omitempty"`
 
 	TranscoderId string `json:"transcoderId" db:"transcoder_id"`
 }

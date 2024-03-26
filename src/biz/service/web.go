@@ -148,6 +148,71 @@ func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequ
 	return nil
 }
 
+func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasToGroupRequest) error {
+	logger.SDebug("AddCamerasToGroup: request", zap.Any("request", req))
+
+	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
+	if err != nil {
+		logger.SError("AddCamerasToGroup: getCameraGroupById", zap.Error(err))
+		return err
+	}
+	if len(group) == 0 {
+		logger.SError("AddCamerasToGroup: group not found")
+		return custerror.ErrorNotFound
+	}
+
+	for _, cameraId := range req.CameraIds {
+		camera, err := s.getCameraById(ctx, []string{cameraId})
+		if err != nil {
+			logger.SError("AddCamerasToGroup: getCameraById", zap.Error(err))
+			return err
+		}
+		if len(camera) == 0 {
+			logger.SError("AddCamerasToGroup: camera not found")
+			return custerror.ErrorNotFound
+		}
+
+		if err := s.addCameraToGroup(ctx, camera, req.GroupId); err != nil {
+			logger.SError("AddCamerasToGroup: addCameraToGroup", zap.Error(err))
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.RemoveCamerasFromGroupRequest) error {
+	logger.SDebug("DeleteCamerasFromGroup: request", zap.Any("request", req))
+
+	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
+	if err != nil {
+		logger.SError("DeleteCamerasFromGroup: getCameraGroupById", zap.Error(err))
+		return err
+	}
+	if len(group) == 0 {
+		logger.SError("DeleteCamerasFromGroup: group not found")
+		return custerror.ErrorNotFound
+	}
+
+	for _, cameraId := range req.CameraIds {
+		camera, err := s.getCameraById(ctx, []string{cameraId})
+		if err != nil {
+			logger.SError("DeleteCamerasFromGroup: getCameraById", zap.Error(err))
+			return err
+		}
+		if len(camera) == 0 {
+			logger.SError("DeleteCamerasFromGroup: camera not found")
+			return custerror.ErrorNotFound
+		}
+
+		if err := s.deleteCameraFromGroup(ctx, camera, req.GroupId); err != nil {
+			logger.SError("DeleteCamerasFromGroup: deleteCameraFromGroup", zap.Error(err))
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCameraGroupsRequest) (*web.GetCameraGroupsResponse, error) {
 	logger.SDebug("GetCameraGroups: request", zap.Any("request", req))
 
@@ -220,7 +285,7 @@ func (s *WebService) DeleteCameraGroup(ctx context.Context, req *web.DeleteCamer
 func (s *WebService) deleteCameraById(ctx context.Context, id string) error {
 	return s.db.Delete(ctx,
 		squirrel.Delete("cameras").
-			Where("camera_id = ?", id))
+			Where("camera_id = $1", id))
 }
 
 func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camera, error) {
@@ -240,7 +305,7 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 		zap.Any("args", args))
 
 	cameras := []db.Camera{}
-	if err := s.db.Select(ctx, q, &cameras); err != nil {
+	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &cameras); err != nil {
 		return nil, err
 	}
 
@@ -281,6 +346,38 @@ func (s *WebService) addCamera(ctx context.Context, camera *db.Camera) error {
 	return nil
 }
 
+func (s *WebService) addCameraToGroup(ctx context.Context, cameras []db.Camera, groupId string) error {
+	for _, camera := range cameras {
+		q := squirrel.Update("cameras").Where("camera_id = ?", camera.CameraId).SetMap(map[string]interface{}{
+			"group_id": groupId,
+		})
+		sql, args, _ := q.ToSql()
+		logger.SDebug("addCameraToGroup: SQL query",
+			zap.String("query", sql),
+			zap.Any("args", args))
+		if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *WebService) deleteCameraFromGroup(ctx context.Context, cameras []db.Camera, groupId string) error {
+	for _, camera := range cameras {
+		q := squirrel.Update("cameras").Where("camera_id = ?", camera.CameraId).Where("group_id = ?", camera.GroupId).SetMap(map[string]interface{}{
+			"group_id": nil,
+		})
+		sql, args, _ := q.ToSql()
+		logger.SDebug("deleteCameraFromGroup: SQL query",
+			zap.String("query", sql),
+			zap.Any("args", args))
+		if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db.CameraGroup, error) {
 	q := squirrel.Select("*").From("camera_groups")
 
@@ -298,7 +395,7 @@ func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db
 		zap.Any("args", args))
 
 	groups := []db.CameraGroup{}
-	if err := s.db.Select(ctx, q, &groups); err != nil {
+	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &groups); err != nil {
 		return nil, err
 	}
 
@@ -308,14 +405,14 @@ func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db
 func (s *WebService) getCameraGroupByName(ctx context.Context, names []string) ([]db.CameraGroup, error) {
 	q := squirrel.Select("*").From("camera_groups")
 
-	//if len(names) > 0 {
-	//	or := squirrel.Or{}
-	//	for _, i := range names {
-	//		eq := squirrel.Eq{"name": i}
-	//		or = append(or, eq)
-	//	}
-	//	q = q.Where(or)
-	//}
+	if len(names) > 0 {
+		or := squirrel.Or{}
+		for _, i := range names {
+			eq := squirrel.Eq{"name": i}
+			or = append(or, eq)
+		}
+		q = q.Where(or)
+	}
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getGroupByName: SQL",
@@ -323,7 +420,7 @@ func (s *WebService) getCameraGroupByName(ctx context.Context, names []string) (
 		zap.Any("args", args))
 
 	var groups []db.CameraGroup
-	if err := s.db.Select(ctx, q, &groups); err != nil {
+	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &groups); err != nil {
 		return nil, err
 	}
 
@@ -334,7 +431,7 @@ func (s *WebService) addCameraGroup(ctx context.Context, group *db.CameraGroup) 
 	q := squirrel.Insert("camera_groups").
 		Columns(group.Fields()...).
 		Values(group.Values()...)
-	if err := s.db.Insert(ctx, q); err != nil {
+	if err := s.db.Insert(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
 		return err
 	}
 	return nil
@@ -343,18 +440,18 @@ func (s *WebService) addCameraGroup(ctx context.Context, group *db.CameraGroup) 
 func (s *WebService) deleteCameraGroup(ctx context.Context, id string) error {
 	return s.db.Delete(ctx,
 		squirrel.Delete("camera_groups").
-			Where("group_id = ?", id))
+			Where("group_id = $1", id))
 }
 
 func (s *WebService) updateCameraGroup(ctx context.Context, group *db.CameraGroup) error {
-	q := squirrel.Update("camera_groups").Where("group_id = ?", group.GroupId).SetMap(map[string]interface{}{
+	q := squirrel.Update("camera_groups").Where("group_id = $1", group.GroupId).SetMap(map[string]interface{}{
 		"name": group.Name,
 	})
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateGroup: SQL query",
 		zap.String("query", sql),
 		zap.Any("args", args))
-	if err := s.db.Update(ctx, q); err != nil {
+	if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
 		return err
 	}
 	return nil
@@ -427,7 +524,7 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 }
 
 func (s *WebService) updateDevice(ctx context.Context, d *db.Transcoder) error {
-	q := squirrel.Update("transcoders").Where("device_id = ?", d.DeviceId).SetMap(map[string]interface{}{
+	q := squirrel.Update("transcoders").Where("device_id = $1", d.DeviceId).SetMap(map[string]interface{}{
 		"name": d.Name,
 	})
 	sql, args, _ := q.ToSql()
@@ -533,7 +630,7 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 		valueMap[fields[i]] = values[i]
 	}
 
-	q := squirrel.Update("cameras").Where("camera_id = ?", camera.CameraId).SetMap(valueMap)
+	q := squirrel.Update("cameras").Where("camera_id = $1", camera.CameraId).SetMap(valueMap)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateCamera: SQL query",
 		zap.String("query", sql),
@@ -662,7 +759,7 @@ func (s *WebService) requestRemoveCamera(ctx context.Context, camera *db.Camera)
 }
 
 func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string) ([]db.Camera, error) {
-	q := squirrel.Select("*").From("cameras").Where("transcoder_id = ?", transcoderId)
+	q := squirrel.Select("*").From("cameras").Where("transcoder_id = $1", transcoderId)
 
 	results := []db.Camera{}
 	if err := s.db.Select(ctx, q, &results); err != nil {
