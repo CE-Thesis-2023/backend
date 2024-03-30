@@ -88,6 +88,25 @@ func DeleteCamera(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(http.StatusAccepted)
 }
 
+func GetCamerasByGroupId(ctx *fiber.Ctx) error {
+	logger.SDebug("GetCamerasInGroup: request")
+
+	groupId := ctx.Params("id")
+	if len(groupId) == 0 {
+		return custerror.FormatInvalidArgument("missing groupId as parameter")
+	}
+
+	resp, err := service.GetWebService().GetCameraByGroupId(ctx.UserContext(), &web.GetCamerasByGroupIdRequest{
+		GroupId: groupId,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
 func GetCameraGroups(ctx *fiber.Ctx) error {
 	logger.SDebug("GetCameraGroups: request")
 
@@ -257,4 +276,29 @@ func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.JSON(resp)
+}
+
+func SendEventToMqtt(ctx *fiber.Ctx) error {
+	logger.SDebug("HandleMqttJsonRequest: request")
+
+	var msg web.SendEventToMqttRequest
+	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+		logger.SError("HandleMqttJsonRequest: unmarshal error", zap.Error(err))
+		return err
+	}
+
+	err := service.GetWebService().SendEventToMqtt(ctx.UserContext(), &msg)
+	if err != nil {
+		return err
+	}
+	publicToOtherCamerasReq := web.PublicEventToOtherCamerasInGroupRequest{
+		CameraId: msg.CameraId,
+		Event:    msg.Event,
+	}
+	err = service.GetWebService().PublicEventToOtherCamerasInGroup(ctx.UserContext(), &publicToOtherCamerasReq)
+	if err != nil {
+		return err
+	}
+
+	return ctx.SendStatus(200)
 }

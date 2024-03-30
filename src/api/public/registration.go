@@ -25,6 +25,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Post("/api/cameras", CreateCamera)
 		app.Delete("/api/cameras", DeleteCamera)
 
+		app.Get("/api/camera-groups/cameras/:id", GetCamerasByGroupId)
 		app.Get("/api/camera-groups", GetCameraGroups)
 		app.Post("/api/camera-groups", AddCameraGroup)
 		app.Delete("/api/camera-groups", DeleteCameraGroup)
@@ -39,5 +40,7 @@ func ServiceRegistration() func(app *fiber.App) {
 
 		app.Use("/ws/ltd/:id", communicator.HandleRegisterRequest)
 		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
+
+		app.Post("/mqtt/event", SendEventToMqtt)
 	}
 }

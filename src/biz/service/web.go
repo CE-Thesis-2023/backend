@@ -148,6 +148,38 @@ func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequ
 	return nil
 }
 
+func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCamerasByGroupIdRequest) (*web.GetCamerasByGroupIdResponse, error) {
+	logger.SDebug("getCameraByGroupId: request", zap.Any("request", req))
+
+	cameras, err := s.getCameraByGroupId(ctx, req.GroupId)
+	if err != nil {
+		logger.SError("getCameraByGroupId: getCameraByGroupId", zap.Error(err))
+		return nil, err
+	}
+
+	logger.SDebug("getCameraByGroupId: cameras", zap.Any("cameras", cameras))
+	resp := web.GetCamerasByGroupIdResponse{
+		Cameras: cameras,
+	}
+	return &resp, nil
+}
+
+func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]db.Camera, error) {
+	q := squirrel.Select("*").From("cameras").Where("group_id = ?", groupId)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getCameraByGroupId: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var cameras []db.Camera
+	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &cameras); err != nil {
+		return nil, err
+	}
+
+	return cameras, nil
+}
+
 func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasToGroupRequest) error {
 	logger.SDebug("AddCamerasToGroup: request", zap.Any("request", req))
 
@@ -205,7 +237,7 @@ func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.Remove
 			return custerror.ErrorNotFound
 		}
 
-		if err := s.deleteCameraFromGroup(ctx, camera, req.GroupId); err != nil {
+		if err := s.deleteCameraFromGroup(ctx, camera); err != nil {
 			logger.SError("DeleteCamerasFromGroup: deleteCameraFromGroup", zap.Error(err))
 			return err
 		}
@@ -362,7 +394,7 @@ func (s *WebService) addCameraToGroup(ctx context.Context, cameras []db.Camera, 
 	return nil
 }
 
-func (s *WebService) deleteCameraFromGroup(ctx context.Context, cameras []db.Camera, groupId string) error {
+func (s *WebService) deleteCameraFromGroup(ctx context.Context, cameras []db.Camera) error {
 	for _, camera := range cameras {
 		q := squirrel.Update("cameras").Where("camera_id = ?", camera.CameraId).Where("group_id = ?", camera.GroupId).SetMap(map[string]interface{}{
 			"group_id": nil,
@@ -897,4 +929,102 @@ func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoReq
 	return &events.CommandRetrieveDeviceInfo{
 		CameraId: req.CameraId,
 	}
+}
+
+func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEventToMqttRequest) error {
+	logger.SDebug("SendCameraEvent: request", zap.Any("request", request))
+
+	cameras, err := s.getCameraById(ctx, []string{request.CameraId})
+	if err != nil {
+		logger.SError("SendCameraEvent: getCameraById error", zap.Error(err))
+		return err
+	}
+
+	if len(cameras) == 0 {
+		logger.SError("SendCameraEvent: camera not found", zap.String("cameraId", request.CameraId))
+		return custerror.FormatNotFound("camera not found")
+	}
+
+	msg := &web.EventRequest{
+		Event: request.Event,
+	}
+
+	pl, err := sonic.Marshal(msg)
+
+	if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
+		Topic:   fmt.Sprintf("events/%s/%s", *cameras[0].GroupId, cameras[0].CameraId),
+		QoS:     1,
+		Payload: pl,
+	}); err != nil {
+		logger.SError("SendCameraEvent: Publish error", zap.Error(err))
+		return err
+	}
+
+	logger.SDebug("SendCameraEvent: success")
+	return nil
+}
+
+func (s *WebService) PublicEventToOtherCamerasInGroup(ctx context.Context, req *web.PublicEventToOtherCamerasInGroupRequest) error {
+	logger.SDebug("PublicEventToOtherCamerasInGroup: request", zap.Any("request", req))
+
+	camera, err := s.getCameraById(ctx, []string{req.CameraId})
+	if err != nil {
+		logger.SError("PublicEventToOtherCamerasInGroup: getCameraById error", zap.Error(err))
+		return err
+	}
+
+	if len(camera) == 0 {
+		logger.SError("PublicEventToOtherCamerasInGroup: camera not found", zap.String("cameraId", req.CameraId))
+		return custerror.FormatNotFound("camera not found")
+	}
+
+	if err := s.publicEventToOtherCamerasInGroup(ctx, camera[0], req.Event); err != nil {
+		logger.SError("PublicEventToOtherCamerasInGroup: publicEventToOtherCamerasInGroup error", zap.Error(err))
+		return err
+	}
+
+	logger.SDebug("PublicEventToOtherCamerasInGroup: success")
+	return nil
+}
+
+// This function is to public event to other topics of cameras in the same group
+func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camera db.Camera, event string) error {
+
+	if camera.GroupId == nil {
+		logger.SError("PublicEventToOtherCamerasInGroup: camera is not in any group")
+		return custerror.FormatInternalError("camera is not in any group")
+	}
+
+	cameras, err := s.getCameraByGroupId(ctx, *camera.GroupId)
+	if err != nil {
+		logger.SError("PublicEventToOtherCamerasInGroup: getCameraGroupById error", zap.Error(err))
+		return err
+	}
+
+	for _, c := range cameras {
+		if c.CameraId == camera.CameraId {
+			continue
+		}
+
+		msg := &web.EventRequest{
+			Event: fmt.Sprintf("{cameraId: %s, event: %s}", camera.CameraId, event),
+		}
+
+		pl, err := sonic.Marshal(msg)
+
+		if err != nil {
+			logger.SError("PublicEventToOtherCamerasInGroup: Marshal error", zap.Error(err))
+			return err
+		}
+
+		if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
+			Topic:   fmt.Sprintf("events/%s/%s", *c.GroupId, c.CameraId),
+			QoS:     1,
+			Payload: pl,
+		}); err != nil {
+			logger.SError("PublicEventToOtherCamerasInGroup: Publish error", zap.Error(err))
+			return err
+		}
+	}
+	return nil
 }
