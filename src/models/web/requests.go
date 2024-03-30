@@ -155,3 +155,25 @@ type CameraDeviceAbnormalStatus struct {
 	RAIDLogicDiskError   bool `json:"raidLogicDiskError"`
 	SpareWorkDeviceError bool `json:"spareWorkDeviceError"`
 }
+
+type SendEventToMqttRequest struct {
+	CameraId string `json:"cameraId"`
+	Event    string `json:"event"`
+}
+
+type EventRequest struct {
+	Event string `json:"event"`
+}
+
+type PublicEventToOtherCamerasInGroupRequest struct {
+	CameraId string `json:"cameraId"`
+	Event    string `json:"event"`
+}
+
+type GetCamerasByGroupIdRequest struct {
+	GroupId string `json:"groupId"`
+}
+
+type GetCamerasByGroupIdResponse struct {
+	Cameras []db.Camera `json:"cameras"`
+}
