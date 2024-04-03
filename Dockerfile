@@ -12,12 +12,17 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     -ldflags "-w -s" \
     -o main src/main.go
 
-FROM alpine:3.18 AS runner
+FROM scratch AS runner
 
 ENV CONFIG_FILE_PATH=/configs/configs.json
 
+EXPOSE 9000
+EXPOSE 9001
+
 COPY configs.json /configs/configs.json
-COPY src/templates templates
+COPY certs /configs/certs
 COPY --from=builder /build/main main
+
+ENV CONFIG_FILE_PATH=/configs/configs.json
 
 CMD [ "./main" ]
