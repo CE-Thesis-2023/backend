@@ -3,34 +3,40 @@ package db
 import "time"
 
 type Transcoder struct {
-	DeviceId string `json:"deviceId" db:"device_id,primary"`
-	Name     string `json:"name" db:"name"`
+	DeviceId string `json:"deviceId" db:"DEVICE_ID,primary"`
+	Name     string `json:"name" db:"NAME"`
+}
+
+type OpenGateIntegration struct {
+	Available    bool `json:"available" db:"AVAILABLE"`
+	IsRestarting bool `json:"isRestarting" db:"IS_RESTARTING"`
 }
 
 type Camera struct {
-	CameraId string  `json:"cameraId" db:"camera_id,primary"`
-	Name     string  `json:"name" db:"name"`
-	Ip       string  `json:"ip" db:"ip"`
-	Port     int     `json:"port" db:"port"`
-	Username string  `json:"username" db:"username"`
-	Password string  `json:"password" db:"password"`
-	Started  bool    `json:"started" db:"started"`
-	GroupId  *string `json:"groupId" db:"group_id,omitempty"`
+	CameraId string  `json:"cameraId" db:"CAMERA_ID,primary"`
+	Name     string  `json:"name" db:"NAME"`
+	Ip       string  `json:"ip" db:"IP"`
+	Port     int     `json:"port" db:"PORT"`
+	Username string  `json:"username" db:"USERNAME"`
+	Password string  `json:"password" db:"PASSWORD"`
+	Started  bool    `json:"started" db:"STARTED"`
+	GroupId  *string `json:"groupId" db:"GROUP_ID,omitempty"`
 
-	TranscoderId string `json:"transcoderId" db:"transcoder_id"`
+	TranscoderId string `json:"transcoderId" db:"TRANSCODER_ID"`
+	OpenGateId   string `json:"openGateId" db:"OPENGATE_ID"`
 }
 
 type CameraGroup struct {
-	GroupId     string    `json:"groupId" db:"group_id,primary"`
-	Name        string    `json:"name" db:"name"`
-	CreatedDate time.Time `json:"createdDate" db:"created_date"`
+	GroupId     string    `json:"groupId" db:"GROUP_ID,primary"`
+	Name        string    `json:"name" db:"NAME"`
+	CreatedDate time.Time `json:"createdDate" db:"CREATED_DATE"`
 }
 
 func (t *Transcoder) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
-		"device_id",
-		"name",
+		"DEVICE_ID",
+		"NAME",
 	)
 	return fs
 }
@@ -46,14 +52,14 @@ func (t *Transcoder) Values() []interface{} {
 func (t *Camera) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
-		"camera_id",
-		"name",
-		"ip",
-		"port",
-		"username",
-		"password",
-		"transcoder_id",
-		"started",
+		"CAMERA_ID",
+		"NAME",
+		"IP",
+		"PORT",
+		"USERNAME",
+		"PASSWORD",
+		"TRANSCODER_ID",
+		"STARTED",
 	)
 	return fs
 }
@@ -76,9 +82,9 @@ func (t *Camera) Values() []interface{} {
 func (t *CameraGroup) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
-		"group_id",
-		"name",
-		"created_date",
+		"GROUP_ID",
+		"NAME",
+		"CREATED_DATE",
 	)
 	return fs
 }

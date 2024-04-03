@@ -54,6 +54,8 @@ func RouterHandler() custmqtt.RouterRegister {
 
 		router.RegisterHandler("updates/#",
 			WrapForHandlers(eh.UpdateEventsHandler))
+
+		registerOpenGateHandlers(router)
 	}
 }
 
@@ -63,4 +65,8 @@ func WrapForHandlers(handler func(p *paho.Publish) error) func(p *paho.Publish) 
 			helper.EventHandlerErrorHandler(err)
 		}
 	}
+}
+
+func registerOpenGateHandlers(router paho.Router) {
+	// https://docs.frigate.video/integrations/mqtt
 }
