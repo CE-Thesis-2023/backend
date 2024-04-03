@@ -12,6 +12,14 @@ type OpenGateIntegration struct {
 	IsRestarting bool `json:"isRestarting" db:"IS_RESTARTING"`
 }
 
+type ObjectTrackingEvent struct {
+	EventId    string `json:"eventId" db:"EVENT_ID,primary"`
+	OpenGateId string `json:"openGateId" db:"OPENGATE_ID"`
+	CameraId   string `json:"cameraId" db:"CAMERA_ID"`
+
+	EventType string `json:"eventType" db:"EVENT_TYPE"`
+}
+
 type Camera struct {
 	CameraId string  `json:"cameraId" db:"CAMERA_ID,primary"`
 	Name     string  `json:"name" db:"NAME"`

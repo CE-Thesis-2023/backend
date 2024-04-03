@@ -60,6 +60,7 @@ type TlsConfig struct {
 }
 
 func (c TlsConfig) Enabled() bool {
+	
 	if len(c.Cert) > 0 && len(c.Key) > 0 {
 		return true
 	}

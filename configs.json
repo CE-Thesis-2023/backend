@@ -1,16 +1,18 @@
 {
   "public": {
-    "port": 8080,
+    "port": 9000,
     "name": "public_api",
     "tls": {
-      "disable": "true"
+      "cert": "certs/cert.pem",
+      "key": "certs/key.pem"
     }
   },
   "private": {
-    "port": 8081,
+    "port": 9001,
     "name": "private_api",
     "tls": {
-      "disable": "true"
+      "cert": "certs/cert.pem",
+      "key": "certs/key.pem"
     },
     "auth": {
       "username": "dev",
@@ -22,19 +24,23 @@
     "encoding": "console"
   },
   "mqttStore": {
-    "host": "mqtt.cluster.ntranlab.com",
-    "port": 1883,
+    "host": "mosquitto.mqtt.ntranlab.com",
+    "port": 8883,
     "enabled": true,
     "name": "mqtt_store",
-    "username": "application",
-    "password": "123456Aa@!",
-    "level": "debug"
+    "username": "admin",
+    "password": "ctportal2024",
+    "level": "info",
+    "tls": {
+      "cert": "certs/cert.pem",
+      "key": "certs/key.pem"
+    }
   },
   "database": {
-    "connection": "user=ps_dev password=123456Aa@! dbname=backend host=localhost port=5432 sslmode=disable"
+    "connection": "user=postgres password=EIxK7UPwkj3Dkp5e dbname=backend host=db.postgres.ntranlab.com port=5432 sslmode=require"
   },
   "mediaEngine": {
-    "host": "103.165.142.44",
+    "host": "api.mediamtx.ntranlab.com",
     "providerPorts": {
       "srt": 8890
     },

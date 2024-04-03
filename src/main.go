@@ -31,7 +31,6 @@ func main() {
 					custhttp.WithErrorHandler(custhttp.GlobalErrorHandler()),
 					custhttp.WithRegistration(publicapi.ServiceRegistration()),
 					custhttp.WithMiddleware(custhttp.CommonPublicMiddlewares(&configs.Public)...),
-					custhttp.WithTemplatePath("./templates"),
 				)),
 				app.WithHttpServer(custhttp.New(
 					custhttp.WithErrorHandler(custhttp.GlobalErrorHandler()),

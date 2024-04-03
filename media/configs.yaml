@@ -1,6 +1,0 @@
-webrtcAdditionalHosts:
-  - 103.165.142.44
-webrtcICEServers2:
-  - url: stun:stun.l.google.com:19302
-api: yes
-apiAddress: 103.165.142.44:9997
