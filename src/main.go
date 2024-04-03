@@ -48,6 +48,7 @@ func main() {
 						&db.Transcoder{},
 						&db.Camera{},
 						&db.CameraGroup{},
+						&db.ObjectTrackingEvent{},
 					)
 
 					cache.Init()
