@@ -16,7 +16,6 @@ require (
 	github.com/motemen/go-loghttp v0.0.0-20231107055348-29ae44b293f4
 	github.com/opus-domini/fast-shot v0.9.0
 	github.com/panjf2000/ants/v2 v2.9.0
-	go.mrchanchal.com/zaphandler v0.0.0-20230611140024-bd4fd80897ad
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
