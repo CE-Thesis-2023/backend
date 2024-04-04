@@ -60,19 +60,21 @@ const (
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-	camera, err := c.webService.GetCamerasByOpenGateId(ctx, &web.GetCameraByOpenGateIdRequest{
+	resp, err := c.webService.GetCamerasByOpenGateId(ctx, &web.GetCameraByOpenGateIdRequest{
 		OpenGateId: c.ClientId,
 	})
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
-	err = c.actorPool.Send(
-		camera.Camera.GroupId,
-		camera.Camera.TranscoderId,
-		pub.Payload)
+	camera := resp.Camera
+	err = c.actorPool.Send(transcoder.TranscoderEventMessage{
+		CameraId:     camera.CameraId,
+		GroupId:      camera.GroupId,
+		TranscoderId: camera.TranscoderId,
+		OpenGateId:   camera.OpenGateId,
+		Type:         c.Type,
+		Action:       c.Action,
+	})
 	if err != nil {
 		return err
 	}

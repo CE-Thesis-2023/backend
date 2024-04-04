@@ -9,6 +9,7 @@ import (
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/anthdm/hollywood/actor"
+	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
 )
 
@@ -48,13 +49,13 @@ func (p *TranscoderActorsPool) Exists(cameraGroupId string, TranscoderId string)
 	return found
 }
 
-func (p *TranscoderActorsPool) Allocate(cameraGroupId string, TranscoderId string) (*actor.PID, error) {
+func (p *TranscoderActorsPool) Allocate(cameraGroupId string, transcoderId string) (*actor.PID, error) {
 	var engine *actor.Engine
 	var found bool
 	var err error
 	engine, found = p.groupEngineMap[cameraGroupId]
 	if found {
-		pid := engine.Registry.GetPID("transcoder", TranscoderId)
+		pid := engine.Registry.GetPID("transcoder", transcoderId)
 		if pid != nil {
 			return pid, nil
 		}
@@ -69,17 +70,17 @@ func (p *TranscoderActorsPool) Allocate(cameraGroupId string, TranscoderId strin
 	}
 	pid := engine.Spawn(newTranscoderActor,
 		"transcoder",
-		actor.WithID(TranscoderId),
+		actor.WithID(transcoderId),
 		actor.WithInboxSize(10))
 	return pid, nil
 }
 
-func (p *TranscoderActorsPool) Send(cameraGroupId string, transcoderId string, message interface{}) error {
-	pid, err := p.Allocate(cameraGroupId, transcoderId)
+func (p *TranscoderActorsPool) Send(message TranscoderEventMessage) error {
+	pid, err := p.Allocate(message.GroupId, message.TranscoderId)
 	if err != nil {
 		return err
 	}
-	engine, _ := p.groupEngineMap[cameraGroupId]
+	engine := p.groupEngineMap[message.GroupId]
 	engine.Send(pid, message)
 	return nil
 }
@@ -118,5 +119,22 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	logger.SDebug("TranscoderActor received message",
 		zap.String("pid", ctx.PID().String()),
 		zap.Any("message", ctx.Message()))
-
+	message := ctx.Message()
+	var event TranscoderEventMessage
+	if err := copier.Copy(&event, message); err != nil {
+		logger.SError("unable to copy message",
+			zap.Error(err))
+		return
+	}
+	payload := event.Payload
+	switch event.Type {
+	case "opengate":
+		logger.SInfo("TranscoderActor received opengate event",
+			zap.String("openGateId", event.OpenGateId),
+			zap.Any("payload", payload))
+	case "transcoder":
+		logger.SInfo("TranscoderActor received transcoder event",
+			zap.String("transcoderId", event.TranscoderId),
+			zap.Any("payload", payload))
+	}
 }
