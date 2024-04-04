@@ -4,26 +4,26 @@ import (
 	"context"
 	"sync"
 
+	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/anthdm/hollywood/actor"
-	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
 )
 
 type TranscoderEventProcessor interface {
-	OpenGateAvailable(ctx context.Context, openGateId string, pub *paho.Publish) error
-	OpenGateEvent(ctx context.Context, openGateId string, pub *paho.Publish) error
+	OpenGateAvailable(ctx context.Context, openGateId string, message []byte) error
+	OpenGateEvent(ctx context.Context, openGateId string, message []byte) error
 }
 
 type transcoderEventProcessor struct {
-	actors *TranscoderActorsPool
+	commandService *service.CommandService
 }
 
-func NewTranscoderEventProcessor(actors *TranscoderActorsPool) TranscoderEventProcessor {
+func NewTranscoderEventProcessor(commandService *service.CommandService) TranscoderEventProcessor {
 	return &transcoderEventProcessor{
-		actors: actors,
+		commandService: commandService,
 	}
 }
 
@@ -74,6 +74,16 @@ func (p *TranscoderActorsPool) Allocate(cameraGroupId string, TranscoderId strin
 	return pid, nil
 }
 
+func (p *TranscoderActorsPool) Send(cameraGroupId string, transcoderId string, message interface{}) error {
+	pid, err := p.Allocate(cameraGroupId, transcoderId)
+	if err != nil {
+		return err
+	}
+	engine, _ := p.groupEngineMap[cameraGroupId]
+	engine.Send(pid, message)
+	return nil
+}
+
 func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, TranscoderId string, finished chan bool) error {
 	engine, found := p.groupEngineMap[cameraGroupId]
 	if !found {
@@ -95,10 +105,13 @@ func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, TranscoderId str
 }
 
 type TranscoderActor struct {
+	handler TranscoderEventProcessor
 }
 
 func newTranscoderActor() actor.Receiver {
-	return &TranscoderActor{}
+	return &TranscoderActor{
+		handler: NewTranscoderEventProcessor(service.GetCommandService()),
+	}
 }
 
 func (a *TranscoderActor) Receive(ctx *actor.Context) {

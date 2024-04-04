@@ -5,12 +5,11 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/bytedance/sonic"
-	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
 )
 
-func (p *transcoderEventProcessor) OpenGateAvailable(ctx context.Context, openGateId string, pub *paho.Publish) error {
-	payload := string(pub.Payload)
+func (p *transcoderEventProcessor) OpenGateAvailable(ctx context.Context, openGateId string, message []byte) error {
+	payload := string(message)
 	logger.SDebug("processor.OpenGateAvailable",
 		zap.String("openGateId", openGateId),
 		zap.String("message", payload))
@@ -74,12 +73,12 @@ type ObjectSubLabel struct {
 	String *string
 }
 
-func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId string, pub *paho.Publish) error {
+func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId string, message []byte) error {
 	logger.SDebug("processor.OpenGateEvent",
 		zap.String("openGateId", openGateId))
 
 	var detectionEvent DetectionEvent
-	if err := sonic.Unmarshal(pub.Payload, &detectionEvent); err != nil {
+	if err := sonic.Unmarshal(message, &detectionEvent); err != nil {
 		logger.SError("failed to unmarshal detection event",
 			zap.Error(err))
 		return err

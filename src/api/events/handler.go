@@ -4,8 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/eclipse/paho.golang/paho"
 )
 
@@ -19,11 +21,12 @@ type Command struct {
 	ClientId string `json:"clientId"`
 	Action   string `json:"action"`
 
-	transcoderHandler transcoder.TranscoderEventProcessor
+	actorPool  *transcoder.TranscoderActorsPool
+	webService *service.WebService
 }
 
-func CommandFromPath(path string, transcoderHandler transcoder.TranscoderEventProcessor) (*Command, error) {
-	parts := strings.Split(path, "/")
+func CommandFromPath(pub *paho.Publish, pool *transcoder.TranscoderActorsPool, webService *service.WebService) (*Command, error) {
+	parts := strings.Split(pub.Topic, "/")
 	if len(parts) == 0 {
 		return nil, custerror.FormatInvalidArgument("path is empty")
 	}
@@ -31,10 +34,11 @@ func CommandFromPath(path string, transcoderHandler transcoder.TranscoderEventPr
 		return nil, custerror.FormatInvalidArgument("path is too short")
 	}
 	return &Command{
-		Type:              parts[0],
-		ClientId:          parts[1],
-		Action:            strings.Join(parts[2:], "/"),
-		transcoderHandler: transcoderHandler,
+		Type:       parts[0],
+		ClientId:   parts[1],
+		Action:     strings.Join(parts[2:], "/"),
+		actorPool:  pool,
+		webService: webService,
 	}, nil
 }
 
@@ -56,14 +60,23 @@ const (
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-	switch c.Action {
-	case OPENGATE_AVAILABLE:
-		return c.transcoderHandler.OpenGateAvailable(ctx, c.ClientId, pub)
-	case OPENGATE_EVENTS:
-		return c.transcoderHandler.OpenGateEvent(ctx, c.ClientId, pub)
-	default:
-		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+	camera, err := c.webService.GetCamerasByOpenGateId(ctx, &web.GetCameraByOpenGateIdRequest{
+		OpenGateId: c.ClientId,
+	})
+	if err != nil {
+		return err
 	}
+	if err != nil {
+		return err
+	}
+	err = c.actorPool.Send(
+		camera.Camera.GroupId,
+		camera.Camera.TranscoderId,
+		pub.Payload)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Command) runTranscoder(ctx context.Context, pub *paho.Publish) error {

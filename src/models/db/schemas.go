@@ -8,7 +8,7 @@ type Transcoder struct {
 }
 
 type OpenGateIntegration struct {
-	DeviceId     string `json:"device_id" db:"DEVICE_ID"`
+	OpenGateId   string `json:"openGateId" db:"OPENGATE_ID,primary"`
 	Available    bool   `json:"available" db:"AVAILABLE"`
 	IsRestarting bool   `json:"isRestarting" db:"IS_RESTARTING"`
 }
@@ -22,15 +22,15 @@ type ObjectTrackingEvent struct {
 }
 
 type Camera struct {
-	CameraId string  `json:"cameraId" db:"CAMERA_ID,primary"`
-	Name     string  `json:"name" db:"NAME"`
-	Ip       string  `json:"ip" db:"IP"`
-	Port     int     `json:"port" db:"PORT"`
-	Username string  `json:"username" db:"USERNAME"`
-	Password string  `json:"password" db:"PASSWORD"`
-	Started  bool    `json:"started" db:"STARTED"`
-	GroupId  *string `json:"groupId" db:"GROUP_ID,omitempty"`
+	CameraId string `json:"cameraId" db:"CAMERA_ID,primary"`
+	Name     string `json:"name" db:"NAME"`
+	Ip       string `json:"ip" db:"IP"`
+	Port     int    `json:"port" db:"PORT"`
+	Username string `json:"username" db:"USERNAME"`
+	Password string `json:"password" db:"PASSWORD"`
+	Started  bool   `json:"started" db:"STARTED"`
 
+	GroupId      string `json:"groupId" db:"GROUP_ID,omitempty"`
 	TranscoderId string `json:"transcoderId" db:"TRANSCODER_ID"`
 	OpenGateId   string `json:"openGateId" db:"OPENGATE_ID"`
 }

@@ -81,6 +81,20 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 	return &resp, nil
 }
 
+func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCameraByOpenGateIdRequest) (*web.GetCameraByOpenGateIdResponse, error) {
+	logger.SDebug("GetCamerasByOpenGateId: request", zap.Any("request", req))
+
+	camera, err := s.getCameraByOpenGateId(ctx, req.OpenGateId)
+	if err != nil {
+		logger.SError("GetCamerasByOpenGateId: error", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetCameraByOpenGateIdResponse{
+		Camera: camera,
+	}, nil
+}
+
 func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (*web.AddCameraResponse, error) {
 	logger.SDebug("AddCamera: request", zap.Any("request", req))
 
@@ -342,6 +356,23 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 	}
 
 	return cameras, nil
+}
+
+func (s *WebService) getCameraByOpenGateId(ctx context.Context, openGateId string) (*db.Camera, error) {
+	q := squirrel.Select("*").
+		From("open_gate_integration").
+		Where("opengate_id = ?", openGateId)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getCameraByOpenGateId: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var camera db.Camera
+	if err := s.db.Get(ctx, q, &camera); err != nil {
+		return nil, err
+	}
+
+	return &camera, nil
 }
 
 func (s *WebService) getCameraByName(ctx context.Context, names []string) ([]db.Camera, error) {
@@ -952,7 +983,7 @@ func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEvent
 	pl, err := sonic.Marshal(msg)
 
 	if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("events/%s/%s", *cameras[0].GroupId, cameras[0].CameraId),
+		Topic:   fmt.Sprintf("events/%s/%s", cameras[0].GroupId, cameras[0].CameraId),
 		QoS:     1,
 		Payload: pl,
 	}); err != nil {
@@ -990,12 +1021,12 @@ func (s *WebService) PublicEventToOtherCamerasInGroup(ctx context.Context, req *
 // This function is to public event to other topics of cameras in the same group
 func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camera db.Camera, event string) error {
 
-	if camera.GroupId == nil {
+	if camera.GroupId == "" {
 		logger.SError("PublicEventToOtherCamerasInGroup: camera is not in any group")
 		return custerror.FormatInternalError("camera is not in any group")
 	}
 
-	cameras, err := s.getCameraByGroupId(ctx, *camera.GroupId)
+	cameras, err := s.getCameraByGroupId(ctx, camera.GroupId)
 	if err != nil {
 		logger.SError("PublicEventToOtherCamerasInGroup: getCameraGroupById error", zap.Error(err))
 		return err
@@ -1018,7 +1049,7 @@ func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camer
 		}
 
 		if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
-			Topic:   fmt.Sprintf("events/%s/%s", *c.GroupId, c.CameraId),
+			Topic:   fmt.Sprintf("events/%s/%s", c.GroupId, c.CameraId),
 			QoS:     1,
 			Payload: pl,
 		}); err != nil {

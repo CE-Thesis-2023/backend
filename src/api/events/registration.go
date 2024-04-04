@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
@@ -66,13 +67,13 @@ func WrapForHandlers(handler func(p *paho.Publish) error) func(p *paho.Publish) 
 
 func registerTranscoderTopics(router paho.Router) {
 	actors := transcoder.NewTranscoderActorsPool()
-	transcoderHandler := transcoder.NewTranscoderEventProcessor(actors)
+	webService := service.GetWebService()
 
 	router.RegisterHandler("opengate/#", WrapForHandlers(func(p *paho.Publish) error {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), time.Second*5)
 		defer cancel()
-		cmd, err := CommandFromPath(p.Topic, transcoderHandler)
+		cmd, err := CommandFromPath(p, actors, webService)
 		if err != nil {
 			logger.SError("unable to parse command from path",
 				zap.Error(err),
@@ -89,7 +90,7 @@ func registerTranscoderTopics(router paho.Router) {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), time.Second*5)
 		defer cancel()
-		cmd, err := CommandFromPath(p.Topic, transcoderHandler)
+		cmd, err := CommandFromPath(p, actors, webService)
 		if err != nil {
 			logger.SError("unable to parse command from path",
 				zap.Error(err),
