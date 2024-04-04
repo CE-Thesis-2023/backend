@@ -79,11 +79,9 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.String("topic", p.Topic))
 		}
 		if err := cmd.Run(ctx, p); err != nil {
-			logger.SError("unable to run command",
-				zap.Error(err),
-				zap.Any("command", cmd))
+			return err
 		}
-		return err
+		return nil
 	}))
 
 	router.RegisterHandler("transcoder/#", WrapForHandlers(func(p *paho.Publish) error {
@@ -97,10 +95,8 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.String("topic", p.Topic))
 		}
 		if err := cmd.Run(ctx, p); err != nil {
-			logger.SError("unable to run command",
-				zap.Error(err),
-				zap.Any("command", cmd))
+			return err
 		}
-		return err
+		return nil
 	}))
 }
