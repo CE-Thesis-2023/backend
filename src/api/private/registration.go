@@ -8,7 +8,7 @@ import (
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
 		app.Use("/", custhttp.SetCors())
-		priv := app.Group("/api/priv")
+		priv := app.Group("/api/private")
 		priv.Post("/registers", RegisterDevice)
 		priv.Get("/transcoders/:id/cameras", GetTranscoderAssignedCameras)
 	}

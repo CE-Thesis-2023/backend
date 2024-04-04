@@ -47,7 +47,7 @@ func NewWebService() *WebService {
 }
 
 func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequest) (*web.GetTranscodersResponse, error) {
-	logger.SDebug("GetDevices: request", zap.Any("request", req))
+	logger.SDebug("GetDevices: request", zap.Reflect("request", req))
 
 	devices, err := s.getDeviceById(ctx, req.Ids)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequ
 		return nil, err
 	}
 
-	logger.SDebug("GetDevices: devices", zap.Any("devices", devices))
+	logger.SDebug("GetDevices: devices", zap.Reflect("devices", devices))
 	resp := web.GetTranscodersResponse{
 		Transcoders: devices,
 	}
@@ -64,7 +64,7 @@ func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequ
 }
 
 func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest) (*web.GetCamerasResponse, error) {
-	logger.SDebug("GetCameras: request", zap.Any("request", req))
+	logger.SDebug("GetCameras: request", zap.Reflect("request", req))
 
 	cameras, err := s.getCameraById(ctx, req.Ids)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 		return nil, err
 	}
 
-	logger.SDebug("GetCameras: cameras", zap.Any("cameras", cameras))
+	logger.SDebug("GetCameras: cameras", zap.Reflect("cameras", cameras))
 	resp := web.GetCamerasResponse{
 		Cameras: cameras,
 	}
@@ -80,7 +80,7 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 }
 
 func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCameraByOpenGateIdRequest) (*web.GetCameraByOpenGateIdResponse, error) {
-	logger.SDebug("GetCamerasByOpenGateId: request", zap.Any("request", req))
+	logger.SDebug("GetCamerasByOpenGateId: request", zap.Reflect("request", req))
 
 	camera, err := s.getCameraByOpenGateId(ctx, req.OpenGateId)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCam
 }
 
 func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (*web.AddCameraResponse, error) {
-	logger.SDebug("AddCamera: request", zap.Any("request", req))
+	logger.SDebug("AddCamera: request", zap.Reflect("request", req))
 
 	existing, err := s.getCameraByName(ctx, []string{req.Name})
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 }
 
 func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequest) error {
-	logger.SDebug("DeleteCamera: request", zap.Any("request", req))
+	logger.SDebug("DeleteCamera: request", zap.Reflect("request", req))
 
 	c, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequ
 }
 
 func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCamerasByGroupIdRequest) (*web.GetCamerasByGroupIdResponse, error) {
-	logger.SDebug("getCameraByGroupId: request", zap.Any("request", req))
+	logger.SDebug("getCameraByGroupId: request", zap.Reflect("request", req))
 
 	cameras, err := s.getCameraByGroupId(ctx, req.GroupId)
 	if err != nil {
@@ -169,7 +169,7 @@ func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCameras
 		return nil, err
 	}
 
-	logger.SDebug("getCameraByGroupId: cameras", zap.Any("cameras", cameras))
+	logger.SDebug("getCameraByGroupId: cameras", zap.Reflect("cameras", cameras))
 	resp := web.GetCamerasByGroupIdResponse{
 		Cameras: cameras,
 	}
@@ -181,8 +181,8 @@ func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByGroupId: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var cameras []db.Camera
 	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &cameras); err != nil {
@@ -196,7 +196,7 @@ func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]
 }
 
 func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasToGroupRequest) error {
-	logger.SDebug("AddCamerasToGroup: request", zap.Any("request", req))
+	logger.SDebug("AddCamerasToGroup: request", zap.Reflect("request", req))
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -229,7 +229,7 @@ func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasT
 }
 
 func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.RemoveCamerasFromGroupRequest) error {
-	logger.SDebug("DeleteCamerasFromGroup: request", zap.Any("request", req))
+	logger.SDebug("DeleteCamerasFromGroup: request", zap.Reflect("request", req))
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -261,7 +261,7 @@ func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.Remove
 }
 
 func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCameraGroupsRequest) (*web.GetCameraGroupsResponse, error) {
-	logger.SDebug("GetCameraGroups: request", zap.Any("request", req))
+	logger.SDebug("GetCameraGroups: request", zap.Reflect("request", req))
 
 	groups, err := s.getCameraGroupById(ctx, req.Ids)
 
@@ -270,7 +270,7 @@ func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCamer
 		return nil, err
 	}
 
-	logger.SDebug("GetCameraGroups: groups", zap.Any("groups", groups))
+	logger.SDebug("GetCameraGroups: groups", zap.Reflect("groups", groups))
 	resp := web.GetCameraGroupsResponse{
 		CameraGroups: groups,
 	}
@@ -278,7 +278,7 @@ func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCamer
 }
 
 func (s *WebService) AddCameraGroup(ctx context.Context, req *web.AddCameraGroupRequest) (*web.AddCameraGroupResponse, error) {
-	logger.SDebug("AddCameraGroup: request", zap.Any("request", req))
+	logger.SDebug("AddCameraGroup: request", zap.Reflect("request", req))
 
 	existing, err := s.getCameraGroupByName(ctx, []string{req.Name})
 	if err != nil {
@@ -309,7 +309,7 @@ func (s *WebService) AddCameraGroup(ctx context.Context, req *web.AddCameraGroup
 }
 
 func (s *WebService) DeleteCameraGroup(ctx context.Context, req *web.DeleteCameraGroupRequest) error {
-	logger.SDebug("DeleteCameraGroup: request", zap.Any("request", req))
+	logger.SDebug("DeleteCameraGroup: request", zap.Reflect("request", req))
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -348,8 +348,8 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	cameras := []db.Camera{}
 	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &cameras); err != nil {
@@ -365,8 +365,8 @@ func (s *WebService) getCameraByOpenGateId(ctx context.Context, openGateId strin
 		Where("open_gate_id = $1", openGateId)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByOpenGateId: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var camera db.Camera
 	if err := s.db.Get(ctx, q.PlaceholderFormat(squirrel.Dollar), &camera); err != nil {
@@ -392,8 +392,8 @@ func (s *WebService) getCameraByName(ctx context.Context, names []string) ([]db.
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByName: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	cameras := []db.Camera{}
 	if err := s.db.Select(ctx, q, &cameras); err != nil {
@@ -421,7 +421,7 @@ func (s *WebService) addCameraToGroup(ctx context.Context, cameras []db.Camera, 
 		sql, args, _ := q.ToSql()
 		logger.SDebug("addCameraToGroup: SQL query",
 			zap.String("query", sql),
-			zap.Any("args", args))
+			zap.Reflect("args", args))
 		if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
 			return err
 		}
@@ -437,7 +437,7 @@ func (s *WebService) deleteCameraFromGroup(ctx context.Context, cameras []db.Cam
 		sql, args, _ := q.ToSql()
 		logger.SDebug("deleteCameraFromGroup: SQL query",
 			zap.String("query", sql),
-			zap.Any("args", args))
+			zap.Reflect("args", args))
 		if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
 			return err
 		}
@@ -458,8 +458,8 @@ func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getGroupByIds: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	groups := []db.CameraGroup{}
 	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &groups); err != nil {
@@ -483,8 +483,8 @@ func (s *WebService) getCameraGroupByName(ctx context.Context, names []string) (
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getGroupByName: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var groups []db.CameraGroup
 	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &groups); err != nil {
@@ -517,7 +517,7 @@ func (s *WebService) updateCameraGroup(ctx context.Context, group *db.CameraGrou
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateGroup: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q.PlaceholderFormat(squirrel.Dollar)); err != nil {
 		return err
 	}
@@ -539,8 +539,8 @@ func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Trans
 
 	sql, args, _ := query.ToSql()
 	logger.SDebug("getDeviceById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var transcoders []db.Transcoder
 	if err := s.db.Select(ctx, query, &transcoders); err != nil {
@@ -564,7 +564,7 @@ func (s *WebService) addDevice(ctx context.Context, d *db.Transcoder) error {
 }
 
 func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTranscoderRequest) (*db.Transcoder, error) {
-	logger.SInfo("UpdateTranscoder: request", zap.Any("request", req))
+	logger.SInfo("UpdateTranscoder: request", zap.Reflect("request", req))
 
 	transcoders, err := s.getDeviceById(ctx, []string{req.Id})
 	if err != nil {
@@ -579,7 +579,7 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 	transcoder := transcoders[0]
 
 	logger.SDebug("UpdateTranscoder: original",
-		zap.Any("original", transcoder))
+		zap.Reflect("original", transcoder))
 
 	if err := copier.Copy(transcoder, req); err != nil {
 		logger.SError("UpdateTranscoder: copy error", zap.Error(err))
@@ -589,7 +589,7 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 		logger.SError("UpdateTranscoder: update error", zap.Error(err))
 		return nil, err
 	}
-	logger.SDebug("UpdatedTranscoder: updated", zap.Any("updated", transcoder))
+	logger.SDebug("UpdatedTranscoder: updated", zap.Reflect("updated", transcoder))
 	return &transcoder, nil
 }
 
@@ -600,7 +600,7 @@ func (s *WebService) updateDevice(ctx context.Context, d *db.Transcoder) error {
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateDevice: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
@@ -661,7 +661,7 @@ func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequ
 		return custerror.FormatNotFound("camera not found")
 	}
 
-	logger.SDebug("ToggleStream: camera", zap.Any("camera", camera[0]))
+	logger.SDebug("ToggleStream: camera", zap.Reflect("camera", camera[0]))
 
 	if camera[0].Started == req.Start {
 		logger.SDebug("ToggleStream: stream already started")
@@ -704,7 +704,7 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateCamera: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
@@ -908,7 +908,7 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 }
 
 func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDeviceInfoRequest) (*web.GetCameraDeviceInfo, error) {
-	logger.SInfo("GetDeviceInfo: request", zap.Any("request", req))
+	logger.SInfo("GetDeviceInfo: request", zap.Reflect("request", req))
 
 	cameras, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
@@ -948,7 +948,7 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
-	logger.SDebug("GetDeviceInfo: response", zap.Any("response", resp))
+	logger.SDebug("GetDeviceInfo: response", zap.Reflect("response", resp))
 	if resp == nil {
 		logger.SError("GetDeviceInfo: ltd responded with null")
 		return nil, custerror.ErrorInternal
@@ -959,7 +959,7 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
-	logger.SInfo("GetDeviceInfo: info", zap.Any("deviceInfo", info))
+	logger.SInfo("GetDeviceInfo: info", zap.Reflect("deviceInfo", info))
 	return &info, nil
 }
 
@@ -970,7 +970,7 @@ func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoReq
 }
 
 func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEventToMqttRequest) error {
-	logger.SDebug("SendCameraEvent: request", zap.Any("request", request))
+	logger.SDebug("SendCameraEvent: request", zap.Reflect("request", request))
 
 	cameras, err := s.getCameraById(ctx, []string{request.CameraId})
 	if err != nil {
@@ -1006,7 +1006,7 @@ func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEvent
 }
 
 func (s *WebService) PublicEventToOtherCamerasInGroup(ctx context.Context, req *web.PublicEventToOtherCamerasInGroupRequest) error {
-	logger.SDebug("PublicEventToOtherCamerasInGroup: request", zap.Any("request", req))
+	logger.SDebug("PublicEventToOtherCamerasInGroup: request", zap.Reflect("request", req))
 
 	camera, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {

@@ -117,7 +117,7 @@ func newTranscoderActor() actor.Receiver {
 func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	logger.SDebug("TranscoderActor received message",
 		zap.String("pid", ctx.PID().String()),
-		zap.Any("message", ctx.Message()))
+		zap.Reflect("message", ctx.Message()))
 	message := ctx.Message()
 	var event TranscoderEventMessage
 	if err := copier.Copy(&event, message); err != nil {
@@ -130,10 +130,10 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	case "opengate":
 		logger.SInfo("TranscoderActor received opengate event",
 			zap.String("openGateId", event.OpenGateId),
-			zap.Any("payload", payload))
+			zap.Reflect("payload", payload))
 	case "transcoder":
 		logger.SInfo("TranscoderActor received transcoder event",
 			zap.String("transcoderId", event.TranscoderId),
-			zap.Any("payload", payload))
+			zap.Reflect("payload", payload))
 	}
 }

@@ -31,7 +31,7 @@ func NewCommandService() *CommandService {
 
 func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceRegistrationRequest) error {
 	logger.SDebug("RegisterDevice: request",
-		zap.Any("request", req))
+		zap.Reflect("request", req))
 
 	device, err := s.webService.getDeviceById(ctx, []string{
 		req.DeviceId,
@@ -61,13 +61,13 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 	}
 
 	logger.SInfo("RegisterDevice: device",
-		zap.Any("device", device))
+		zap.Reflect("device", device))
 
 	return nil
 }
 
 func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.UpdateCameraListRequest) (*events.UpdateCameraListResponse, error) {
-	logger.SInfo("commandService.UpdateCameraList: request", zap.Any("request", req))
+	logger.SInfo("commandService.UpdateCameraList: request", zap.Reflect("request", req))
 
 	transcoders, err := s.webService.getDeviceById(ctx, []string{req.DeviceId})
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.Updat
 		return nil, err
 	}
 
-	logger.SInfo("UpdateCameraList: cameras", zap.Any("cameras", cameras))
+	logger.SInfo("UpdateCameraList: cameras", zap.Reflect("cameras", cameras))
 
 	return &events.UpdateCameraListResponse{
 		Cameras: cameras,
