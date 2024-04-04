@@ -44,10 +44,10 @@ func main() {
 
 					custdb.Migrate(custdb.Gorm(),
 						&db.Transcoder{},
+						&db.OpenGateIntegration{},
 						&db.Camera{},
 						&db.CameraGroup{},
 						&db.ObjectTrackingEvent{},
-						&db.OpenGateIntegration{},
 					)
 					service.Init()
 
