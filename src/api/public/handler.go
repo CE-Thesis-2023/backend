@@ -10,7 +10,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -58,7 +58,7 @@ func CreateCamera(ctx *fiber.Ctx) error {
 		zap.String("request", string(ctx.Body())))
 
 	var msg web.AddCameraRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("CreateCamera: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -129,7 +129,7 @@ func AddCameraGroup(ctx *fiber.Ctx) error {
 	logger.SDebug("AddCameraGroup: request")
 
 	var msg web.AddCameraGroupRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("AddCameraGroup: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -145,7 +145,7 @@ func DeleteCameraGroup(ctx *fiber.Ctx) error {
 	logger.SDebug("DeleteCameraGroup: request")
 
 	var msg web.DeleteCameraGroupRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("DeleteCameraGroup: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -161,7 +161,7 @@ func AddCamerasToGroup(ctx *fiber.Ctx) error {
 	logger.SDebug("AddCamerasToGroup: request")
 
 	var msg web.AddCamerasToGroupRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("AddCamerasToGroup: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -177,7 +177,7 @@ func RemoveCamerasFromGroup(ctx *fiber.Ctx) error {
 	logger.SDebug("RemoveCamerasFromGroup: request")
 
 	var msg web.RemoveCamerasFromGroupRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("RemoveCamerasFromGroup: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -194,7 +194,7 @@ func UpdateTranscoder(ctx *fiber.Ctx) error {
 	logger.SDebug("UpdateTranscoder: request")
 
 	var msg web.UpdateTranscoderRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SDebug("UpdateTranscoder: unmarshal msg error", zap.Error(err))
 		return custerror.ErrorInvalidArgument
 	}
@@ -244,7 +244,7 @@ func RemoteControl(ctx *fiber.Ctx) error {
 	logger.SDebug("RemoteControl: request")
 
 	var msg web.RemoteControlRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SError("RemoteControl: unmarshal error", zap.Error(err))
 		return err
 	}
@@ -282,7 +282,7 @@ func SendEventToMqtt(ctx *fiber.Ctx) error {
 	logger.SDebug("HandleMqttJsonRequest: request")
 
 	var msg web.SendEventToMqttRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SError("HandleMqttJsonRequest: unmarshal error", zap.Error(err))
 		return err
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -15,7 +15,7 @@ func RegisterDevice(ctx *fiber.Ctx) error {
 	logger.SInfo("RegisterDevice: request")
 
 	var msg events.DeviceRegistrationRequest
-	if err := sonic.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
 		logger.SError("RegisterDevice: request body marshal error", zap.Error(err))
 		return custerror.FormatInvalidArgument(err.Error())
 	}

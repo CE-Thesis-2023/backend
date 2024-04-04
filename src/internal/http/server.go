@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html/v2"
 )
 
 type RegistrationFunc func(app *fiber.App)
@@ -32,11 +31,6 @@ func New(options ...Optioner) *HttpServer {
 		AppName:               globalConfigs.Name,
 		ErrorHandler:          configs.errorHandler,
 		DisableStartupMessage: true,
-	}
-
-	if configs.templatePath != "" {
-		engine := html.New(configs.templatePath, ".html")
-		httpConfigs.Views = engine
 	}
 
 	app := fiber.New(httpConfigs)

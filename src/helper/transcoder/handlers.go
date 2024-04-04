@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"go.uber.org/zap"
 )
 
@@ -78,7 +78,7 @@ func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId
 		zap.String("openGateId", openGateId))
 
 	var detectionEvent DetectionEvent
-	if err := sonic.Unmarshal(message, &detectionEvent); err != nil {
+	if err := json.Unmarshal(message, &detectionEvent); err != nil {
 		logger.SError("failed to unmarshal detection event",
 			zap.Error(err))
 		return err

@@ -21,7 +21,7 @@ import (
 
 	events "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
@@ -721,7 +721,7 @@ func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Cam
 			"cameraId": camera.CameraId,
 		}
 	}
-	msg, err := sonic.Marshal(&cmd)
+	msg, err := json.Marshal(&cmd)
 	if err != nil {
 		logger.SError("requestLtdStreamControl: error", zap.Error(err))
 		return err
@@ -763,7 +763,7 @@ func (s *WebService) requestAddCamera(ctx context.Context, camera *db.Camera) er
 	}
 	cmd.Info = mapped
 
-	pl, err := sonic.Marshal(cmd)
+	pl, err := json.Marshal(cmd)
 	if err != nil {
 		logger.SError("requestAddCamera: marshal error", zap.Error(err))
 		return err
@@ -799,7 +799,7 @@ func (s *WebService) requestRemoveCamera(ctx context.Context, camera *db.Camera)
 	}
 	cmd.Info = mapped
 
-	pl, err := sonic.Marshal(cmd)
+	pl, err := json.Marshal(cmd)
 	if err != nil {
 		logger.SError("requestRemoveCamera: marshal error", zap.Error(err))
 		return err
@@ -881,7 +881,7 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 		Tilt:             req.Tilt,
 		StopAfterSeconds: helper.Int(2),
 	}
-	pl, err := sonic.Marshal(msg)
+	pl, err := json.Marshal(msg)
 	if err != nil {
 		logger.SDebug("sendRemoteControlCommand: marshal error", zap.Error(err))
 		return err
@@ -978,7 +978,7 @@ func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEvent
 		Event: request.Event,
 	}
 
-	pl, err := sonic.Marshal(msg)
+	pl, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
@@ -1042,7 +1042,7 @@ func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camer
 			Event: fmt.Sprintf("{cameraId: %s, event: %s}", camera.CameraId, event),
 		}
 
-		pl, err := sonic.Marshal(msg)
+		pl, err := json.Marshal(msg)
 
 		if err != nil {
 			logger.SError("PublicEventToOtherCamerasInGroup: Marshal error", zap.Error(err))

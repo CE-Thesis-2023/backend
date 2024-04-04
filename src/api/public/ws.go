@@ -8,7 +8,7 @@ import (
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -62,7 +62,7 @@ func WsListenToMessages() handlers.ConnectionHandler {
 				logger.SError("WsListenToMessages: ReadJSON error", zap.Error(err))
 				return err
 			}
-			if err := sonic.Unmarshal(msgBytes, &msg); err != nil {
+			if err := json.Unmarshal(msgBytes, &msg); err != nil {
 				logger.SError("WsListenToMessages: Unmarshal error", zap.Error(err))
 				return err
 			}

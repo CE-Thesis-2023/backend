@@ -8,7 +8,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	ltdEvent "github.com/CE-Thesis-2023/ltd/src/models/events"
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/gofiber/contrib/websocket"
 	"go.uber.org/zap"
 )
@@ -69,7 +69,7 @@ func (c *RequestReplyCommunicator) Request(ctx context.Context, req *ltdEvent.Co
 		Error:    nil,
 	}
 	c.pending[id] = rrCtx
-	msgBytes, err := sonic.Marshal(&msg)
+	msgBytes, err := json.Marshal(&msg)
 	if err != nil {
 		logger.SError("RRCommunicator.Request: Marshal error", zap.Error(err))
 		return nil, err
