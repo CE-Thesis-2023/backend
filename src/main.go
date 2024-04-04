@@ -53,6 +53,7 @@ func main() {
 
 					cache.Init()
 					custactors.Init()
+					service.Init()
 
 					custmqtt.InitClient(
 						context.Background(),
@@ -65,8 +66,6 @@ func main() {
 						custmqtt.WithOnServerDisconnect(eventsapi.DisconnectHandler),
 						custmqtt.WithHandlerRegister(eventsapi.RouterHandler()),
 					)
-
-					service.Init()
 					return nil
 				}),
 				app.WithShutdownHook(func(ctx context.Context) {
