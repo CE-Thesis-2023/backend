@@ -8,8 +8,9 @@ type Transcoder struct {
 }
 
 type OpenGateIntegration struct {
-	Available    bool `json:"available" db:"AVAILABLE"`
-	IsRestarting bool `json:"isRestarting" db:"IS_RESTARTING"`
+	DeviceId     string `json:"device_id" db:"DEVICE_ID"`
+	Available    bool   `json:"available" db:"AVAILABLE"`
+	IsRestarting bool   `json:"isRestarting" db:"IS_RESTARTING"`
 }
 
 type ObjectTrackingEvent struct {

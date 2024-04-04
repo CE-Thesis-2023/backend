@@ -60,7 +60,7 @@ type TlsConfig struct {
 }
 
 func (c TlsConfig) Enabled() bool {
-	
+
 	if len(c.Cert) > 0 && len(c.Key) > 0 {
 		return true
 	}
@@ -78,14 +78,15 @@ type BasicAuthConfigs struct {
 }
 
 type EventStoreConfigs struct {
-	Tls      TlsConfig `json:"tls,omitempty" yaml:"tls,omitempty"`
-	Host     string    `json:"host,omitempty" yaml:"host,omitempty"`
-	Port     int       `json:"port,omitempty" yaml:"port,omitempty"`
-	Name     string    `json:"name,omitempty" yaml:"name,omitempty"`
-	Enabled  bool      `json:"enabled,omitempty" yaml:"enabled,omitempty"`
-	Username string    `json:"username,omitempty" yaml:"username,omitempty"`
-	Password string    `json:"password,omitempty" yaml:"password,omitempty"`
-	Level    string    `json:"level,omitempty" yaml:"level,omitempty"`
+	Tls          TlsConfig `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Host         string    `json:"host,omitempty" yaml:"host,omitempty"`
+	Port         int       `json:"port,omitempty" yaml:"port,omitempty"`
+	Name         string    `json:"name,omitempty" yaml:"name,omitempty"`
+	Enabled      bool      `json:"enabled,omitempty" yaml:"enabled,omitempty"`
+	Username     string    `json:"username,omitempty" yaml:"username,omitempty"`
+	Password     string    `json:"password,omitempty" yaml:"password,omitempty"`
+	Level        string    `json:"level,omitempty" yaml:"level,omitempty"`
+	ListenPrefix string    `json:"listenPrefix,omitempty" yaml:"listenPrefix,omitempty"`
 }
 
 type InfluxConfigs struct {

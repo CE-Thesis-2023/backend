@@ -31,6 +31,7 @@
     "username": "admin",
     "password": "ctportal2024",
     "level": "info",
+    "listenPrefix": "prod",
     "tls": {
       "cert": "/configs/certs/cert.pem",
       "key": "/configs/certs/key.pem"
