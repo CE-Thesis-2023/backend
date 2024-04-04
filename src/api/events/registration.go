@@ -68,7 +68,7 @@ func registerTranscoderTopics(router paho.Router) {
 	actors := transcoder.NewTranscoderActorsPool()
 	transcoderHandler := transcoder.NewTranscoderEventProcessor(actors)
 
-	router.RegisterHandler("opengate/#", func(p *paho.Publish) {
+	router.RegisterHandler("opengate/#", WrapForHandlers(func(p *paho.Publish) error {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), time.Second*5)
 		defer cancel()
@@ -83,9 +83,10 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.Error(err),
 				zap.Any("command", cmd))
 		}
-	})
+		return err
+	}))
 
-	router.RegisterHandler("transcoder/#", func(p *paho.Publish) {
+	router.RegisterHandler("transcoder/#", WrapForHandlers(func(p *paho.Publish) error {
 		ctx, cancel := context.WithTimeout(
 			context.Background(), time.Second*5)
 		defer cancel()
@@ -100,5 +101,6 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.Error(err),
 				zap.Any("command", cmd))
 		}
-	})
+		return err
+	}))
 }
