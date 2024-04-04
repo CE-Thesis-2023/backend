@@ -48,5 +48,10 @@
       "webRtc": 8889
     },
     "api": 9997
+  },
+  "redis": {
+    "host": "redis.ctportal.ntranlab.com",
+    "port": 6379,
+    "password": "ctportal2024"
   }
 }

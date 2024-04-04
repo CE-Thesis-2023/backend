@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
-	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/anthdm/hollywood/actor"
@@ -97,11 +96,11 @@ func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, TranscoderId str
 		return custerror.FormatNotFound("Transcoder actor not found")
 	}
 	wg := engine.Poison(pid)
-	custcon.Do(func() error {
+	go func() {
 		wg.Wait()
 		finished <- true
-		return nil
-	})
+		return
+	}()
 	return nil
 }
 

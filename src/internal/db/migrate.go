@@ -1,7 +1,6 @@
 package custdb
 
 import (
-	_ "github.com/glebarez/go-sqlite"
 	"gorm.io/gorm"
 )
 

@@ -13,10 +13,8 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custcron "github.com/CE-Thesis-2023/backend/src/internal/cron"
-	"github.com/CE-Thesis-2023/backend/src/internal/events"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 
 	"go.uber.org/zap"
 )
@@ -66,28 +64,6 @@ func Run(shutdownTimeout time.Duration, registration RegistrationFunc) {
 			}()
 		}
 
-		for _, s := range opts.natsServers {
-			s := s
-			go func() {
-				logger.Infof("Run: start embedded NATS server name = %s", s.Name())
-				if err := s.Start(); err != nil {
-					logger.Infof("Run: start embedded NATS server err = %s", err)
-					quit <- syscall.SIGTERM
-				}
-			}()
-		}
-
-		for _, s := range opts.mqttServers {
-			s := s
-			go func() {
-				logger.Infof("Run: start embedded MQTT server name = %s", s.Name())
-				if err := s.Start(); err != nil {
-					logger.Infof("Run: start embedded MQTT server err = %s", err)
-					quit <- syscall.SIGTERM
-				}
-			}()
-		}
-
 		for _, s := range opts.schedulers {
 			s := s
 			go func() {
@@ -125,28 +101,6 @@ func Run(shutdownTimeout time.Duration, registration RegistrationFunc) {
 
 	go func() {
 		defer wg.Done()
-		for _, s := range opts.natsServers {
-			s := s
-			logger.Infof("Run: stop NATS embedded server name = %s", s.Name())
-			if err := s.Stop(ctx); err != nil {
-				log.Fatal(err)
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		for _, s := range opts.mqttServers {
-			s := s
-			logger.Infof("Run: stop MQTT embedded server name = %s", s.Name())
-			if err := s.Stop(ctx); err != nil {
-				log.Fatal(err)
-			}
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
 		for _, s := range opts.schedulers {
 			s := s
 			logger.Infof("Run: stop scheduler name = %s", s.Name())
@@ -168,8 +122,6 @@ type ShutdownHook func(ctx context.Context)
 
 type Options struct {
 	httpServers []*custhttp.HttpServer
-	natsServers []*events.EmbeddedNats
-	mqttServers []*custmqtt.EmbeddedMqtt
 	schedulers  []*custcron.Scheduler
 
 	factoryHook  FactoryHook
@@ -182,22 +134,6 @@ func WithHttpServer(server *custhttp.HttpServer) Optioner {
 	return func(opts *Options) {
 		if server != nil {
 			opts.httpServers = append(opts.httpServers, server)
-		}
-	}
-}
-
-func WithNatsServer(server *events.EmbeddedNats) Optioner {
-	return func(opts *Options) {
-		if server != nil {
-			opts.natsServers = append(opts.natsServers, server)
-		}
-	}
-}
-
-func WithMqttServer(server *custmqtt.EmbeddedMqtt) Optioner {
-	return func(opts *Options) {
-		if server != nil {
-			opts.mqttServers = append(opts.mqttServers, server)
 		}
 	}
 }

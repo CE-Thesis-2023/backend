@@ -8,9 +8,7 @@ import (
 	privateapi "github.com/CE-Thesis-2023/backend/src/api/private"
 	publicapi "github.com/CE-Thesis-2023/backend/src/api/public"
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
-	custactors "github.com/CE-Thesis-2023/backend/src/internal/actor"
 	"github.com/CE-Thesis-2023/backend/src/internal/app"
-	"github.com/CE-Thesis-2023/backend/src/internal/cache"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
@@ -49,10 +47,8 @@ func main() {
 						&db.Camera{},
 						&db.CameraGroup{},
 						&db.ObjectTrackingEvent{},
+						&db.OpenGateIntegration{},
 					)
-
-					cache.Init()
-					custactors.Init()
 					service.Init()
 
 					custmqtt.InitClient(

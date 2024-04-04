@@ -9,7 +9,6 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	"github.com/CE-Thesis-2023/backend/src/helper"
-	"github.com/CE-Thesis-2023/backend/src/internal/cache"
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
@@ -42,7 +41,6 @@ type WebService struct {
 func NewWebService() *WebService {
 	return &WebService{
 		db:         custdb.Layered(),
-		cache:      cache.Cache(),
 		mqttClient: custmqtt.Client(),
 		pool:       custcon.New(10),
 	}
@@ -981,6 +979,9 @@ func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEvent
 	}
 
 	pl, err := sonic.Marshal(msg)
+	if err != nil {
+		return err
+	}
 
 	if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
 		Topic:   fmt.Sprintf("events/%s/%s", cameras[0].GroupId, cameras[0].CameraId),

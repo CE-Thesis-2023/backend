@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/dgraph-io/ristretto"
-	"github.com/panjf2000/ants/v2"
-	"go.uber.org/zap"
-	"github.com/CE-Thesis-2023/backend/src/internal/cache"
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
+	"github.com/dgraph-io/ristretto"
+	"github.com/panjf2000/ants/v2"
+	"go.uber.org/zap"
 )
 
 type CommandService struct {
@@ -25,7 +24,6 @@ type CommandService struct {
 func NewCommandService() *CommandService {
 	return &CommandService{
 		db:         custdb.Layered(),
-		cache:      cache.Cache(),
 		pool:       custcon.New(10),
 		webService: GetWebService(),
 	}

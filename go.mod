@@ -7,9 +7,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/anthdm/hollywood v0.0.0-20231230200740-54133c9bd2b4
 	github.com/bytedance/sonic v1.10.2
-	github.com/carlmjohnson/flowmatic v0.23.4
 	github.com/eclipse/paho.golang v0.12.0
-	github.com/glebarez/go-sqlite v1.21.2
 	github.com/gofiber/contrib/websocket v1.3.0
 	github.com/gofiber/fiber/v2 v2.51.0
 	github.com/gofiber/template/html/v2 v2.0.5
@@ -17,7 +15,6 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/mochi-mqtt/server/v2 v2.4.2
 	github.com/motemen/go-loghttp v0.0.0-20231107055348-29ae44b293f4
 	github.com/opus-domini/fast-shot v0.9.0
 	github.com/panjf2000/ants/v2 v2.9.0
@@ -27,7 +24,6 @@ require (
 )
 
 require (
-	github.com/carlmjohnson/deque v0.23.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
@@ -53,9 +49,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rs/xid v1.4.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -68,10 +62,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
-	modernc.org/libc v1.22.5 // indirect
-	modernc.org/mathutil v1.5.0 // indirect
-	modernc.org/memory v1.5.0 // indirect
-	modernc.org/sqlite v1.23.1 // indirect
 )
 
 require (
