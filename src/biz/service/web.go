@@ -361,7 +361,7 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 func (s *WebService) getCameraByOpenGateId(ctx context.Context, openGateId string) (*db.Camera, error) {
 	q := squirrel.Select("*").
 		From("open_gate_integration").
-		Where("opengate_id = ?", openGateId)
+		Where("opengate_id = $1", openGateId)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByOpenGateId: SQL",
 		zap.Any("q", sql),
