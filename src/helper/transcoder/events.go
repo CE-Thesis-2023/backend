@@ -1,6 +1,7 @@
-package opengate
+package transcoder
 
 import (
+	"context"
 	"sync"
 
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
@@ -10,37 +11,49 @@ import (
 	"go.uber.org/zap"
 )
 
-type OpenGateEventProcessor interface {
+type TranscoderEventProcessor interface {
+	OpenGateAvailable(ctx context.Context, openGateId string) error
+	OpenGateEvent(ctx context.Context, openGateId string) error
 }
 
-type OpenGateActorsPool struct {
+type transcoderEventProcessor struct {
+	actors *TranscoderActorsPool
+}
+
+func NewTranscoderEventProcessor(actors *TranscoderActorsPool) TranscoderEventProcessor {
+	return &transcoderEventProcessor{
+		actors: actors,
+	}
+}
+
+type TranscoderActorsPool struct {
 	mu             sync.Mutex
 	groupEngineMap map[string]*actor.Engine
 }
 
-func (p *OpenGateActorsPool) NewOpenGateActorsPool() *OpenGateActorsPool {
-	return &OpenGateActorsPool{
+func NewTranscoderActorsPool() *TranscoderActorsPool {
+	return &TranscoderActorsPool{
 		groupEngineMap: map[string]*actor.Engine{},
 	}
 }
 
-func (p *OpenGateActorsPool) Exists(cameraGroupId string, openGateId string) bool {
+func (p *TranscoderActorsPool) Exists(cameraGroupId string, TranscoderId string) bool {
 	engine, found := p.groupEngineMap[cameraGroupId]
 	if found {
 		pid := engine.Registry.
-			GetPID("opengate", openGateId)
+			GetPID("transcoder", TranscoderId)
 		return pid != nil
 	}
 	return found
 }
 
-func (p *OpenGateActorsPool) Allocate(cameraGroupId string, openGateId string) (*actor.PID, error) {
+func (p *TranscoderActorsPool) Allocate(cameraGroupId string, TranscoderId string) (*actor.PID, error) {
 	var engine *actor.Engine
 	var found bool
 	var err error
 	engine, found = p.groupEngineMap[cameraGroupId]
 	if found {
-		pid := engine.Registry.GetPID("opengate", openGateId)
+		pid := engine.Registry.GetPID("transcoder", TranscoderId)
 		if pid != nil {
 			return pid, nil
 		}
@@ -53,23 +66,23 @@ func (p *OpenGateActorsPool) Allocate(cameraGroupId string, openGateId string) (
 		p.groupEngineMap[cameraGroupId] = engine
 		p.mu.Unlock()
 	}
-	pid := engine.Spawn(newOpenGateActor,
-		"opengate",
-		actor.WithID(openGateId),
+	pid := engine.Spawn(newTranscoderActor,
+		"transcoder",
+		actor.WithID(TranscoderId),
 		actor.WithInboxSize(10))
 	return pid, nil
 }
 
-func (p *OpenGateActorsPool) Deallocate(cameraGroupId string, openGateId string, finished chan bool) error {
+func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, TranscoderId string, finished chan bool) error {
 	engine, found := p.groupEngineMap[cameraGroupId]
 	if !found {
 		return custerror.FormatNotFound("camera group engine not found")
 	}
 	pid := engine.
 		Registry.
-		GetPID("opengate", openGateId)
+		GetPID("transcoder", TranscoderId)
 	if pid == nil {
-		return custerror.FormatNotFound("opengate actor not found")
+		return custerror.FormatNotFound("Transcoder actor not found")
 	}
 	wg := engine.Poison(pid)
 	custcon.Do(func() error {
@@ -80,15 +93,15 @@ func (p *OpenGateActorsPool) Deallocate(cameraGroupId string, openGateId string,
 	return nil
 }
 
-type openGateActor struct {
+type TranscoderActor struct {
 }
 
-func newOpenGateActor() actor.Receiver {
-	return &openGateActor{}
+func newTranscoderActor() actor.Receiver {
+	return &TranscoderActor{}
 }
 
-func (a *openGateActor) Receive(ctx *actor.Context) {
-	logger.SDebug("OpenGateActor received message",
+func (a *TranscoderActor) Receive(ctx *actor.Context) {
+	logger.SDebug("TranscoderActor received message",
 		zap.String("pid", ctx.PID().String()),
 		zap.Any("message", ctx.Message()))
 

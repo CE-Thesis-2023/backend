@@ -1,4 +1,4 @@
-package opengate
+package transcoder
 
 type Configuration struct {
 }

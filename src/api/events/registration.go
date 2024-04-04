@@ -5,12 +5,9 @@ import (
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/helper"
-	custactors "github.com/CE-Thesis-2023/backend/src/internal/actor"
-	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
+	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
-	"github.com/anthdm/hollywood/actor"
-
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
@@ -55,12 +52,7 @@ func DisconnectHandler(d *paho.Disconnect) {
 
 func RouterHandler() custmqtt.RouterRegister {
 	return func(router *paho.StandardRouter) {
-		eh := GetStandardEventsHandler()
-
-		router.RegisterHandler("updates/#",
-			WrapForHandlers(eh.UpdateEventsHandler))
-
-		registerOpenGateHandlers(router)
+		registerTranscoderTopics(router)
 	}
 }
 
@@ -72,8 +64,41 @@ func WrapForHandlers(handler func(p *paho.Publish) error) func(p *paho.Publish) 
 	}
 }
 
-func registerOpenGateHandlers(router paho.Router) {
-	// https://docs.frigate.video/integrations/mqtt
+func registerTranscoderTopics(router paho.Router) {
+	actors := transcoder.NewTranscoderActorsPool()
+	transcoderHandler := transcoder.NewTranscoderEventProcessor(actors)
+
 	router.RegisterHandler("opengate/#", func(p *paho.Publish) {
+		ctx, cancel := context.WithTimeout(
+			context.Background(), time.Second*5)
+		defer cancel()
+		cmd, err := CommandFromPath(p.Topic, transcoderHandler)
+		if err != nil {
+			logger.SError("unable to parse command from path",
+				zap.Error(err),
+				zap.String("topic", p.Topic))
+		}
+		if err := cmd.Run(ctx); err != nil {
+			logger.SError("unable to run command",
+				zap.Error(err),
+				zap.Any("command", cmd))
+		}
+	})
+
+	router.RegisterHandler("transcoder/#", func(p *paho.Publish) {
+		ctx, cancel := context.WithTimeout(
+			context.Background(), time.Second*5)
+		defer cancel()
+		cmd, err := CommandFromPath(p.Topic, transcoderHandler)
+		if err != nil {
+			logger.SError("unable to parse command from path",
+				zap.Error(err),
+				zap.String("topic", p.Topic))
+		}
+		if err := cmd.Run(ctx); err != nil {
+			logger.SError("unable to run command",
+				zap.Error(err),
+				zap.Any("command", cmd))
+		}
 	})
 }
