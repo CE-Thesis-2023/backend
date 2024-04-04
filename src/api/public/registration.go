@@ -25,7 +25,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Post("/api/cameras", CreateCamera)
 		app.Delete("/api/cameras", DeleteCamera)
 
-		app.Get("/api/camera-groups/cameras/:id", GetCamerasByGroupId)
+		app.Get("/api/camera-groups/:id/cameras", GetCamerasByGroupId)
 		app.Get("/api/camera-groups", GetCameraGroups)
 		app.Post("/api/camera-groups", AddCameraGroup)
 		app.Delete("/api/camera-groups", DeleteCameraGroup)

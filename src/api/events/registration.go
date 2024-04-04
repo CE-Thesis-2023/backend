@@ -83,7 +83,6 @@ func registerTranscoderTopics(router paho.Router) {
 		if err := cmd.Run(ctx, p); err != nil {
 			return err
 		}
-
 		return nil
 	}))
 

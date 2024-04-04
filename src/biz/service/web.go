@@ -188,6 +188,9 @@ func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]
 	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &cameras); err != nil {
 		return nil, err
 	}
+	if cameras == nil {
+		return []db.Camera{}, nil
+	}
 
 	return cameras, nil
 }
@@ -542,6 +545,9 @@ func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Trans
 	var transcoders []db.Transcoder
 	if err := s.db.Select(ctx, query, &transcoders); err != nil {
 		return nil, err
+	}
+	if transcoders == nil {
+		return []db.Transcoder{}, nil
 	}
 
 	return transcoders, nil
