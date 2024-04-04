@@ -74,6 +74,7 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 		OpenGateId:   camera.OpenGateId,
 		Type:         c.Type,
 		Action:       c.Action,
+		Payload:      pub.Payload,
 	})
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	return nil
 }
 
-func (c *Command) runTranscoder(ctx context.Context, pub *paho.Publish) error {
+func (c *Command) runTranscoder(_ context.Context, _ *paho.Publish) error {
 	switch c.Action {
 	default:
 		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
