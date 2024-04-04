@@ -67,8 +67,6 @@ func main() {
 					)
 
 					service.Init()
-					eventsapi.Init(ctx)
-
 					return nil
 				}),
 				app.WithShutdownHook(func(ctx context.Context) {
