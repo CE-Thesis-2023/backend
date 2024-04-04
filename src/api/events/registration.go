@@ -17,7 +17,7 @@ func Register(cm *autopaho.ConnectionManager, connack *paho.Connack) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	subs := makeSubscriptions(ctx, cm, connack)
+	subs := makeSubscriptions()
 	if _, err := cm.Subscribe(ctx, &paho.Subscribe{
 		Subscriptions: subs,
 	}); err != nil {
@@ -31,7 +31,7 @@ func Register(cm *autopaho.ConnectionManager, connack *paho.Connack) {
 	logger.SInfo("MQTT subscriptions made success", zap.Any("subs", subs))
 }
 
-func makeSubscriptions(ctx context.Context, cm *autopaho.ConnectionManager, connack *paho.Connack) []paho.SubscribeOptions {
+func makeSubscriptions() []paho.SubscribeOptions {
 	return []paho.SubscribeOptions{
 		{Topic: "updates/#", QoS: 1},
 		{Topic: "opengate/#", QoS: 1},
@@ -78,7 +78,7 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.Error(err),
 				zap.String("topic", p.Topic))
 		}
-		if err := cmd.Run(ctx); err != nil {
+		if err := cmd.Run(ctx, p); err != nil {
 			logger.SError("unable to run command",
 				zap.Error(err),
 				zap.Any("command", cmd))
@@ -95,7 +95,7 @@ func registerTranscoderTopics(router paho.Router) {
 				zap.Error(err),
 				zap.String("topic", p.Topic))
 		}
-		if err := cmd.Run(ctx); err != nil {
+		if err := cmd.Run(ctx, p); err != nil {
 			logger.SError("unable to run command",
 				zap.Error(err),
 				zap.Any("command", cmd))

@@ -8,12 +8,13 @@ import (
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/anthdm/hollywood/actor"
+	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
 )
 
 type TranscoderEventProcessor interface {
-	OpenGateAvailable(ctx context.Context, openGateId string) error
-	OpenGateEvent(ctx context.Context, openGateId string) error
+	OpenGateAvailable(ctx context.Context, openGateId string, pub *paho.Publish) error
+	OpenGateEvent(ctx context.Context, openGateId string, pub *paho.Publish) error
 }
 
 type transcoderEventProcessor struct {
