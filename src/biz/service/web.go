@@ -19,9 +19,9 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/mitchellh/mapstructure"
 
+	"encoding/json"
 	events "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
-	"encoding/json"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
@@ -358,16 +358,19 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 
 func (s *WebService) getCameraByOpenGateId(ctx context.Context, openGateId string) (*db.Camera, error) {
 	q := squirrel.Select("*").
-		From("open_gate_integration").
-		Where("opengate_id = $1", openGateId)
+		From("cameras").
+		Where("open_gate_id = $1", openGateId)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByOpenGateId: SQL",
 		zap.Any("q", sql),
 		zap.Any("args", args))
 
 	var camera db.Camera
-	if err := s.db.Get(ctx, q, &camera); err != nil {
+	if err := s.db.Get(ctx, q.PlaceholderFormat(squirrel.Dollar), &camera); err != nil {
 		return nil, err
+	}
+	if camera.CameraId == "" {
+		return nil, custerror.FormatNotFound("camera not found")
 	}
 
 	return &camera, nil

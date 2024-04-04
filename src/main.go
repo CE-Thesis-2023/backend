@@ -41,7 +41,6 @@ func main() {
 					defer cancel()
 
 					custdb.Init(ctx, configs)
-
 					custdb.Migrate(custdb.Gorm(),
 						&db.Transcoder{},
 						&db.OpenGateIntegration{},
