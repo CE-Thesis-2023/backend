@@ -27,16 +27,13 @@ func CommandFromPath(path string, transcoderHandler transcoder.TranscoderEventPr
 	if len(parts) == 0 {
 		return nil, custerror.FormatInvalidArgument("path is empty")
 	}
-	if len(parts) > 3 {
-		return nil, custerror.FormatInvalidArgument("path is too long")
-	}
 	if len(parts) < 3 {
 		return nil, custerror.FormatInvalidArgument("path is too short")
 	}
 	return &Command{
 		Type:              parts[0],
 		ClientId:          parts[1],
-		Action:            parts[2],
+		Action:            strings.Join(parts[2:], "/"),
 		transcoderHandler: transcoderHandler,
 	}, nil
 }

@@ -77,6 +77,7 @@ func registerTranscoderTopics(router paho.Router) {
 			logger.SError("unable to parse command from path",
 				zap.Error(err),
 				zap.String("topic", p.Topic))
+			return err
 		}
 		if err := cmd.Run(ctx, p); err != nil {
 			return err
@@ -93,6 +94,7 @@ func registerTranscoderTopics(router paho.Router) {
 			logger.SError("unable to parse command from path",
 				zap.Error(err),
 				zap.String("topic", p.Topic))
+			return err
 		}
 		if err := cmd.Run(ctx, p); err != nil {
 			return err
