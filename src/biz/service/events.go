@@ -9,14 +9,12 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
-	"github.com/dgraph-io/ristretto"
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 )
 
 type CommandService struct {
 	db         *custdb.LayeredDb
-	cache      *ristretto.Cache
 	pool       *ants.Pool
 	webService *WebService
 }
