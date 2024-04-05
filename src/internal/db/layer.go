@@ -37,7 +37,7 @@ func (db *LayeredDb) Select(ctx context.Context, selectBuilder sq.SelectBuilder,
 
 	logger.SDebug("LayeredDb.Select",
 		zap.String("query", queryStr),
-		zap.Reflect("arguments", arguments))
+		zap.Any("arguments", arguments))
 
 	sqldb := db.sqldb
 
@@ -59,7 +59,7 @@ func (db *LayeredDb) Get(ctx context.Context, selectBuilder sq.SelectBuilder, de
 
 	logger.SDebug("LayeredDb.Get",
 		zap.String("query", queryStr),
-		zap.Reflect("arguments", arguments))
+		zap.Any("arguments", arguments))
 
 	sqldb := db.sqldb
 
@@ -82,7 +82,7 @@ func (db *LayeredDb) Insert(ctx context.Context, insertBuilder sq.InsertBuilder)
 
 	logger.SDebug("LayeredDb.Insert",
 		zap.String("query", queryStr),
-		zap.Reflect("arguments", arguments))
+		zap.Any("arguments", arguments))
 
 	sqldb := db.sqldb
 
@@ -102,7 +102,7 @@ func (db *LayeredDb) Update(ctx context.Context, updateBuilder sq.UpdateBuilder)
 
 	logger.SDebug("LayeredDb.Update",
 		zap.String("query", queryStr),
-		zap.Reflect("arguments", arguments))
+		zap.Any("arguments", arguments))
 
 	sqldb := db.sqldb
 
@@ -134,7 +134,7 @@ func (db *LayeredDb) Delete(ctx context.Context, deleteBuilder sq.DeleteBuilder)
 
 	logger.SDebug("LayeredDb.Delete",
 		zap.String("query", queryStr),
-		zap.Reflect("arguments", arguments))
+		zap.Any("arguments", arguments))
 
 	sqldb := db.sqldb
 

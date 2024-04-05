@@ -24,12 +24,12 @@ func Register(cm *autopaho.ConnectionManager, connack *paho.Connack) {
 	}); err != nil {
 		logger.SError("unable to make MQTT subscriptions",
 			zap.String("where", "api.events.Register"),
-			zap.Reflect("subs", subs),
+			zap.Any("subs", subs),
 		)
 		return
 	}
 
-	logger.SInfo("MQTT subscriptions made success", zap.Reflect("subs", subs))
+	logger.SInfo("MQTT subscriptions made success", zap.Any("subs", subs))
 }
 
 func makeSubscriptions() []paho.SubscribeOptions {

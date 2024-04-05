@@ -20,7 +20,8 @@ func RegisterDevice(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument(err.Error())
 	}
 
-	if err := service.GetCommandService().RegisterDevice(ctx.Context(), &msg); err != nil {
+	if err := service.GetCommandService().
+		RegisterDevice(ctx.Context(), &msg); err != nil {
 		logger.SError("RegisterDevice: service.RegisterDevice error", zap.Error(err))
 		return err
 	}

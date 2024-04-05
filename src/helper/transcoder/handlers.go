@@ -97,7 +97,7 @@ func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId
 	}
 
 	logger.SDebug("detection event",
-		zap.Reflect("before", detectionEvent.Before),
-		zap.Reflect("after", detectionEvent.After))
+		zap.Any("before", detectionEvent.Before),
+		zap.Any("after", detectionEvent.After))
 	return nil
 }

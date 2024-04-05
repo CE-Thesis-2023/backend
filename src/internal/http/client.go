@@ -68,14 +68,14 @@ func getDefaultRoundTripper() http.RoundTripper {
 				zap.String("port", req.URL.Port()),
 				zap.String("path", req.URL.EscapedPath()),
 				zap.String("queries", req.URL.RawQuery),
-				zap.Reflect("header", req.Header),
+				zap.Any("header", req.Header),
 			)
 		},
 		LogResponse: func(resp *http.Response) {
 			status := resp.StatusCode
 			logger.SDebug("HTTP Response",
 				zap.Int("status", status),
-				zap.Reflect("headers", resp.Header))
+				zap.Any("headers", resp.Header))
 		},
 	}
 

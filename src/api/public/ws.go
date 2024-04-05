@@ -40,7 +40,7 @@ func WsAuthorizeLtd() handlers.AuthorizerHandler {
 		ltd := devices.Transcoders[0]
 		logger.SDebug("WsAuthorizeLtd: authorizing LTD",
 			zap.String("deviceId", ltd.DeviceId),
-			zap.Reflect("device", ltd))
+			zap.Any("device", ltd))
 		return nil
 	}
 }
