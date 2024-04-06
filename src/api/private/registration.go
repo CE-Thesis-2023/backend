@@ -11,6 +11,6 @@ func ServiceRegistration() func(app *fiber.App) {
 		priv := app.Group("/private")
 		priv.Post("/registers", RegisterDevice)
 		priv.Get("/transcoders/:id/cameras", GetTranscoderAssignedCameras)
-		priv.Get("/api/opengate/cameras", GetOpenGateCameraSettings)
+		priv.Get("/opengate/cameras", GetOpenGateCameraSettings)
 	}
 }

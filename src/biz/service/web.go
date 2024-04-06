@@ -181,11 +181,6 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 		return nil, err
 	}
 
-	if err = s.requestAddCamera(ctx, &entry); err != nil {
-		logger.SError("AddCamera: requestAddCamera error", zap.Error(err))
-		return nil, err
-	}
-
 	if err := s.initializeDefaultOpenGateCameraSettings(ctx, &entry, &transcoder[0]); err != nil {
 		logger.SError("AddCamera: initializeDefaultOpenGateCameraSettings error", zap.Error(err))
 		return nil, err
@@ -839,48 +834,6 @@ func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Cam
 		return err
 	}
 	logger.SDebug("requestLtdStreamControl: message published successfully")
-	return nil
-}
-
-func (s *WebService) requestAddCamera(ctx context.Context, camera *db.Camera) error {
-	logger.SDebug("requestAddCamera: request",
-		zap.String("cameraId", camera.CameraId),
-		zap.String("transcoderId", camera.TranscoderId))
-	cmd := events.CommandRequest{
-		CommandType: events.Command_AddCamera,
-	}
-	info := events.CommandAddCameraInfo{
-		CameraId: camera.CameraId,
-		Name:     camera.Name,
-		Ip:       camera.Ip,
-		Port:     camera.Port,
-		Username: camera.Username,
-		Password: camera.Password,
-	}
-	mapped, err := helper.ToMap(info)
-	if err != nil {
-		logger.SDebug("requestAddCamera: ToMap error", zap.Error(err))
-		return err
-	}
-	cmd.Info = mapped
-
-	pl, err := json.Marshal(cmd)
-	if err != nil {
-		logger.SError("requestAddCamera: marshal error", zap.Error(err))
-		return err
-	}
-	logger.SDebug("requestAddCamera: info", zap.String("info", string(pl)))
-
-	_, err = s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("commands/%s", camera.TranscoderId),
-		QoS:     1,
-		Payload: pl,
-	})
-	if err != nil {
-		logger.SError("requestAddCamera: publish error", zap.Error(err))
-		return err
-	}
-	logger.SInfo("requestAddCamera: success")
 	return nil
 }
 
