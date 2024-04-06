@@ -176,13 +176,15 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 	}
 	entry.CameraId = uuid.NewString()
 
-	if err := s.addCamera(ctx, &entry); err != nil {
-		logger.SError("AddCamera: addCamera error", zap.Error(err))
+	openGateCameraSettings, err := s.initializeDefaultOpenGateCameraSettings(ctx, &entry, &transcoder[0])
+	if err != nil {
+		logger.SError("AddCamera: initializeDefaultOpenGateCameraSettings error", zap.Error(err))
 		return nil, err
 	}
+	entry.SettingsId = openGateCameraSettings.SettingsId
 
-	if err := s.initializeDefaultOpenGateCameraSettings(ctx, &entry, &transcoder[0]); err != nil {
-		logger.SError("AddCamera: initializeDefaultOpenGateCameraSettings error", zap.Error(err))
+	if err := s.addCamera(ctx, &entry); err != nil {
+		logger.SError("AddCamera: addCamera error", zap.Error(err))
 		return nil, err
 	}
 
@@ -190,8 +192,9 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 	return &web.AddCameraResponse{CameraId: entry.CameraId}, err
 }
 
-func (s *WebService) initializeDefaultOpenGateCameraSettings(ctx context.Context, camera *db.Camera, transcoder *db.Transcoder) error {
+func (s *WebService) initializeDefaultOpenGateCameraSettings(ctx context.Context, camera *db.Camera, transcoder *db.Transcoder) (*db.OpenGateCameraSettings, error) {
 	settings := db.OpenGateCameraSettings{
+		SettingsId:  uuid.NewString(),
 		CameraId:    camera.CameraId,
 		Height:      480,
 		Width:       640,
@@ -203,7 +206,8 @@ func (s *WebService) initializeDefaultOpenGateCameraSettings(ctx context.Context
 		OpenGateId:  transcoder.OpenGateIntegrationId,
 	}
 
-	return s.addOpenGateCameraSettings(ctx, &settings)
+	return &settings,
+		s.addOpenGateCameraSettings(ctx, &settings)
 }
 
 func (s *WebService) addOpenGateCameraSettings(ctx context.Context, settings *db.OpenGateCameraSettings) error {
