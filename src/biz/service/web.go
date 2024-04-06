@@ -20,6 +20,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"encoding/json"
+
 	events "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
@@ -157,8 +158,17 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 		return nil, custerror.ErrorAlreadyExists
 	}
 
-	_, err = s.getDeviceById(ctx, []string{req.TranscoderId})
+	transcoder, err := s.getDeviceById(ctx, []string{req.TranscoderId})
 	if err != nil {
+		logger.SError("AddCamera: transcoder device not found")
+		return nil, custerror.FormatNotFound("transcoder device not found")
+	}
+
+	if transcoder == nil {
+		logger.SError("AddCamera: transcoder device not found")
+		return nil, custerror.FormatNotFound("transcoder device not found")
+	}
+	if len(transcoder) == 0 {
 		logger.SError("AddCamera: transcoder device not found")
 		return nil, custerror.FormatNotFound("transcoder device not found")
 	}
@@ -180,8 +190,39 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 		return nil, err
 	}
 
+	if err := s.initializeDefaultOpenGateCameraSettings(ctx, &entry, &transcoder[0]); err != nil {
+		logger.SError("AddCamera: initializeDefaultOpenGateCameraSettings error", zap.Error(err))
+		return nil, err
+	}
+
 	logger.SInfo("AddCamera: success", zap.String("id", entry.CameraId))
 	return &web.AddCameraResponse{CameraId: entry.CameraId}, err
+}
+
+func (s *WebService) initializeDefaultOpenGateCameraSettings(ctx context.Context, camera *db.Camera, transcoder *db.Transcoder) error {
+	settings := db.OpenGateCameraSettings{
+		CameraId:    camera.CameraId,
+		Height:      480,
+		Width:       640,
+		Fps:         5,
+		MqttEnabled: true,
+		Timestamp:   true,
+		BoundingBox: true,
+		Crop:        true,
+		OpenGateId:  transcoder.OpenGateIntegrationId,
+	}
+
+	return s.addOpenGateCameraSettings(ctx, &settings)
+}
+
+func (s *WebService) addOpenGateCameraSettings(ctx context.Context, settings *db.OpenGateCameraSettings) error {
+	q := s.builder.Insert("open_gate_camera_settings").
+		Columns(settings.Fields()...).
+		Values(settings.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequest) error {
@@ -581,6 +622,26 @@ func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Trans
 	}
 
 	return transcoders, nil
+}
+
+func (s *WebService) addOpenGateIntegration(ctx context.Context, integration *db.OpenGateIntegration) error {
+	q := s.builder.Insert("open_gate_integrations").
+		Columns(integration.Fields()...).
+		Values(integration.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) addOpenGateMqttConfigurations(ctx context.Context, config *db.OpenGateMqttConfiguration) error {
+	q := s.builder.Insert("open_gate_mqtt_configurations").
+		Columns(config.Fields()...).
+		Values(config.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *WebService) addDevice(ctx context.Context, d *db.Transcoder) error {
@@ -1199,7 +1260,7 @@ func (s *WebService) updateOpenGateMqttConfigurationDto(req *web.UpdateOpenGateI
 
 func (s *WebService) getOpenGateMqttConfigurationById(ctx context.Context, id string) (*db.OpenGateMqttConfiguration, error) {
 	q := s.builder.Select("*").
-		From("opengate_mqtt_configurations").
+		From("open_gate_mqtt_configurations").
 		Where("configuration_id = ?", id)
 
 	sql, args, _ := q.ToSql()
@@ -1222,7 +1283,7 @@ func (s *WebService) updateOpenGateIntegration(ctx context.Context, integration 
 		valueMap[fields[i]] = values[i]
 	}
 
-	q := s.builder.Update("opengate_integrations").
+	q := s.builder.Update("open_gate_integrations").
 		Where("integration_id = ?", integration.OpenGateId).
 		SetMap(valueMap)
 	sql, args, _ := q.ToSql()
@@ -1243,7 +1304,7 @@ func (s *WebService) updateOpenGateMqttConfiguration(ctx context.Context, mqtt *
 		valueMap[fields[i]] = values[i]
 	}
 
-	q := s.builder.Update("opengate_mqtt_configurations").
+	q := s.builder.Update("open_gate_mqtt_configurations").
 		Where("configuration_id = ?", mqtt.ConfigurationId).
 		SetMap(valueMap)
 	sql, args, _ := q.ToSql()
@@ -1290,7 +1351,7 @@ func (s *WebService) GetOpenGateCameraSettings(ctx context.Context, req *web.Get
 
 func (s *WebService) getOpenGateCameraSettings(ctx context.Context, ids []string) ([]db.OpenGateCameraSettings, error) {
 	q := s.builder.Select("*").
-		From("opengate_camera_settings")
+		From("open_gate_camera_settings")
 
 	if len(ids) > 0 {
 		or := squirrel.Or{}

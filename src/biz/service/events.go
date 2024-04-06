@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+
 	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
+	"github.com/google/uuid"
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 )
@@ -47,13 +49,21 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 		return custerror.ErrorAlreadyExists
 	}
 
-	logger.SInfo("RegisterDevice: device not found",
-		zap.String("id", req.DeviceId))
-	if err := s.webService.addDevice(ctx, &db.Transcoder{
+	transcoder := &db.Transcoder{
 		DeviceId: req.DeviceId,
 		Name:     "",
-	}); err != nil {
+	}
+
+	logger.SInfo("RegisterDevice: device not found",
+		zap.String("id", req.DeviceId))
+	if err := s.webService.addDevice(ctx, transcoder); err != nil {
 		logger.SDebug("RegisterDevice: addDevice",
+			zap.Error(err))
+		return err
+	}
+
+	if err := s.initializeOpenGateDefaultConfigurations(ctx, transcoder); err != nil {
+		logger.SDebug("RegisterDevice: initializeOpenGateDefaultConfigurations",
 			zap.Error(err))
 		return err
 	}
@@ -62,6 +72,47 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 		zap.Any("device", device))
 
 	return nil
+}
+
+func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Context, device *db.Transcoder) error {
+	logger.SDebug("initializeOpenGateDefaultConfigurations: request",
+		zap.Any("device", device))
+
+	openGateIntegration := &db.OpenGateIntegration{
+		OpenGateId:            uuid.NewString(),
+		TranscoderId:          device.DeviceId,
+		Available:             false,
+		IsRestarting:          false,
+		LogLevel:              "info",
+		SnapshotRetentionDays: 7,
+	}
+
+	mqttConfigs := db.OpenGateMqttConfiguration{
+		OpenGateId:      device.OpenGateIntegrationId,
+		ConfigurationId: uuid.NewString(),
+		Enabled:         true,
+		Host:            "mosquitto.mqtt.ntranlab.com",
+		User:            "admin",
+		Password:        "ctportal2024",
+		Port:            8883,
+	}
+	openGateIntegration.MqttId = mqttConfigs.ConfigurationId
+
+	if err := s.webService.addOpenGateIntegration(ctx, openGateIntegration); err != nil {
+		logger.SDebug("initializeOpenGateDefaultConfigurations: addOpenGateIntegration",
+			zap.Error(err))
+		return err
+	}
+
+	if err := s.webService.addOpenGateMqttConfigurations(ctx, &mqttConfigs); err != nil {
+		logger.SDebug("initializeOpenGateDefaultConfigurations: addOpenGateMqttConfiguration",
+			zap.Error(err))
+		return err
+	}
+
+	logger.SInfo("initializeOpenGateDefaultConfigurations: success")
+	return nil
+
 }
 
 func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.UpdateCameraListRequest) (*events.UpdateCameraListResponse, error) {
