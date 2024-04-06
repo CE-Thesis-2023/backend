@@ -182,6 +182,9 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 		return nil, err
 	}
 	entry.SettingsId = openGateCameraSettings.SettingsId
+	logger.SDebug("AddCamera: openGateCameraSettings",
+		zap.Any("settings", openGateCameraSettings),
+		zap.Any("entry", entry))
 
 	if err := s.addCamera(ctx, &entry); err != nil {
 		logger.SError("AddCamera: addCamera error", zap.Error(err))
@@ -238,12 +241,17 @@ func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequ
 		return err
 	}
 
-	if err := s.requestRemoveCamera(ctx, &c[0]); err != nil {
-		logger.SError("requestRemoveCamera: error = %s", zap.Error(err))
+	if err := s.deleteOpenGateCameraSettings(ctx, req.CameraId); err != nil {
+		logger.SError("DeleteCamera: deleteOpenGateCameraSettings", zap.Error(err))
 		return err
 	}
-
 	return nil
+}
+
+func (s *WebService) deleteOpenGateCameraSettings(ctx context.Context, cameraId string) error {
+	return s.db.Delete(ctx,
+		s.builder.Delete("open_gate_camera_settings").
+			Where("camera_id = ?", cameraId))
 }
 
 func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCamerasByGroupIdRequest) (*web.GetCamerasByGroupIdResponse, error) {
@@ -838,42 +846,6 @@ func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Cam
 		return err
 	}
 	logger.SDebug("requestLtdStreamControl: message published successfully")
-	return nil
-}
-
-func (s *WebService) requestRemoveCamera(ctx context.Context, camera *db.Camera) error {
-	logger.SDebug("requestRemoveCamera: request",
-		zap.String("cameraId", camera.CameraId),
-		zap.String("transcoderId", camera.TranscoderId))
-	cmd := events.CommandRequest{
-		CommandType: events.Command_DeleteCamera,
-	}
-	mapped, err := helper.ToMap(events.CommandDeleteCameraRequest{
-		CameraId: camera.CameraId,
-	})
-	if err != nil {
-		logger.SError("requestRemoveCamera: ToMap error", zap.Error(err))
-		return err
-	}
-	cmd.Info = mapped
-
-	pl, err := json.Marshal(cmd)
-	if err != nil {
-		logger.SError("requestRemoveCamera: marshal error", zap.Error(err))
-		return err
-	}
-	logger.SDebug("requestRemoveCamera: message", zap.String("msg", string(pl)))
-
-	_, err = s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("commands/%s", camera.TranscoderId),
-		QoS:     1,
-		Payload: pl,
-	})
-	if err != nil {
-		logger.SError("requestRemoveCamera: publish error", zap.Error(err))
-		return err
-	}
-	logger.SInfo("requestRemoveCamera: success")
 	return nil
 }
 
