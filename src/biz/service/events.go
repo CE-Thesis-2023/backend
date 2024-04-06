@@ -50,16 +50,16 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 		Name:     "Unknown Transcoder",
 	}
 
-	logger.SInfo("RegisterDevice: device not found",
-		zap.String("id", req.DeviceId))
-	if err := s.webService.addDevice(ctx, transcoder); err != nil {
-		logger.SDebug("RegisterDevice: addDevice",
+	if err := s.initializeOpenGateDefaultConfigurations(ctx, transcoder); err != nil {
+		logger.SDebug("RegisterDevice: initializeOpenGateDefaultConfigurations",
 			zap.Error(err))
 		return err
 	}
 
-	if err := s.initializeOpenGateDefaultConfigurations(ctx, transcoder); err != nil {
-		logger.SDebug("RegisterDevice: initializeOpenGateDefaultConfigurations",
+	logger.SInfo("RegisterDevice: device not found",
+		zap.String("id", req.DeviceId))
+	if err := s.webService.addDevice(ctx, transcoder); err != nil {
+		logger.SDebug("RegisterDevice: addDevice",
 			zap.Error(err))
 		return err
 	}
@@ -105,6 +105,8 @@ func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Con
 			zap.Error(err))
 		return err
 	}
+
+	device.OpenGateIntegrationId = openGateIntegration.OpenGateId
 
 	logger.SInfo("initializeOpenGateDefaultConfigurations: success")
 	return nil
