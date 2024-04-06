@@ -1298,3 +1298,17 @@ func (s *WebService) getOpenGateCameraSettings(ctx context.Context, ids []string
 
 	return settings, nil
 }
+
+func (s *WebService) GetOpenGateMqttConfigurationById(ctx context.Context, req *web.GetOpenGateMqttSettingsRequest) (*web.GetOpenGateMqttSettingsResponse, error) {
+	logger.SDebug("GetOpenGateMqttConfigurationById: request", zap.Any("request", req))
+
+	config, err := s.getOpenGateMqttConfigurationById(ctx, req.ConfigurationId)
+	if err != nil {
+		logger.SError("GetOpenGateMqttConfigurationById: getOpenGateMqttConfigurationById error", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetOpenGateMqttSettingsResponse{
+		OpenGateMqttConfiguration: config,
+	}, nil
+}

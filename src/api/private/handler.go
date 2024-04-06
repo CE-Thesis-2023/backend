@@ -78,3 +78,24 @@ func GetOpenGateCameraSettings(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+func GetOpenGateMqttSettings(ctx *fiber.Ctx) error {
+	logger.SInfo("GetOpenGateMqttSettings: request")
+
+	id := ctx.Params("id")
+	if len(id) == 0 {
+		return custerror.FormatInvalidArgument("missing id params")
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetOpenGateMqttConfigurationById(ctx.Context(), &web.GetOpenGateMqttSettingsRequest{
+			ConfigurationId: id,
+		})
+	if err != nil {
+		logger.SError("GetOpenGateMqttSettings: service.GetOpenGateMqttSettings error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}

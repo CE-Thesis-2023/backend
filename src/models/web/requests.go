@@ -217,3 +217,11 @@ type GetOpenGateCameraSettingsRequest struct {
 type GetOpenGateCameraSettingsResponse struct {
 	OpenGateCameraSettings []db.OpenGateCameraSettings `json:"openGateCameraSettings"`
 }
+
+type GetOpenGateMqttSettingsResponse struct {
+	OpenGateMqttConfiguration *db.OpenGateMqttConfiguration `json:"openGateMqttConfiguration"`
+}
+
+type GetOpenGateMqttSettingsRequest struct {
+	ConfigurationId string `json:"configurationId"`
+}
