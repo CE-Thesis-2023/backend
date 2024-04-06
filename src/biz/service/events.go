@@ -90,9 +90,10 @@ func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Con
 		Username:        "admin",
 		Password:        "ctportal2024",
 		Port:            8883,
-		OpenGateId:      device.OpenGateIntegrationId,
+		OpenGateId:      openGateIntegration.OpenGateId,
 	}
 	openGateIntegration.MqttId = mqttConfigs.ConfigurationId
+	device.OpenGateIntegrationId = openGateIntegration.OpenGateId
 
 	if err := s.webService.addOpenGateIntegration(ctx, openGateIntegration); err != nil {
 		logger.SDebug("initializeOpenGateDefaultConfigurations: addOpenGateIntegration",
