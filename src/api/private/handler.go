@@ -1,6 +1,7 @@
 package privateapi
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
@@ -98,4 +99,24 @@ func GetOpenGateMqttSettings(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.JSON(resp)
+}
+
+func DeleteTranscoder(ctx *fiber.Ctx) error {
+	logger.SDebug("DeleteTranscoder: request")
+
+	transcoderId := ctx.Query("id")
+	if len(transcoderId) == 0 {
+		return custerror.FormatInvalidArgument("missing transcoderId as query string")
+	}
+
+	err := service.GetCommandService().DeleteTranscoder(
+		ctx.UserContext(),
+		&web.DeleteTranscoderRequest{
+			DeviceId: transcoderId,
+		})
+	if err != nil {
+		return err
+	}
+
+	return ctx.SendStatus(http.StatusAccepted)
 }

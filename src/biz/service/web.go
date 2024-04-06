@@ -1312,3 +1312,21 @@ func (s *WebService) GetOpenGateMqttConfigurationById(ctx context.Context, req *
 		OpenGateMqttConfiguration: config,
 	}, nil
 }
+
+func (s *WebService) deleteOpenGateIntegration(ctx context.Context, id string) error {
+	return s.db.Delete(ctx,
+		s.builder.Delete("open_gate_integrations").
+			Where("integration_id = ?", id))
+}
+
+func (s *WebService) deleteOpenGateMqttConfiguration(ctx context.Context, id string) error {
+	return s.db.Delete(ctx,
+		s.builder.Delete("open_gate_mqtt_configurations").
+			Where("configuration_id = ?", id))
+}
+
+func (s *WebService) deleteDeviceById(ctx context.Context, id string) error {
+	return s.db.Delete(ctx,
+		s.builder.Delete("transcoders").
+			Where("device_id = ?", id))
+}

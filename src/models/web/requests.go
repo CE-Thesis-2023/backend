@@ -15,11 +15,6 @@ type GetTranscodersResponse struct {
 type RegisterTranscoderRequest struct {
 	Name string `json:"name"`
 }
-
-type DeleteTranscoderRequest struct {
-	Id string `json:"id"`
-}
-
 type UpdateTranscoderRequest struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
@@ -224,4 +219,8 @@ type GetOpenGateMqttSettingsResponse struct {
 
 type GetOpenGateMqttSettingsRequest struct {
 	ConfigurationId string `json:"configurationId"`
+}
+
+type DeleteTranscoderRequest struct {
+	DeviceId string `json:"device_id"`
 }

@@ -10,6 +10,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Use("/", custhttp.SetCors())
 		priv := app.Group("/private")
 		priv.Post("/registers", RegisterDevice)
+		priv.Delete("/deregisters", DeleteTranscoder)
 		priv.Get("/transcoders/:id/cameras", GetTranscoderAssignedCameras)
 		priv.Get("/opengate/cameras", GetOpenGateCameraSettings)
 		priv.Get("/opengate/:id/mqtt", GetOpenGateMqttSettings)

@@ -9,6 +9,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
+	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -142,4 +143,48 @@ func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.Updat
 	return &events.UpdateCameraListResponse{
 		Cameras: cameras,
 	}, nil
+}
+
+func (c *CommandService) DeleteTranscoder(ctx context.Context, req *web.DeleteTranscoderRequest) error {
+	logger.SInfo("DeleteTranscoder: request", zap.Any("request", req))
+
+	transcoders, err := c.webService.getDeviceById(ctx, []string{req.DeviceId})
+	if err != nil {
+		logger.SDebug("DeleteTranscoder: getDeviceById", zap.Error(err))
+		return err
+	}
+
+	if len(transcoders) == 0 {
+		logger.SError("DeleteTranscoder: transcoder not found", zap.Reflect("request", req))
+		return custerror.ErrorNotFound
+	}
+	transcoder := transcoders[0]
+
+	openGateIntegration, err := c.webService.getOpenGateIntegrationById(ctx, transcoder.OpenGateIntegrationId)
+	if err != nil {
+		logger.SDebug("DeleteTranscoder: getOpenGateIntegrationById", zap.Error(err))
+		return err
+	}
+
+	mqtt := openGateIntegration.MqttId
+	if mqtt != "" {
+		if err := c.webService.deleteOpenGateMqttConfiguration(ctx, mqtt); err != nil {
+			logger.SDebug("DeleteTranscoder: deleteOpenGateMqttConfigurations", zap.Error(err))
+			return err
+		}
+	}
+
+	if openGateIntegration != nil {
+		if err := c.webService.deleteOpenGateIntegration(ctx, transcoder.OpenGateIntegrationId); err != nil {
+			logger.SDebug("DeleteTranscoder: deleteOpenGateIntegration", zap.Error(err))
+			return err
+		}
+	}
+
+	if err := c.webService.deleteDeviceById(ctx, req.DeviceId); err != nil {
+		logger.SDebug("DeleteTranscoder: deleteDevice", zap.Error(err))
+		return err
+	}
+
+	return nil
 }
