@@ -2,6 +2,7 @@ package eventsapi
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
@@ -60,26 +61,67 @@ const (
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-	resp, err := c.webService.GetCamerasByOpenGateId(ctx, &web.GetCameraByOpenGateIdRequest{
-		OpenGateId: c.ClientId,
-	})
+	names := make([]string, 0)
+	if c.Action == OPENGATE_EVENTS {
+		names = c.extractCameraNameFromEvent(pub.Payload)
+	} else {
+		splittedAction := strings.Split(c.Action, "/")
+		if len(splittedAction) > 1 {
+			names = append(names, splittedAction[0])
+		}
+	}
+
+	resp, err := c.webService.GetCamerasByOpenGateId(
+		ctx,
+		&web.GetCameraByOpenGateIdRequest{
+			OpenGateId:  c.ClientId,
+			CameraNames: names,
+		})
 	if err != nil {
 		return err
 	}
-	camera := resp.Camera
-	err = c.actorPool.Send(transcoder.TranscoderEventMessage{
-		CameraId:     camera.CameraId,
-		GroupId:      camera.GroupId,
-		TranscoderId: camera.TranscoderId,
-		OpenGateId:   camera.OpenGateId,
-		Type:         c.Type,
-		Action:       c.Action,
-		Payload:      pub.Payload,
-	})
-	if err != nil {
-		return err
+	cameras := resp.Cameras
+
+	for _, cam := range cameras {
+		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
+			CameraId:     cam.CameraId,
+			GroupId:      cam.GroupId,
+			TranscoderId: cam.TranscoderId,
+			OpenGateId:   c.ClientId,
+			Type:         c.Type,
+			Action:       c.Action,
+			Payload:      pub.Payload,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func (c *Command) extractCameraNameFromEvent(event []byte) []string {
+	var names []string
+	var eventStruct map[string]interface{}
+	if err := json.Unmarshal(event, &eventStruct); err != nil {
+		return nil
+	}
+	before := eventStruct["before"]
+	if before != nil {
+		beforeStruct := before.(map[string]interface{})
+		if beforeStruct["camera"] != nil {
+			names = append(names,
+				beforeStruct["camera"].(string))
+		}
+	}
+	after := eventStruct["after"]
+	if after != nil {
+		afterStruct := after.(map[string]interface{})
+		if afterStruct["camera"] != nil {
+			names = append(names,
+				afterStruct["camera"].(string))
+		}
+	}
+	return names
 }
 
 func (c *Command) runTranscoder(_ context.Context, _ *paho.Publish) error {

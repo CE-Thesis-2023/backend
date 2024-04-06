@@ -78,7 +78,10 @@ func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.Updat
 		return nil, custerror.ErrorNotFound
 	}
 
-	cameras, err := s.webService.getCamerasByTranscoderId(ctx, req.DeviceId)
+	cameras, err := s.webService.getCamerasByTranscoderId(
+		ctx,
+		req.DeviceId,
+		nil)
 	if err != nil {
 		logger.SError("UpdateCameraList: getCamerasByTranscoderId", zap.Error(err))
 		return nil, err

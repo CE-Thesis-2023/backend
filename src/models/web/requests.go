@@ -109,7 +109,7 @@ type GetStreamInfoResponse struct {
 	Protocol       string `json:"protocol"`
 	TranscoderId   string `json:"transcoderId"`
 	TranscoderName string `json:"transcoderName"`
-	Started        bool   `json:"started"`
+	Started        bool   `json:"enabled"`
 }
 
 type ToggleStreamRequest struct {
@@ -179,9 +179,10 @@ type GetCamerasByGroupIdResponse struct {
 }
 
 type GetCameraByOpenGateIdRequest struct {
-	OpenGateId string `json:"openGateId"`
+	OpenGateId  string   `json:"openGateId"`
+	CameraNames []string `json:"cameraNames"`
 }
 
 type GetCameraByOpenGateIdResponse struct {
-	Camera *db.Camera `json:"camera"`
+	Cameras []db.Camera `json:"camera"`
 }

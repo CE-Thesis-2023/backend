@@ -82,17 +82,65 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 }
 
 func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCameraByOpenGateIdRequest) (*web.GetCameraByOpenGateIdResponse, error) {
-	logger.SDebug("GetCamerasByOpenGateId: request", zap.Any("request", req))
+	logger.SDebug("GetCamerasByOpenGateId: request",
+		zap.Any("request", req))
 
-	camera, err := s.getCameraByOpenGateId(ctx, req.OpenGateId)
+	integration, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
+	if err != nil {
+		logger.SError("GetCamerasByOpenGateId: getOpenGateIntegrationById", zap.Error(err))
+		return nil, err
+	}
+
+	transcoder, err := s.getTranscoderById(ctx, integration.TranscoderId)
+	if err != nil {
+		logger.SError("GetCamerasByOpenGateId: getTranscoderById", zap.Error(err))
+		return nil, err
+	}
+
+	cameras, err := s.getCamerasByTranscoderId(
+		ctx,
+		transcoder.DeviceId,
+		req.CameraNames)
 	if err != nil {
 		logger.SError("GetCamerasByOpenGateId: error", zap.Error(err))
 		return nil, err
 	}
 
 	return &web.GetCameraByOpenGateIdResponse{
-		Camera: camera,
+		Cameras: cameras,
 	}, nil
+}
+
+func (s *WebService) getOpenGateIntegrationById(ctx context.Context, id string) (*db.OpenGateIntegration, error) {
+	q := s.builder.Select("*").
+		From("open_gate_integrations").
+		Where("open_gate_id = ?", id)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateIntegrationById: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var openGate db.OpenGateIntegration
+	if err := s.db.Get(ctx, q, &openGate); err != nil {
+		return nil, err
+	}
+	return &openGate, nil
+}
+
+func (s *WebService) getTranscoderById(ctx context.Context, id string) (*db.Transcoder, error) {
+	q := s.builder.Select("*").
+		From("transcoders").
+		Where("device_id = ?", id)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getTranscoderById: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var transcoder db.Transcoder
+	if err := s.db.Get(ctx, q, &transcoder); err != nil {
+		return nil, err
+	}
+	return &transcoder, nil
 }
 
 func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (*web.AddCameraResponse, error) {
@@ -365,26 +413,6 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 	return cameras, nil
 }
 
-func (s *WebService) getCameraByOpenGateId(ctx context.Context, openGateId string) (*db.Camera, error) {
-	q := s.builder.Select("*").
-		From("cameras").
-		Where("open_gate_id = ?", openGateId)
-	sql, args, _ := q.ToSql()
-	logger.SDebug("getCameraByOpenGateId: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
-
-	var camera db.Camera
-	if err := s.db.Get(ctx, q, &camera); err != nil {
-		return nil, err
-	}
-	if camera.CameraId == "" {
-		return nil, custerror.FormatNotFound("camera not found")
-	}
-
-	return &camera, nil
-}
-
 func (s *WebService) getCameraByName(ctx context.Context, names []string) ([]db.Camera, error) {
 	q := s.builder.Select("*").
 		From("cameras")
@@ -641,7 +669,7 @@ func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRe
 		Protocol:       "webrtc",
 		TranscoderId:   transcoder[0].DeviceId,
 		TranscoderName: transcoder[0].Name,
-		Started:        camera[0].Started,
+		Started:        camera[0].Enabled,
 	}, nil
 }
 
@@ -668,7 +696,7 @@ func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequ
 
 	logger.SDebug("ToggleStream: camera", zap.Any("camera", camera[0]))
 
-	if camera[0].Started == req.Start {
+	if camera[0].Enabled == req.Start {
 		logger.SDebug("ToggleStream: stream already started")
 		return nil
 	}
@@ -679,7 +707,7 @@ func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequ
 		return err
 	}
 
-	newCamera.Started = req.Start
+	newCamera.Enabled = req.Start
 
 	err = s.updateCamera(ctx, &newCamera)
 	if err != nil {
@@ -723,7 +751,7 @@ func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Cam
 		zap.String("cameraId", camera.CameraId),
 		zap.String("transcoderId", camera.TranscoderId))
 	cmd := events.CommandRequest{}
-	if camera.Started {
+	if camera.Enabled {
 		logger.SDebug("requestLtdStreamControl: stream start")
 		cmd.CommandType = events.Command_StartFfmpegStream
 		cmd.Info = map[string]interface{}{
@@ -835,10 +863,18 @@ func (s *WebService) requestRemoveCamera(ctx context.Context, camera *db.Camera)
 	return nil
 }
 
-func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string) ([]db.Camera, error) {
+func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string, cameraNames []string) ([]db.Camera, error) {
 	q := s.builder.Select("*").
 		From("cameras").
 		Where("transcoder_id = ?", transcoderId)
+
+	if len(cameraNames) > 0 {
+		or := squirrel.Or{}
+		for _, i := range cameraNames {
+			or = append(or, squirrel.Eq{"name": i})
+		}
+		q = q.Where(or)
+	}
 
 	results := []db.Camera{}
 	if err := s.db.Select(ctx, q, &results); err != nil {
