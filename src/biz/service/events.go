@@ -4,27 +4,23 @@ import (
 	"context"
 	"errors"
 
-	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/google/uuid"
-	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 )
 
 type CommandService struct {
 	db         *custdb.LayeredDb
-	pool       *ants.Pool
 	webService *WebService
 }
 
 func NewCommandService() *CommandService {
 	return &CommandService{
 		db:         custdb.Layered(),
-		pool:       custcon.New(10),
 		webService: GetWebService(),
 	}
 }

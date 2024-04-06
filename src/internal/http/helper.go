@@ -19,7 +19,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/panjf2000/ants/v2"
 )
 
 func CommonPublicMiddlewares(configs *configs.HttpConfigs) []interface{} {
@@ -119,14 +118,6 @@ func GlobalErrorHandler() func(c *fiber.Ctx, err error) error {
 			case sql.ErrNoRows:
 				customError = custerror.ErrorNotFound
 			case sql.ErrTxDone, sql.ErrConnDone:
-				customError = custerror.ErrorInternal
-			case ants.ErrInvalidLoadBalancingStrategy,
-				ants.ErrInvalidPoolExpiry,
-				ants.ErrInvalidPoolIndex,
-				ants.ErrInvalidPreAllocSize,
-				ants.ErrLackPoolFunc,
-				ants.ErrPoolClosed,
-				ants.ErrPoolOverload:
 				customError = custerror.ErrorInternal
 			default:
 				customError = custerror.ErrorInternal

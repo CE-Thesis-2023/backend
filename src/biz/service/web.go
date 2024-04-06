@@ -9,7 +9,6 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	"github.com/CE-Thesis-2023/backend/src/helper"
-	custcon "github.com/CE-Thesis-2023/backend/src/internal/concurrent"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -28,7 +27,6 @@ import (
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
-	"github.com/panjf2000/ants/v2"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +34,6 @@ type WebService struct {
 	db         *custdb.LayeredDb
 	cache      *ristretto.Cache
 	mqttClient *autopaho.ConnectionManager
-	pool       *ants.Pool
 	builder    squirrel.StatementBuilderType
 }
 
@@ -44,7 +41,6 @@ func NewWebService() *WebService {
 	return &WebService{
 		db:         custdb.Layered(),
 		mqttClient: custmqtt.Client(),
-		pool:       custcon.New(10),
 		builder:    squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
 	}
 }
@@ -980,12 +976,12 @@ func (s *WebService) getCameraByIdCached(ctx context.Context, cameraId string) (
 		return nil, custerror.ErrorNotFound
 	}
 
-	s.pool.Submit(func() {
+	go func() {
 		set := s.cache.Set(fmt.Sprintf("rc-Camera-cameraId=%s", cameraId), camera[0], 100)
 		if set {
 			logger.SDebug("getCameraByIdCached: camera info cache set")
 		}
-	})
+	}()
 	return &camera[0], nil
 }
 
