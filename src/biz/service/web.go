@@ -1316,7 +1316,7 @@ func (s *WebService) GetOpenGateMqttConfigurationById(ctx context.Context, req *
 func (s *WebService) deleteOpenGateIntegration(ctx context.Context, id string) error {
 	return s.db.Delete(ctx,
 		s.builder.Delete("open_gate_integrations").
-			Where("integration_id = ?", id))
+			Where("open_gate_id = ?", id))
 }
 
 func (s *WebService) deleteOpenGateMqttConfiguration(ctx context.Context, id string) error {
