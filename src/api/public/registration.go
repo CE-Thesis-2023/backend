@@ -25,12 +25,15 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Post("/api/cameras", CreateCamera)
 		app.Delete("/api/cameras", DeleteCamera)
 
-		app.Get("/api/camera-groups/:id/cameras", GetCamerasByGroupId)
-		app.Get("/api/camera-groups", GetCameraGroups)
-		app.Post("/api/camera-groups", AddCameraGroup)
-		app.Delete("/api/camera-groups", DeleteCameraGroup)
-		app.Post("/api/camera-groups/add-cameras", AddCamerasToGroup)
-		app.Post("/api/camera-groups/remove-cameras", RemoveCamerasFromGroup)
+		app.Get("/api/opengate/:openGateId", GetOpenGateSettings)
+		app.Put("/api/opengate/:openGateId", UpdateOpenGateSettings)
+
+		app.Get("/api/groups/:id/cameras", GetCamerasByGroupId)
+		app.Get("/api/groups", GetCameraGroups)
+		app.Post("/api/groups", AddCameraGroup)
+		app.Delete("/api/groups", DeleteCameraGroup)
+		app.Post("/api/groups/cameras", AddCamerasToGroup)
+		app.Delete("/api/groups/cameras", RemoveCamerasFromGroup)
 
 		app.Get("/api/cameras/:id/streams", GetStreamInfo)
 		app.Put("/api/cameras/:id/streams", ToggleStream)
@@ -40,7 +43,5 @@ func ServiceRegistration() func(app *fiber.App) {
 
 		app.Use("/ws/ltd/:id", communicator.HandleRegisterRequest)
 		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
-
-		app.Post("/mqtt/event", SendEventToMqtt)
 	}
 }

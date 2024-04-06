@@ -47,6 +47,9 @@ func main() {
 						&db.Camera{},
 						&db.CameraGroup{},
 						&db.ObjectTrackingEvent{},
+						&db.OpenGateCameraSettings{},
+						&db.OpenGateIntegration{},
+						&db.OpenGateMqttConfiguration{},
 					)
 					service.Init()
 

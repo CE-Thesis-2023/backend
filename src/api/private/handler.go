@@ -1,12 +1,17 @@
 package privateapi
 
 import (
+	"strings"
+
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
+	"github.com/CE-Thesis-2023/backend/src/models/web"
 
 	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -42,6 +47,32 @@ func GetTranscoderAssignedCameras(ctx *fiber.Ctx) error {
 	resp, err := service.GetCommandService().UpdateCameraList(ctx.Context(), &msg)
 	if err != nil {
 		logger.SError("GetTranscoderAssignedCameras: service.UpdateCameraList error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func GetOpenGateCameraSettings(ctx *fiber.Ctx) error {
+	logger.SInfo("GetOpenGateCameraSettings: request")
+
+	cameraIds := ctx.Query("camera_id")
+	if len(cameraIds) == 0 {
+		return ctx.JSON(web.GetOpenGateCameraSettingsResponse{
+			OpenGateCameraSettings: []db.OpenGateCameraSettings{},
+		})
+	}
+
+	idList := strings.Split(cameraIds, ",")
+	req := web.GetOpenGateCameraSettingsRequest{
+		CameraId: idList,
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetOpenGateCameraSettings(ctx.Context(), &req)
+	if err != nil {
+		logger.SError("GetOpenGateCameraSettings: service.GetOpenGateCameraSettings error", zap.Error(err))
 		return err
 	}
 

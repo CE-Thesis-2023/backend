@@ -265,9 +265,10 @@ func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument("missing cameraId as parameter")
 	}
 
-	resp, err := service.GetWebService().GetDeviceInfo(ctx.UserContext(), &web.GetCameraDeviceInfoRequest{
-		CameraId: cameraId,
-	})
+	resp, err := service.GetWebService().
+		GetDeviceInfo(ctx.UserContext(), &web.GetCameraDeviceInfoRequest{
+			CameraId: cameraId,
+		})
 	if err != nil {
 		if errors.Is(err, custerror.ErrorFailedPrecondition) {
 			return ctx.SendStatus(http.StatusExpectationFailed)
@@ -278,27 +279,48 @@ func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
 	return ctx.JSON(resp)
 }
 
-func SendEventToMqtt(ctx *fiber.Ctx) error {
-	logger.SDebug("HandleMqttJsonRequest: request")
+func GetOpenGateSettings(ctx *fiber.Ctx) error {
+	logger.SDebug("GetOpenGateSettings: request")
 
-	var msg web.SendEventToMqttRequest
+	openGateId := ctx.Params("openGateId")
+	if len(openGateId) == 0 {
+		return custerror.FormatInvalidArgument("missing openGateId as parameter")
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetOpenGateIntegrationById(
+			ctx.UserContext(),
+			&web.GetOpenGateIntegrationByIdRequest{
+				OpenGateId: openGateId,
+			})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func UpdateOpenGateSettings(ctx *fiber.Ctx) error {
+	logger.SDebug("UpdateOpenGateSettings: request")
+
+	openGateId := ctx.Params("openGateId")
+	if len(openGateId) == 0 {
+		return custerror.FormatInvalidArgument("missing openGateId as parameter")
+	}
+
+	var msg web.UpdateOpenGateIntegrationRequest
 	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
-		logger.SError("HandleMqttJsonRequest: unmarshal error", zap.Error(err))
+		logger.SDebug("UpdateOpenGateSettings: unmarshal msg error", zap.Error(err))
+		return custerror.ErrorInvalidArgument
+	}
+
+	if err := service.
+		GetWebService().
+		UpdateOpenGateIntegrationById(ctx.UserContext(), &msg); err != nil {
+		logger.SDebug("UpdateOpenGateSettings: update error", zap.Error(err))
 		return err
 	}
 
-	err := service.GetWebService().SendEventToMqtt(ctx.UserContext(), &msg)
-	if err != nil {
-		return err
-	}
-	publicToOtherCamerasReq := web.PublicEventToOtherCamerasInGroupRequest{
-		CameraId: msg.CameraId,
-		Event:    msg.Event,
-	}
-	err = service.GetWebService().PublicEventToOtherCamerasInGroup(ctx.UserContext(), &publicToOtherCamerasReq)
-	if err != nil {
-		return err
-	}
-
-	return ctx.SendStatus(200)
+	return ctx.SendStatus(http.StatusAccepted)
 }

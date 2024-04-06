@@ -1114,3 +1114,201 @@ func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camer
 	}
 	return nil
 }
+
+func (s *WebService) GetOpenGateIntegrationById(ctx context.Context, req *web.GetOpenGateIntegrationByIdRequest) (*web.GetOpenGateIntegrationByIdResponse, error) {
+	logger.SDebug("GetOpenGateIntegrationById: request",
+		zap.Any("request", req))
+
+	opengate, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
+	if err != nil {
+		logger.SError("GetOpenGateIntegrationById: getOpenGateIntegrationById error", zap.Error(err))
+		return nil, err
+	}
+	return &web.GetOpenGateIntegrationByIdResponse{
+		OpenGateIntegration: opengate,
+	}, nil
+}
+
+func (s *WebService) UpdateOpenGateIntegrationById(ctx context.Context, req *web.UpdateOpenGateIntegrationRequest) error {
+	logger.SDebug("UpdateOpenGateIntegrationById: request",
+		zap.Any("request", req))
+
+	integration, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
+	if err != nil {
+		logger.SError("updateOpenGateIntegrationById: getOpenGateIntegrationById error", zap.Error(err))
+		return err
+	}
+
+	if integration == nil {
+		logger.SError("updateOpenGateIntegrationById: integration not found")
+		return custerror.FormatNotFound("integration not found")
+	}
+
+	s.updateOpenGateIntegrationDto(req, integration)
+	if err := s.updateOpenGateIntegration(ctx, integration); err != nil {
+		logger.SError("updateOpenGateIntegrationById: updateOpenGateMqttConfiguration error", zap.Error(err))
+		return err
+	}
+
+	mqttConfiguration, err := s.getOpenGateMqttConfigurationById(ctx, integration.MqttId)
+	if err != nil {
+		logger.SError("updateOpenGateIntegrationById: getOpenGateMqttConfigurationById error",
+			zap.Error(err))
+		return err
+	}
+
+	if mqttConfiguration == nil {
+		logger.SError("updateOpenGateIntegrationById: mqtt configuration not found")
+		return custerror.FormatNotFound("mqtt configuration not found")
+	}
+
+	s.updateOpenGateMqttConfigurationDto(req.Mqtt, mqttConfiguration)
+	if err := s.updateOpenGateMqttConfiguration(ctx, mqttConfiguration); err != nil {
+		logger.SError("updateOpenGateIntegrationById: updateOpenGateMqttConfiguration error", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *WebService) updateOpenGateIntegrationDto(req *web.UpdateOpenGateIntegrationRequest, integration *db.OpenGateIntegration) {
+	if req.LogLevel != "" {
+		integration.LogLevel = req.LogLevel
+	}
+	if req.SnapshotRetentionDays > 0 {
+		integration.SnapshotRetentionDays = req.SnapshotRetentionDays
+	}
+}
+
+func (s *WebService) updateOpenGateMqttConfigurationDto(req *web.UpdateOpenGateIntegrationMqttRequest, mqtt *db.OpenGateMqttConfiguration) {
+	if req.Host != "" {
+		mqtt.Host = req.Host
+
+	}
+	if req.Port > 0 {
+		mqtt.Port = req.Port
+	}
+	if req.User != "" {
+		mqtt.User = req.User
+	}
+	if req.Password != "" {
+		mqtt.Password = req.Password
+	}
+	mqtt.Enabled = req.Enabled
+}
+
+func (s *WebService) getOpenGateMqttConfigurationById(ctx context.Context, id string) (*db.OpenGateMqttConfiguration, error) {
+	q := s.builder.Select("*").
+		From("opengate_mqtt_configurations").
+		Where("configuration_id = ?", id)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateMqttConfigurationById: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var config db.OpenGateMqttConfiguration
+	if err := s.db.Get(ctx, q, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func (s *WebService) updateOpenGateIntegration(ctx context.Context, integration *db.OpenGateIntegration) error {
+	valueMap := map[string]interface{}{}
+	fields := integration.Fields()
+	values := integration.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("opengate_integrations").
+		Where("integration_id = ?", integration.OpenGateId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateOpenGateIntegration: SQL query",
+		zap.String("query", sql),
+		zap.Any("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) updateOpenGateMqttConfiguration(ctx context.Context, mqtt *db.OpenGateMqttConfiguration) error {
+	valueMap := map[string]interface{}{}
+	fields := mqtt.Fields()
+	values := mqtt.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("opengate_mqtt_configurations").
+		Where("configuration_id = ?", mqtt.ConfigurationId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateOpenGateMqttConfiguration: SQL query",
+		zap.String("query", sql),
+		zap.Any("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) GetOpenGateCameraSettings(ctx context.Context, req *web.GetOpenGateCameraSettingsRequest) (*web.GetOpenGateCameraSettingsResponse, error) {
+	logger.SDebug("GetOpenGateCameraSettings: request", zap.Any("request", req))
+
+	cameras, err := s.getCameraById(ctx, req.CameraId)
+	if err != nil {
+		logger.SError("GetOpenGateCameraSettings: getCameraById error", zap.Error(err))
+		return nil, err
+	}
+
+	if len(cameras) == 0 {
+		logger.SError("GetOpenGateCameraSettings: camera not found")
+		return &web.GetOpenGateCameraSettingsResponse{
+			OpenGateCameraSettings: []db.OpenGateCameraSettings{},
+		}, nil
+	}
+
+	allowedIds := make([]string, 0)
+	for _, c := range cameras {
+		allowedIds = append(allowedIds, c.SettingsId)
+	}
+
+	settings, err := s.getOpenGateCameraSettings(ctx, allowedIds)
+	if err != nil {
+		logger.SError("GetOpenGateCameraSettings: getOpenGateCameraSettings error", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetOpenGateCameraSettingsResponse{
+		OpenGateCameraSettings: settings,
+	}, nil
+}
+
+func (s *WebService) getOpenGateCameraSettings(ctx context.Context, ids []string) ([]db.OpenGateCameraSettings, error) {
+	q := s.builder.Select("*").
+		From("opengate_camera_settings")
+
+	if len(ids) > 0 {
+		or := squirrel.Or{}
+		for _, i := range ids {
+			or = append(or, squirrel.Eq{"settings_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateCameraSettings: SQL",
+		zap.Any("q", sql),
+		zap.Any("args", args))
+
+	var settings []db.OpenGateCameraSettings
+	if err := s.db.Select(ctx, q, &settings); err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}

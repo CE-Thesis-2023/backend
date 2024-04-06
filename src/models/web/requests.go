@@ -186,3 +186,34 @@ type GetCameraByOpenGateIdRequest struct {
 type GetCameraByOpenGateIdResponse struct {
 	Cameras []db.Camera `json:"camera"`
 }
+
+type GetOpenGateIntegrationByIdRequest struct {
+	OpenGateId string `json:"openGateId"`
+}
+
+type GetOpenGateIntegrationByIdResponse struct {
+	OpenGateIntegration *db.OpenGateIntegration `json:"openGateIntegration"`
+}
+
+type UpdateOpenGateIntegrationRequest struct {
+	OpenGateId            string                                `json:"-"`
+	LogLevel              string                                `json:"logLevel,omitempty"`
+	SnapshotRetentionDays int                                   `json:"snapshotRetentionDays,omitempty"`
+	Mqtt                  *UpdateOpenGateIntegrationMqttRequest `json:"mqtt,omitempty"`
+}
+
+type UpdateOpenGateIntegrationMqttRequest struct {
+	Enabled  bool   `json:"enabled"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type GetOpenGateCameraSettingsRequest struct {
+	CameraId []string `json:"cameraId"`
+}
+
+type GetOpenGateCameraSettingsResponse struct {
+	OpenGateCameraSettings []db.OpenGateCameraSettings `json:"openGateCameraSettings"`
+}
