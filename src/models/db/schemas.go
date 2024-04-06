@@ -25,7 +25,7 @@ type OpenGateMqttConfiguration struct {
 	Enabled         bool   `json:"enabled" db:"enabled"`
 	Host            string `json:"host" db:"host"`
 	Port            int    `json:"port" db:"port"`
-	User            string `json:"user" db:"user"`
+	Username        string `json:"username" db:"username"`
 	Password        string `json:"password" db:"password"`
 
 	OpenGateId string `json:"openGateId" db:"open_gate_id"`
@@ -180,7 +180,7 @@ func (t *OpenGateMqttConfiguration) Fields() []string {
 		"enabled",
 		"host",
 		"port",
-		"user",
+		"username",
 		"password",
 		"open_gate_id",
 	)
@@ -194,7 +194,7 @@ func (t *OpenGateMqttConfiguration) Values() []interface{} {
 		t.Enabled,
 		t.Host,
 		t.Port,
-		t.User,
+		t.Username,
 		t.Password,
 		t.OpenGateId,
 	)

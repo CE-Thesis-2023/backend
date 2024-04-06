@@ -1245,8 +1245,8 @@ func (s *WebService) updateOpenGateMqttConfigurationDto(req *web.UpdateOpenGateI
 	if req.Port > 0 {
 		mqtt.Port = req.Port
 	}
-	if req.User != "" {
-		mqtt.User = req.User
+	if req.Username != "" {
+		mqtt.Username = req.Username
 	}
 	if req.Password != "" {
 		mqtt.Password = req.Password

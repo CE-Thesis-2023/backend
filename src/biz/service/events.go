@@ -47,7 +47,7 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 
 	transcoder := &db.Transcoder{
 		DeviceId: req.DeviceId,
-		Name:     "",
+		Name:     "Unknown Transcoder",
 	}
 
 	logger.SInfo("RegisterDevice: device not found",
@@ -84,13 +84,13 @@ func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Con
 	}
 
 	mqttConfigs := db.OpenGateMqttConfiguration{
-		OpenGateId:      device.OpenGateIntegrationId,
 		ConfigurationId: uuid.NewString(),
 		Enabled:         true,
 		Host:            "mosquitto.mqtt.ntranlab.com",
-		User:            "admin",
+		Username:        "admin",
 		Password:        "ctportal2024",
 		Port:            8883,
+		OpenGateId:      device.OpenGateIntegrationId,
 	}
 	openGateIntegration.MqttId = mqttConfigs.ConfigurationId
 

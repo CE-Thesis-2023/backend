@@ -206,7 +206,7 @@ type UpdateOpenGateIntegrationMqttRequest struct {
 	Enabled  bool   `json:"enabled"`
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
-	User     string `json:"user"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
