@@ -3,7 +3,6 @@ package publicapi
 import (
 	"time"
 
-	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
@@ -11,11 +10,6 @@ import (
 
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
-		handlers.WebsocketInit(
-			handlers.WithAuthorizer(WsAuthorizeLtd()),
-			handlers.WithConnectionHandler(WsListenToMessages()),
-		)
-		communicator := handlers.GetWebsocketCommunicator()
 		app.Use("/", custhttp.SetCors())
 
 		app.Get("/api/devices", GetTranscoderDevices)
@@ -43,8 +37,5 @@ func ServiceRegistration() func(app *fiber.App) {
 
 		app.Get("/api/events/object_tracking", GetObjectTrackingEvent)
 		app.Delete("/api/events/object_tracking", DeleteObjectTrackingEvent)
-
-		app.Use("/ws/ltd/:id", communicator.HandleRegisterRequest)
-		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
 	}
 }

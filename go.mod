@@ -3,16 +3,13 @@ module github.com/CE-Thesis-2023/backend
 go 1.21.4
 
 require (
-	github.com/CE-Thesis-2023/ltd v0.0.0-20240109182240-6952302ccf05
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/anthdm/hollywood v0.0.0-20231230200740-54133c9bd2b4
 	github.com/eclipse/paho.golang v0.12.0
-	github.com/gofiber/contrib/websocket v1.3.0
 	github.com/gofiber/fiber/v2 v2.51.0
 	github.com/jinzhu/copier v0.3.5
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
-	github.com/mitchellh/mapstructure v1.5.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
@@ -20,7 +17,6 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/fasthttp/websocket v1.5.7 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -39,7 +35,6 @@ require (
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect

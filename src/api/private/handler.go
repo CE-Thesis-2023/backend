@@ -120,3 +120,25 @@ func DeleteTranscoder(ctx *fiber.Ctx) error {
 
 	return ctx.SendStatus(http.StatusAccepted)
 }
+
+func GetOpenGateIntegrationConfigurations(ctx *fiber.Ctx) error {
+	logger.SInfo("GetOpenGateIntegrationConfigurations: request")
+
+	openGateId := ctx.Params("id")
+	if len(openGateId) == 0 {
+		return custerror.FormatInvalidArgument("missing id params")
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetOpenGateIntegrationById(
+			ctx.Context(), &web.GetOpenGateIntegrationByIdRequest{
+				OpenGateId: openGateId,
+			})
+	if err != nil {
+		logger.SError("GetOpenGateIntegrationConfigurations: service.GetOpenGateIntegrationConfigurations error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}

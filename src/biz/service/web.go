@@ -4,13 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
-	"net/url"
-	"strings"
-	"time"
-
-	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
-	"github.com/CE-Thesis-2023/backend/src/helper"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -19,15 +12,14 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-	"github.com/mitchellh/mapstructure"
+	"math"
+	"net/url"
+	"strings"
+	"time"
 
-	"encoding/json"
-
-	ltdEvents "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eclipse/paho.golang/autopaho"
-	"github.com/eclipse/paho.golang/paho"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
@@ -1004,7 +996,7 @@ func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId 
 	if len(transcoderId) > 0 {
 		q = q.Where("transcoder_id = ?", transcoderId)
 	}
-	
+
 	if len(openGateCameraNames) > 0 {
 		or := squirrel.Or{}
 		for _, i := range openGateCameraNames {
@@ -1084,26 +1076,7 @@ func (s *WebService) getCameraByIdCached(ctx context.Context, cameraId string) (
 }
 
 func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.RemoteControlRequest, camera *db.Camera) error {
-	msg := ltdEvents.PtzCtrlRequest{
-		CameraId:         camera.CameraId,
-		Pan:              req.Pan,
-		Tilt:             req.Tilt,
-		StopAfterSeconds: helper.Int(2),
-	}
-	pl, err := json.Marshal(msg)
-	if err != nil {
-		logger.SDebug("sendRemoteControlCommand: marshal error", zap.Error(err))
-		return err
-	}
-	if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("ptzctrl/%s", camera.TranscoderId),
-		QoS:     1,
-		Payload: pl,
-	}); err != nil {
-		logger.SDebug("sendRemoteControlCommand: Publish error", zap.Error(err))
-		return err
-	}
-
+	// TODO: Request reply to the device
 	return nil
 }
 
@@ -1135,50 +1108,9 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 	if len(cameras) == 0 {
 		logger.SError("GetDeviceInfo: cameraId not found")
 	}
-	cam := cameras[0]
-	msg := s.prepareGetDeviceInfoMessage(req)
 
-	rr, err := handlers.GetWebsocketCommunicator().
-		RequestReply(cam.TranscoderId)
-	if err != nil {
-		if errors.Is(err, custerror.ErrorFailedPrecondition) {
-			logger.SError("GetDeviceInfo: local transcoder device not connected")
-			return nil, err
-		}
-		logger.SError("GetDeviceInfo: error", zap.Error(err))
-		return nil, err
-	}
-
-	resp, err := rr.Request(ctx, &ltdEvents.CommandRequest{
-		CommandType: ltdEvents.Command_GetDeviceInfo,
-		Info: map[string]interface{}{
-			"cameraId": msg.CameraId,
-		},
-	})
-	if err != nil {
-		logger.SError("GetDeviceInfo: rr.Request error", zap.Error(err))
-		return nil, err
-	}
-
-	logger.SDebug("GetDeviceInfo: response", zap.Reflect("response", resp))
-	if resp == nil {
-		logger.SError("GetDeviceInfo: ltd responded with null")
-		return nil, custerror.ErrorInternal
-	}
-	var info web.GetCameraDeviceInfo
-	if err := mapstructure.Decode(resp.Info, &info); err != nil {
-		logger.SError("GetDeviceInfo: mapStructure.Decode error", zap.Error(err))
-		return nil, err
-	}
-
-	logger.SInfo("GetDeviceInfo: info", zap.Reflect("deviceInfo", info))
-	return &info, nil
-}
-
-func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoRequest) *ltdEvents.CommandRetrieveDeviceInfo {
-	return &ltdEvents.CommandRetrieveDeviceInfo{
-		CameraId: req.CameraId,
-	}
+	// TODO: Request-reply to the device
+	return &web.GetCameraDeviceInfo{}, nil
 }
 
 func (s *WebService) validateGetOpenGateIntegrationById(req *web.GetOpenGateIntegrationByIdRequest) error {
