@@ -278,7 +278,7 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 	event := s.webService.fromObjectTrackingEventToDto(&after)
 	event.CameraId = objectTrackingEvent[0].CameraId
 	event.EventId = objectTrackingEvent[0].EventId
-	event.EventType = objectTrackingEvent[0].EventType
+	event.EventType = req.Event.Type
 
 	if err := s.webService.updateObjectTrackingEvent(ctx, event); err != nil {
 		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
