@@ -36,6 +36,8 @@ type ObjectTrackingEvent struct {
 	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id"`
 	EventType       string `json:"eventType" db:"event_type"`
 
+	
+
 	CameraId      string     `json:"cameraId" db:"camera_id"`
 	CameraName    string     `json:"CameraName" db:"camera_name"`
 	FrameTime     *time.Time `json:"frameTime" db:"frame_time"`

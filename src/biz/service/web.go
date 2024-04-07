@@ -1535,3 +1535,40 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []strin
 
 	return events, nil
 }
+
+func (s *WebService) addEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
+	q := s.builder.Insert("object_tracking_events").
+		Columns(event.Fields()...).
+		Values(event.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) updateEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
+	valueMap := map[string]interface{}{}
+	fields := event.Fields()
+	values := event.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("object_tracking_events").
+		Where("event_id = ?", event.EventId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateEvent: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) deleteEvent(ctx context.Context, id string) error {
+	return s.db.Delete(ctx,
+		s.builder.Delete("object_tracking_events").
+			Where("event_id = ?", id))
+}

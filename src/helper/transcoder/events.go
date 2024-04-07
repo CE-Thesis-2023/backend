@@ -14,16 +14,18 @@ import (
 
 type TranscoderEventProcessor interface {
 	OpenGateAvailable(ctx context.Context, openGateId string, message []byte) error
-	OpenGateEvent(ctx context.Context, openGateId string, message []byte) error
+	OpenGateObjectTrackingEvent(ctx context.Context, openGateId string, message []byte) error
 }
 
 type transcoderEventProcessor struct {
-	commandService *service.PrivateService
+	privateService *service.PrivateService
+	webService     *service.WebService
 }
 
-func NewTranscoderEventProcessor(commandService *service.PrivateService) TranscoderEventProcessor {
+func NewTranscoderEventProcessor(privateService *service.PrivateService, webService *service.WebService) TranscoderEventProcessor {
 	return &transcoderEventProcessor{
-		commandService: commandService,
+		privateService: privateService,
+		webService:     webService,
 	}
 }
 
@@ -82,7 +84,9 @@ type TranscoderActor struct {
 
 func newTranscoderActor() actor.Receiver {
 	return &TranscoderActor{
-		handler: NewTranscoderEventProcessor(service.GetPrivateService()),
+		handler: NewTranscoderEventProcessor(
+			service.GetPrivateService(),
+			service.GetWebService()),
 	}
 }
 

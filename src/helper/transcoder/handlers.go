@@ -4,7 +4,11 @@ import (
 	"context"
 
 	"encoding/json"
+
+	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"github.com/CE-Thesis-2023/backend/src/models/events"
+	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"go.uber.org/zap"
 )
 
@@ -24,58 +28,11 @@ func (p *transcoderEventProcessor) OpenGateAvailable(ctx context.Context, openGa
 	return nil
 }
 
-type DetectionEvent struct {
-	Type   string               `json:"type"`
-	Before DetectionEventStatus `json:"before"`
-	After  DetectionEventStatus `json:"after"`
-}
-
-type DetectionEventStatus struct {
-	ID                string                    `json:"id"`
-	Camera            string                    `json:"camera"`
-	FrameTime         float64                   `json:"frame_time"`
-	SnapshotTime      float64                   `json:"snapshot_time"`
-	Label             string                    `json:"label"`
-	SubLabel          []ObjectSubLabel          `json:"sub_label"`
-	TopScore          float64                   `json:"top_score"`
-	FalsePositive     bool                      `json:"false_positive"`
-	StartTime         float64                   `json:"start_time"`
-	EndTime           interface{}               `json:"end_time"`
-	Score             float64                   `json:"score"`
-	Box               []int64                   `json:"box"`
-	Area              int64                     `json:"area"`
-	Ratio             float64                   `json:"ratio"`
-	Region            []int64                   `json:"region"`
-	CurrentZones      []string                  `json:"current_zones"`
-	EnteredZones      []string                  `json:"entered_zones"`
-	Thumbnail         interface{}               `json:"thumbnail"`
-	HasSnapshot       bool                      `json:"has_snapshot"`
-	HasClip           bool                      `json:"has_clip"`
-	Stationary        bool                      `json:"stationary"`
-	MotionlessCount   int64                     `json:"motionless_count"`
-	PositionChanges   int64                     `json:"position_changes"`
-	Attributes        ObjectFeatures            `json:"attributes"`
-	CurrentAttributes []ObjectCurrentAttributes `json:"current_attributes"`
-}
-
-type ObjectFeatures map[string]float64
-
-type ObjectCurrentAttributes struct {
-	Label string  `json:"label"`
-	Box   []int64 `json:"box"`
-	Score float64 `json:"score"`
-}
-
-type ObjectSubLabel struct {
-	Double *float64
-	String *string
-}
-
-func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId string, message []byte) error {
+func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Context, openGateId string, message []byte) error {
 	logger.SDebug("processor.OpenGateEvent",
 		zap.String("openGateId", openGateId))
 
-	var detectionEvent DetectionEvent
+	var detectionEvent events.DetectionEvent
 	if err := json.Unmarshal(message, &detectionEvent); err != nil {
 		logger.SError("failed to unmarshal detection event",
 			zap.Error(err))
@@ -86,12 +43,27 @@ func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId
 	case "new":
 		logger.SInfo("new detection",
 			zap.String("openGateId", openGateId))
+		if err := p.addEventToDatabase(ctx, &detectionEvent); err != nil {
+			logger.SError("failed to add event to database",
+				zap.Error(err))
+			return err
+		}
 	case "update":
 		logger.SInfo("detection update",
 			zap.String("openGateId", openGateId))
+		if err := p.updateEventInDatabase(ctx, &detectionEvent); err != nil {
+			logger.SError("failed to update event in database",
+				zap.Error(err))
+			return err
+		}
 	case "end":
 		logger.SInfo("detection end",
 			zap.String("openGateId", openGateId))
+		if err := p.updateEventInDatabase(ctx, &detectionEvent); err != nil {
+			logger.SError("failed to update event in database",
+				zap.Error(err))
+			return err
+		}
 	}
 
 	logger.SDebug("detection event",
@@ -99,6 +71,54 @@ func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId
 		zap.Any("after", detectionEvent.After))
 	return nil
 }
-func (p *transcoderEventProcessor) addEventToDatabase(ctx context.Context, req *DetectionEvent) error {
+func (p *transcoderEventProcessor) addEventToDatabase(ctx context.Context, req *events.DetectionEvent) error {
+	logger.SDebug("processor.addEventToDatabase", zap.Reflect("req", req))
 
+	resp, err := p.webService.GetObjectTrackingEventById(ctx, &web.GetObjectTrackingEventByIdRequest{
+		OpenGateEventId: []string{req.Before.ID},
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(resp.ObjectTrackingEvents) > 0 {
+		return custerror.FormatAlreadyExists("event already exists")
+	}
+
+	addResp, err := p.privateService.AddEvent(ctx, &web.AddObjectTrackingEventRequest{
+		Event: req,
+	})
+	if err != nil {
+		return err
+	}
+
+	logger.SInfo("event added",
+		zap.String("eventId", addResp.EventId))
+	return nil
+}
+
+func (p *transcoderEventProcessor) updateEventInDatabase(ctx context.Context, req *events.DetectionEvent) error {
+	logger.SDebug("processor.updateEventInDatabase", zap.Reflect("req", req))
+
+	resp, err := p.webService.GetObjectTrackingEventById(ctx, &web.GetObjectTrackingEventByIdRequest{
+		OpenGateEventId: []string{req.Before.ID},
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(resp.ObjectTrackingEvents) == 0 {
+		return custerror.FormatNotFound("event not found")
+	}
+
+	err = p.privateService.UpdateEvent(ctx, &web.UpdateObjectTrackingEventRequest{
+		Event: req,
+	})
+	if err != nil {
+		return err
+	}
+
+	logger.SInfo("event updated",
+		zap.String("openGateEventId", req.Before.ID))
+	return nil
 }

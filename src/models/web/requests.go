@@ -2,6 +2,7 @@ package web
 
 import (
 	"github.com/CE-Thesis-2023/backend/src/models/db"
+	"github.com/CE-Thesis-2023/backend/src/models/events"
 )
 
 type GetTranscodersRequest struct {
@@ -232,4 +233,25 @@ type GetObjectTrackingEventByIdRequest struct {
 
 type GetObjectTrackingEventByIdResponse struct {
 	ObjectTrackingEvents []db.ObjectTrackingEvent `json:"objectTrackingEvents"`
+}
+
+type AddObjectTrackingEventRequest struct {
+	Event *events.DetectionEvent `json:"event"`
+}
+
+type AddObjectTrackingEventResponse struct {
+	EventId string `json:"eventId"`
+}
+
+type UpdateObjectTrackingEventRequest struct {
+	EventId string                 `json:"eventId"`
+	Event   *events.DetectionEvent `json:"event"`
+}
+
+type UpdateObjectTrackingEventResponse struct {
+	EventId string `json:"eventId"`
+}
+
+type DeleteObjectTrackingEventRequest struct {
+	EventId string `json:"eventId"`
 }

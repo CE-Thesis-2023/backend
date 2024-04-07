@@ -11,6 +11,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/google/uuid"
+	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
 )
 
@@ -208,6 +209,72 @@ func (c *PrivateService) DeleteTranscoder(ctx context.Context, req *web.DeleteTr
 
 	if err := c.webService.deleteDeviceById(ctx, req.DeviceId); err != nil {
 		logger.SDebug("DeleteTranscoder: deleteDevice", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *PrivateService) AddEvent(ctx context.Context, req *web.AddObjectTrackingEventRequest) (*web.AddObjectTrackingEventResponse, error) {
+	logger.SInfo("commandService.AddEvent: request", zap.Any("request", req))
+
+	if req.Event == nil {
+		logger.SError("AddEvent: missing event")
+		return nil, custerror.FormatInvalidArgument("missing event")
+	}
+	before := req.Event.Before
+
+	var event db.ObjectTrackingEvent
+	if err := copier.Copy(&event, before); err != nil {
+		logger.SError("AddEvent: unable to copy event", zap.Error(err))
+		return nil, err
+	}
+	event.EventId = uuid.NewString()
+
+	if err := s.webService.addEvent(ctx, &event); err != nil {
+		logger.SDebug("AddEvent: addEventToDatabase", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.AddObjectTrackingEventResponse{
+		EventId: event.EventId,
+	}, nil
+}
+
+func (s *PrivateService) UpdateEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
+	logger.SInfo("commandService.UpdateEvent: request", zap.Any("request", req))
+
+	if req.Event == nil {
+		logger.SError("UpdateEvent: missing event")
+		return custerror.FormatInvalidArgument("missing event")
+	}
+	after := req.Event.After
+
+	var event db.ObjectTrackingEvent
+	if err := copier.Copy(&event, after); err != nil {
+		logger.SError("UpdateEvent: unable to copy event", zap.Error(err))
+		return err
+	}
+	event.EventId = req.EventId
+
+	if err := s.webService.updateEvent(ctx, &event); err != nil {
+		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *PrivateService) DeleteEvent(ctx context.Context, req *web.DeleteObjectTrackingEventRequest) error {
+	logger.SInfo("commandService.DeleteEvent: request", zap.Any("request", req))
+
+	if req.EventId == "" {
+		logger.SError("DeleteEvent: missing event_id")
+		return custerror.FormatInvalidArgument("missing event_id")
+	}
+
+	if err := s.webService.deleteEvent(ctx, req.EventId); err != nil {
+		logger.SDebug("DeleteEvent: deleteEvent", zap.Error(err))
 		return err
 	}
 
