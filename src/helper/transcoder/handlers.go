@@ -112,7 +112,8 @@ func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx conte
 	}
 
 	err = p.privateService.UpdateObjectTrackingEvent(ctx, &web.UpdateObjectTrackingEventRequest{
-		Event: req,
+		EventId: resp.ObjectTrackingEvents[0].EventId,
+		Event:   req,
 	})
 	if err != nil {
 		return err
