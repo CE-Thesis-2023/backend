@@ -8,9 +8,11 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 
 	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -342,6 +344,9 @@ func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
 	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx.UserContext(), req)
 	if err != nil {
 		return err
+	}
+	if resp.ObjectTrackingEvents == nil {
+		resp.ObjectTrackingEvents = []db.ObjectTrackingEvent{}
 	}
 
 	return ctx.JSON(resp)

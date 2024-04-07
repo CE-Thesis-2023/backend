@@ -96,15 +96,17 @@ func (s *ObjectTrackingEvent) Values() []interface{} {
 type Camera struct {
 	CameraId string `json:"cameraId" db:"camera_id,primary"`
 	Name     string `json:"name" db:"name"`
+
 	Ip       string `json:"ip" db:"ip"`
 	Port     int    `json:"port" db:"port"`
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
 	Enabled  bool   `json:"enabled" db:"enabled"`
 
-	GroupId      string `json:"groupId" db:"group_id,omitempty"`
-	TranscoderId string `json:"transcoderId" db:"transcoder_id,omitempty"`
-	SettingsId   string `json:"settingsId" db:"settings_id,omitempty"`
+	OpenGateCameraName string `json:"openGateCameraName" db:"open_gate_camera_name"`
+	GroupId            string `json:"groupId" db:"group_id,omitempty"`
+	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty"`
+	SettingsId         string `json:"settingsId" db:"settings_id,omitempty"`
 }
 
 type OpenGateCameraSettings struct {
@@ -151,6 +153,7 @@ func (t *Camera) Fields() []string {
 	fs = append(fs,
 		"camera_id",
 		"name",
+		"open_gate_camera_name",
 		"ip",
 		"port",
 		"username",
@@ -168,6 +171,7 @@ func (t *Camera) Values() []interface{} {
 	vs = append(vs,
 		t.CameraId,
 		t.Name,
+		t.OpenGateCameraName,
 		t.Ip,
 		t.Port,
 		t.Username,

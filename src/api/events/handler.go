@@ -63,7 +63,7 @@ const (
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	names := make([]string, 0)
 	if c.Action == OPENGATE_EVENTS {
-		names = c.extractCameraNameFromEvent(pub.Payload)
+		names = append(names, c.extractCameraNameFromEvent(pub.Payload))
 	} else {
 		splittedAction := strings.Split(c.Action, "/")
 		if len(splittedAction) > 1 {
@@ -74,8 +74,8 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	resp, err := c.webService.GetCamerasByOpenGateId(
 		ctx,
 		&web.GetCameraByOpenGateIdRequest{
-			OpenGateId:  c.ClientId,
-			CameraNames: names,
+			OpenGateId:          c.ClientId,
+			OpenGateCameraNames: names,
 		})
 	if err != nil {
 		return err
@@ -98,11 +98,11 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	return nil
 }
 
-func (c *Command) extractCameraNameFromEvent(event []byte) []string {
+func (c *Command) extractCameraNameFromEvent(event []byte) string {
 	var names []string
 	var eventStruct map[string]interface{}
 	if err := json.Unmarshal(event, &eventStruct); err != nil {
-		return nil
+		return ""
 	}
 	before := eventStruct["before"]
 	if before != nil {
@@ -112,15 +112,7 @@ func (c *Command) extractCameraNameFromEvent(event []byte) []string {
 				beforeStruct["camera"].(string))
 		}
 	}
-	after := eventStruct["after"]
-	if after != nil {
-		afterStruct := after.(map[string]interface{})
-		if afterStruct["camera"] != nil {
-			names = append(names,
-				afterStruct["camera"].(string))
-		}
-	}
-	return names
+	return names[0]
 }
 
 func (c *Command) runTranscoder(_ context.Context, _ *paho.Publish) error {

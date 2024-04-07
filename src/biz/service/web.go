@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/handlers"
@@ -129,7 +130,7 @@ func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCam
 	cameras, err := s.getCamerasByTranscoderId(
 		ctx,
 		transcoder.DeviceId,
-		req.CameraNames)
+		req.OpenGateCameraNames)
 	if err != nil {
 		logger.SError("GetCamerasByOpenGateId: error", zap.Error(err))
 		return nil, err
@@ -234,6 +235,10 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 		return nil, err
 	}
 	entry.CameraId = uuid.NewString()
+	openGateCameraName := strings.ReplaceAll(req.Name, " ", "_")
+	openGateCameraName = strings.ToLower(openGateCameraName)
+
+	entry.OpenGateCameraName = openGateCameraName
 
 	openGateCameraSettings, err := s.initializeDefaultOpenGateCameraSettings(ctx, &entry, &transcoder[0])
 	if err != nil {
@@ -992,15 +997,15 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 	return nil
 }
 
-func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string, cameraNames []string) ([]db.Camera, error) {
+func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string, openGateCameraNames []string) ([]db.Camera, error) {
 	q := s.builder.Select("*").
 		From("cameras").
 		Where("transcoder_id = ?", transcoderId)
 
-	if len(cameraNames) > 0 {
+	if len(openGateCameraNames) > 0 {
 		or := squirrel.Or{}
-		for _, i := range cameraNames {
-			or = append(or, squirrel.Eq{"name": i})
+		for _, i := range openGateCameraNames {
+			or = append(or, squirrel.Eq{"open_gate_camera_name": i})
 		}
 		q = q.Where(or)
 	}

@@ -175,8 +175,8 @@ type GetCamerasByGroupIdResponse struct {
 }
 
 type GetCameraByOpenGateIdRequest struct {
-	OpenGateId  string   `json:"openGateId"`
-	CameraNames []string `json:"cameraNames"`
+	OpenGateId          string   `json:"openGateId"`
+	OpenGateCameraNames []string `json:"openGateCameraNames"`
 }
 
 type GetCameraByOpenGateIdResponse struct {
