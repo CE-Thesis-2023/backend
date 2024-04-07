@@ -32,10 +32,66 @@ type OpenGateMqttConfiguration struct {
 }
 
 type ObjectTrackingEvent struct {
-	EventId   string `json:"eventId" db:"event_id,primary"`
-	EventType string `json:"eventType" db:"event_type"`
+	EventId         string `json:"eventId" db:"event_id,primary"`
+	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id"`
+	EventType       string `json:"eventType" db:"event_type"`
 
-	CameraId string `json:"cameraId" db:"camera_id"`
+	CameraId      string     `json:"cameraId" db:"camera_id"`
+	CameraName    string     `json:"CameraName" db:"camera_name"`
+	FrameTime     *time.Time `json:"frameTime" db:"frame_time"`
+	Label         string     `json:"label" db:"label"`
+	TopScore      float64    `json:"topScore" db:"top_score"`
+	Score         float64    `json:"score" db:"score"`
+	HasSnapshot   bool       `json:"hasSnapshot" db:"has_snapshot"`
+	HasClip       bool       `json:"hasClip" db:"has_clip"`
+	Stationary    bool       `json:"stationary" db:"stationary"`
+	FalsePositive bool       `json:"falsePositive" db:"false_positive"`
+	StartTime     *time.Time `json:"startTime" db:"start_time"`
+	EndTime       *time.Time `json:"endTime" db:"end_time"`
+}
+
+func (s *ObjectTrackingEvent) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"event_id",
+		"open_gate_event_id",
+		"event_type",
+		"camera_id",
+		"camera_name",
+		"frame_time",
+		"label",
+		"top_score",
+		"score",
+		"has_snapshot",
+		"has_clip",
+		"stationary",
+		"false_positive",
+		"start_time",
+		"end_time",
+	)
+	return fs
+}
+
+func (s *ObjectTrackingEvent) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		s.EventId,
+		s.OpenGateEventId,
+		s.EventType,
+		s.CameraId,
+		s.CameraName,
+		s.FrameTime,
+		s.Label,
+		s.TopScore,
+		s.Score,
+		s.HasSnapshot,
+		s.HasClip,
+		s.Stationary,
+		s.FalsePositive,
+		s.StartTime,
+		s.EndTime,
+	)
+	return vs
 }
 
 type Camera struct {

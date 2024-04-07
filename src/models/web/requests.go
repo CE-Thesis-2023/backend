@@ -222,5 +222,14 @@ type GetOpenGateMqttSettingsRequest struct {
 }
 
 type DeleteTranscoderRequest struct {
-	DeviceId string `json:"device_id"`
+	DeviceId string `json:"deviceId"`
+}
+
+type GetObjectTrackingEventByIdRequest struct {
+	EventId         []string `json:"eventId"`
+	OpenGateEventId []string `json:"openGateEventId"`
+}
+
+type GetObjectTrackingEventByIdResponse struct {
+	ObjectTrackingEvents []db.ObjectTrackingEvent `json:"objectTrackingEvents"`
 }

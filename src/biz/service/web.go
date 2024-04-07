@@ -1474,3 +1474,64 @@ func (s *WebService) deleteDeviceById(ctx context.Context, id string) error {
 		s.builder.Delete("transcoders").
 			Where("device_id = ?", id))
 }
+
+func (s *WebService) validateGetObjectTrackingEventByIdRequest(req *web.GetObjectTrackingEventByIdRequest) error {
+	isIdEmpty := len(req.EventId) == 0
+	isOpenGateIdEmpty := len(req.OpenGateEventId) == 0
+	if isIdEmpty && isOpenGateIdEmpty {
+		return custerror.FormatInvalidArgument("missing event id")
+	}
+	return nil
+}
+
+func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.GetObjectTrackingEventByIdRequest) (*web.GetObjectTrackingEventByIdResponse, error) {
+	logger.SDebug("GetObjectTrackingEventById: request", zap.Reflect("request", req))
+
+	if err := s.validateGetObjectTrackingEventByIdRequest(req); err != nil {
+		logger.SError("GetObjectTrackingEventById: validateGetObjectTrackingEventByIdRequest error", zap.Error(err))
+		return nil, err
+	}
+
+	events, err := s.getObjectTrackingEventById(ctx, req.EventId, req.OpenGateEventId)
+	if err != nil {
+		logger.SError("GetObjectTrackingEventById: getObjectTrackingEventById error", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetObjectTrackingEventByIdResponse{
+		ObjectTrackingEvents: events,
+	}, nil
+}
+
+func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []string, openGateIds []string) ([]db.ObjectTrackingEvent, error) {
+	q := s.builder.Select("*").
+		From("object_tracking_events")
+
+	if len(ids) > 0 {
+		or := squirrel.Or{}
+		for _, i := range ids {
+			or = append(or, squirrel.Eq{"event_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	if len(openGateIds) > 0 {
+		or := squirrel.Or{}
+		for _, i := range openGateIds {
+			or = append(or, squirrel.Eq{"open_gate_event_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getObjectTrackingEventById: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var events []db.ObjectTrackingEvent
+	if err := s.db.Select(ctx, q, &events); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}

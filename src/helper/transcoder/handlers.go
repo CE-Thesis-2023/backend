@@ -3,8 +3,8 @@ package transcoder
 import (
 	"context"
 
-	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"encoding/json"
+	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"go.uber.org/zap"
 )
 
@@ -58,9 +58,7 @@ type DetectionEventStatus struct {
 	CurrentAttributes []ObjectCurrentAttributes `json:"current_attributes"`
 }
 
-type ObjectFeatures struct {
-	Face float64 `json:"face"`
-}
+type ObjectFeatures map[string]float64
 
 type ObjectCurrentAttributes struct {
 	Label string  `json:"label"`
@@ -100,4 +98,7 @@ func (p *transcoderEventProcessor) OpenGateEvent(ctx context.Context, openGateId
 		zap.Any("before", detectionEvent.Before),
 		zap.Any("after", detectionEvent.After))
 	return nil
+}
+func (p *transcoderEventProcessor) addEventToDatabase(ctx context.Context, req *DetectionEvent) error {
+
 }
