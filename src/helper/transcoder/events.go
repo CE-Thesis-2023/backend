@@ -33,8 +33,13 @@ type TranscoderActorsPool struct {
 }
 
 func NewTranscoderActorsPool() *TranscoderActorsPool {
+	engine, err := actor.NewEngine(&actor.EngineConfig{})
+	if err != nil {
+		logger.SFatal("unable to create actor engine",
+			zap.Error(err))
+	}
 	return &TranscoderActorsPool{
-		engine: &actor.Engine{},
+		engine: engine,
 	}
 }
 
