@@ -85,7 +85,6 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	for _, cam := range cameras {
 		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
 			CameraId:     cam.CameraId,
-			GroupId:      cam.GroupId,
 			TranscoderId: cam.TranscoderId,
 			OpenGateId:   c.ClientId,
 			Type:         c.Type,

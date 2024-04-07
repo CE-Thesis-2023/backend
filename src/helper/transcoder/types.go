@@ -6,6 +6,5 @@ type TranscoderEventMessage struct {
 	TranscoderId string `json:"transcoderId"`
 	OpenGateId   string `json:"openGateId"`
 	CameraId     string `json:"cameraId"`
-	GroupId      string `json:"groupId"`
 	Payload      []byte `json:"payload"`
 }

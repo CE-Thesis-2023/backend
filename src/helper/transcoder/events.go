@@ -28,78 +28,50 @@ func NewTranscoderEventProcessor(commandService *service.PrivateService) Transco
 }
 
 type TranscoderActorsPool struct {
-	mu             sync.Mutex
-	groupEngineMap map[string]*actor.Engine
+	mu     sync.Mutex
+	engine *actor.Engine
 }
 
 func NewTranscoderActorsPool() *TranscoderActorsPool {
 	return &TranscoderActorsPool{
-		groupEngineMap: map[string]*actor.Engine{},
+		engine: &actor.Engine{},
 	}
 }
 
-func (p *TranscoderActorsPool) Exists(cameraGroupId string, TranscoderId string) bool {
-	engine, found := p.groupEngineMap[cameraGroupId]
-	if found {
-		pid := engine.Registry.
-			GetPID("transcoder", TranscoderId)
-		return pid != nil
-	}
-	return found
+func (p *TranscoderActorsPool) Exists(transcoderId string) bool {
+	pid := p.engine.Registry.GetPID("transcoder", transcoderId)
+	return pid != nil
 }
 
-func (p *TranscoderActorsPool) Allocate(cameraGroupId string, transcoderId string) (*actor.PID, error) {
-	var engine *actor.Engine
-	var found bool
-	var err error
-	engine, found = p.groupEngineMap[cameraGroupId]
-	if found {
-		pid := engine.Registry.GetPID("transcoder", transcoderId)
-		if pid != nil {
-			return pid, nil
-		}
-	} else {
-		engine, err = actor.NewEngine(&actor.EngineConfig{})
-		if err != nil {
-			return nil, custerror.FormatInternalError("unable to allocation camera group engine: %s", err)
-		}
-		p.mu.Lock()
-		p.groupEngineMap[cameraGroupId] = engine
-		p.mu.Unlock()
+func (p *TranscoderActorsPool) Allocate(transcoderId string) *actor.PID {
+	existingPid := p.engine.Registry.GetPID("transcoder", transcoderId)
+	if existingPid != nil {
+		return existingPid
 	}
-	pid := engine.Spawn(newTranscoderActor,
+	pid := p.engine.Spawn(newTranscoderActor,
 		"transcoder",
 		actor.WithID(transcoderId),
 		actor.WithInboxSize(10))
-	return pid, nil
+	return pid
 }
 
 func (p *TranscoderActorsPool) Send(message TranscoderEventMessage) error {
-	pid, err := p.Allocate(message.GroupId, message.TranscoderId)
-	if err != nil {
-		return err
-	}
-	engine := p.groupEngineMap[message.GroupId]
-	engine.Send(pid, message)
+	pid := p.Allocate(message.TranscoderId)
+	p.engine.Send(pid, message)
 	return nil
 }
 
-func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, TranscoderId string, finished chan bool) error {
-	engine, found := p.groupEngineMap[cameraGroupId]
-	if !found {
-		return custerror.FormatNotFound("camera group engine not found")
-	}
-	pid := engine.
+func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, transcoderId string, finished chan bool) error {
+	pid := p.engine.
 		Registry.
-		GetPID("transcoder", TranscoderId)
+		GetPID("transcoder", transcoderId)
 	if pid == nil {
-		return custerror.FormatNotFound("Transcoder actor not found")
+		return custerror.FormatNotFound("transcoder actor not found")
 	}
-	wg := engine.Poison(pid)
+	wg := p.engine.Poison(pid)
 	go func() {
 		wg.Wait()
 		finished <- true
-		return
 	}()
 	return nil
 }
