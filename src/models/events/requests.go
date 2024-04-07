@@ -15,9 +15,9 @@ type UpdateCameraListResponse struct {
 }
 
 type DetectionEvent struct {
-	Type    string               `json:"type"`
-	Before  DetectionEventStatus `json:"before"`
-	After   DetectionEventStatus `json:"after"`
+	Type   string               `json:"type"`
+	Before DetectionEventStatus `json:"before"`
+	After  DetectionEventStatus `json:"after"`
 }
 
 type DetectionEventStatus struct {
@@ -30,7 +30,7 @@ type DetectionEventStatus struct {
 	TopScore          float64                   `json:"top_score"`
 	FalsePositive     bool                      `json:"false_positive"`
 	StartTime         float64                   `json:"start_time"`
-	EndTime           interface{}               `json:"end_time"`
+	EndTime           *float64                  `json:"end_time"`
 	Score             float64                   `json:"score"`
 	Box               []int64                   `json:"box"`
 	Area              int64                     `json:"area"`

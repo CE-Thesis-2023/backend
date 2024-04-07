@@ -330,9 +330,7 @@ func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
 
 	eventId := ctx.Query("eventId")
 	openGateEventId := ctx.Query("openGateEventId")
-	if eventId == "" && openGateEventId == "" {
-		return custerror.FormatInvalidArgument("missing eventId or openGateEventId as query string")
-	}
+
 	req := &web.GetObjectTrackingEventByIdRequest{}
 	if eventId != "" {
 		req.EventId = []string{eventId}

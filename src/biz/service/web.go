@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"time"
 
@@ -15,12 +16,13 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
+	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/mitchellh/mapstructure"
 
 	"encoding/json"
 
-	events "github.com/CE-Thesis-2023/ltd/src/models/events"
+	ltdEvents "github.com/CE-Thesis-2023/ltd/src/models/events"
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
 	"github.com/eclipse/paho.golang/autopaho"
@@ -1074,7 +1076,7 @@ func (s *WebService) getCameraByIdCached(ctx context.Context, cameraId string) (
 }
 
 func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.RemoteControlRequest, camera *db.Camera) error {
-	msg := events.PtzCtrlRequest{
+	msg := ltdEvents.PtzCtrlRequest{
 		CameraId:         camera.CameraId,
 		Pan:              req.Pan,
 		Tilt:             req.Tilt,
@@ -1139,8 +1141,8 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
-	resp, err := rr.Request(ctx, &events.CommandRequest{
-		CommandType: events.Command_GetDeviceInfo,
+	resp, err := rr.Request(ctx, &ltdEvents.CommandRequest{
+		CommandType: ltdEvents.Command_GetDeviceInfo,
 		Info: map[string]interface{}{
 			"cameraId": msg.CameraId,
 		},
@@ -1165,8 +1167,8 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 	return &info, nil
 }
 
-func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoRequest) *events.CommandRetrieveDeviceInfo {
-	return &events.CommandRetrieveDeviceInfo{
+func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoRequest) *ltdEvents.CommandRetrieveDeviceInfo {
+	return &ltdEvents.CommandRetrieveDeviceInfo{
 		CameraId: req.CameraId,
 	}
 }
@@ -1475,12 +1477,7 @@ func (s *WebService) deleteDeviceById(ctx context.Context, id string) error {
 			Where("device_id = ?", id))
 }
 
-func (s *WebService) validateGetObjectTrackingEventByIdRequest(req *web.GetObjectTrackingEventByIdRequest) error {
-	isIdEmpty := len(req.EventId) == 0
-	isOpenGateIdEmpty := len(req.OpenGateEventId) == 0
-	if isIdEmpty && isOpenGateIdEmpty {
-		return custerror.FormatInvalidArgument("missing event id")
-	}
+func (s *WebService) validateGetObjectTrackingEventByIdRequest(_ *web.GetObjectTrackingEventByIdRequest) error {
 	return nil
 }
 
@@ -1607,4 +1604,34 @@ func (s *WebService) deleteObjectTrackingEvent(ctx context.Context, id string) e
 	return s.db.Delete(ctx,
 		s.builder.Delete("object_tracking_events").
 			Where("event_id = ?", id))
+}
+
+func (s *WebService) fromObjectTrackingEventToDto(event *events.DetectionEventStatus) *db.ObjectTrackingEvent {
+	frameTimeSec, frameTimeDec := math.Modf(event.FrameTime)
+	frameTime := time.Unix(int64(frameTimeSec), int64(frameTimeDec*1e9))
+
+	startTimeSec, startTimeDec := math.Modf(event.StartTime)
+	startTime := time.Unix(int64(startTimeSec), int64(startTimeDec*1e9))
+
+	dto := &db.ObjectTrackingEvent{
+		OpenGateEventId: event.ID,
+		CameraName:      event.Camera,
+		FrameTime:       &frameTime,
+		Label:           event.Label,
+		TopScore:        event.TopScore,
+		Score:           event.Score,
+		HasSnapshot:     event.HasSnapshot,
+		HasClip:         event.HasClip,
+		Stationary:      event.Stationary,
+		FalsePositive:   event.FalsePositive,
+		StartTime:       &startTime,
+	}
+
+	if event.EndTime != nil {
+		endTimeSec, endTimeDec := math.Modf(*event.EndTime)
+		endTime := time.Unix(int64(endTimeSec), int64(endTimeDec*1e9))
+		dto.EndTime = &endTime
+	}
+
+	return dto
 }

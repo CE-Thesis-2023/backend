@@ -11,7 +11,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/google/uuid"
-	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
 )
 
@@ -231,26 +230,44 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 	}
 
 	before := req.Event.Before
-
-	var event db.ObjectTrackingEvent
-	if err := copier.Copy(&event, before); err != nil {
-		logger.SError("AddEvent: unable to copy event", zap.Error(err))
+	cameras, err := s.webService.getCameraByName(ctx, []string{before.Camera})
+	if err != nil {
+		logger.SDebug("AddEvent: getCameraByName", zap.Error(err))
 		return nil, err
 	}
-	event.EventId = uuid.NewString()
+	if len(cameras) == 0 {
+		logger.SError("AddEvent: camera not found")
+		return nil, custerror.ErrorNotFound
+	}
 
-	if err := s.webService.addObjectTrackingEvent(ctx, &event); err != nil {
+	dbEvent := s.webService.fromObjectTrackingEventToDto(&before)
+	dbEvent.EventId = uuid.NewString()
+	dbEvent.EventType = req.Event.Type
+	dbEvent.CameraId = cameras[0].CameraId
+
+	if err := s.webService.addObjectTrackingEvent(ctx, dbEvent); err != nil {
 		logger.SDebug("AddEvent: addEventToDatabase", zap.Error(err))
 		return nil, err
 	}
 
 	return &web.AddObjectTrackingEventResponse{
-		EventId: event.EventId,
+		EventId: dbEvent.EventId,
 	}, nil
 }
 
 func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
 	logger.SInfo("commandService.UpdateEvent: request", zap.Any("request", req))
+
+	objectTrackingEvent, err := s.webService.getObjectTrackingEventById(
+		ctx, []string{req.EventId}, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(objectTrackingEvent) == 0 {
+		logger.SError("UpdateEvent: event not found")
+		return custerror.ErrorNotFound
+	}
 
 	if req.Event == nil {
 		logger.SError("UpdateEvent: missing event")
@@ -258,14 +275,12 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 	}
 	after := req.Event.After
 
-	var event db.ObjectTrackingEvent
-	if err := copier.Copy(&event, after); err != nil {
-		logger.SError("UpdateEvent: unable to copy event", zap.Error(err))
-		return err
-	}
-	event.EventId = req.EventId
+	event := s.webService.fromObjectTrackingEventToDto(&after)
+	event.CameraId = objectTrackingEvent[0].CameraId
+	event.EventId = objectTrackingEvent[0].EventId
+	event.EventType = objectTrackingEvent[0].EventType
 
-	if err := s.webService.updateObjectTrackingEvent(ctx, &event); err != nil {
+	if err := s.webService.updateObjectTrackingEvent(ctx, event); err != nil {
 		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
 		return err
 	}

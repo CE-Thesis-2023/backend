@@ -27,16 +27,13 @@ type OpenGateMqttConfiguration struct {
 	Port            int    `json:"port" db:"port"`
 	Username        string `json:"username" db:"username"`
 	Password        string `json:"password" db:"password"`
-
-	OpenGateId string `json:"openGateId" db:"open_gate_id"`
+	OpenGateId      string `json:"openGateId" db:"open_gate_id"`
 }
 
 type ObjectTrackingEvent struct {
 	EventId         string `json:"eventId" db:"event_id,primary"`
 	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id"`
 	EventType       string `json:"eventType" db:"event_type"`
-
-	
 
 	CameraId      string     `json:"cameraId" db:"camera_id"`
 	CameraName    string     `json:"CameraName" db:"camera_name"`
