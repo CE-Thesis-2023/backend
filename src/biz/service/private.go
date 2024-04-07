@@ -230,9 +230,9 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 	}
 
 	before := req.Event.Before
-	cameras, err := s.webService.getCameraByName(ctx, []string{before.Camera})
+	cameras, err := s.webService.getCamerasByTranscoderId(ctx, "", []string{before.Camera})
 	if err != nil {
-		logger.SDebug("AddEvent: getCameraByName", zap.Error(err))
+		logger.SDebug("AddEvent: getCamerasByTranscoderId", zap.Error(err))
 		return nil, err
 	}
 	if len(cameras) == 0 {

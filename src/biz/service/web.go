@@ -999,9 +999,12 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 
 func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId string, openGateCameraNames []string) ([]db.Camera, error) {
 	q := s.builder.Select("*").
-		From("cameras").
-		Where("transcoder_id = ?", transcoderId)
+		From("cameras")
 
+	if len(transcoderId) > 0 {
+		q = q.Where("transcoder_id = ?", transcoderId)
+	}
+	
 	if len(openGateCameraNames) > 0 {
 		or := squirrel.Or{}
 		for _, i := range openGateCameraNames {

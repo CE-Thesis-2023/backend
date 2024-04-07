@@ -26,7 +26,7 @@ type DetectionEventStatus struct {
 	FrameTime         float64                   `json:"frame_time"`
 	SnapshotTime      float64                   `json:"snapshot_time"`
 	Label             string                    `json:"label"`
-	SubLabel          []ObjectSubLabel          `json:"sub_label"`
+	SubLabel          []interface{}             `json:"sub_label"`
 	TopScore          float64                   `json:"top_score"`
 	FalsePositive     bool                      `json:"false_positive"`
 	StartTime         float64                   `json:"start_time"`

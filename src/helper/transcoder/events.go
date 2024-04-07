@@ -2,6 +2,7 @@ package transcoder
 
 import (
 	"context"
+	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -95,8 +96,7 @@ func newTranscoderActor() actor.Receiver {
 
 func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	logger.SDebug("TranscoderActor received message",
-		zap.String("pid", ctx.PID().String()),
-		zap.Any("message", ctx.Message()))
+		zap.String("pid", ctx.PID().String()))
 	message := ctx.Message()
 	var event TranscoderEventMessage
 	if err := copier.Copy(&event, message); err != nil {
@@ -104,12 +104,17 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 			zap.Error(err))
 		return
 	}
+	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	payload := event.Payload
 	switch event.Type {
 	case "opengate":
 		logger.SInfo("TranscoderActor received opengate event",
-			zap.String("openGateId", event.OpenGateId),
-			zap.Any("payload", payload))
+			zap.String("openGateId", event.OpenGateId))
+		if err := a.handler.OpenGateObjectTrackingEvent(timeOutCtx, event.OpenGateId, payload); err != nil {
+			logger.SError("unable to process opengate event",
+				zap.Error(err))
+		}
 	case "transcoder":
 		logger.SInfo("TranscoderActor received transcoder event",
 			zap.String("transcoderId", event.TranscoderId),
