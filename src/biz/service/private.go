@@ -14,21 +14,34 @@ import (
 	"go.uber.org/zap"
 )
 
-type CommandService struct {
+type PrivateService struct {
 	db         *custdb.LayeredDb
 	webService *WebService
 }
 
-func NewCommandService() *CommandService {
-	return &CommandService{
+func NewPrivateService() *PrivateService {
+	return &PrivateService{
 		db:         custdb.Layered(),
 		webService: GetWebService(),
 	}
 }
 
-func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceRegistrationRequest) error {
+func (s *PrivateService) validateRegisterDeviceRequest(req *events.DeviceRegistrationRequest) error {
+	if req.DeviceId == "" {
+		return custerror.FormatInvalidArgument("missing device_id")
+	}
+	return nil
+}
+
+func (s *PrivateService) RegisterDevice(ctx context.Context, req *events.DeviceRegistrationRequest) error {
 	logger.SDebug("RegisterDevice: request",
 		zap.Any("request", req))
+
+	if err := s.validateRegisterDeviceRequest(req); err != nil {
+		logger.SDebug("RegisterDevice: validateRegisterDeviceRequest",
+			zap.Error(err))
+		return err
+	}
 
 	device, err := s.webService.getDeviceById(ctx, []string{
 		req.DeviceId,
@@ -71,7 +84,7 @@ func (s *CommandService) RegisterDevice(ctx context.Context, req *events.DeviceR
 	return nil
 }
 
-func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Context, device *db.Transcoder) error {
+func (s *PrivateService) initializeOpenGateDefaultConfigurations(ctx context.Context, device *db.Transcoder) error {
 	logger.SDebug("initializeOpenGateDefaultConfigurations: request",
 		zap.Any("device", device))
 
@@ -115,8 +128,20 @@ func (s *CommandService) initializeOpenGateDefaultConfigurations(ctx context.Con
 
 }
 
-func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.UpdateCameraListRequest) (*events.UpdateCameraListResponse, error) {
+func (s *PrivateService) validateUpdateCameraListRequest(req *events.UpdateCameraListRequest) error {
+	if req.DeviceId == "" {
+		return custerror.FormatInvalidArgument("missing device_id")
+	}
+	return nil
+}
+
+func (s *PrivateService) UpdateCameraList(ctx context.Context, req *events.UpdateCameraListRequest) (*events.UpdateCameraListResponse, error) {
 	logger.SInfo("commandService.UpdateCameraList: request", zap.Any("request", req))
+
+	if err := s.validateUpdateCameraListRequest(req); err != nil {
+		logger.SDebug("UpdateCameraList: validateUpdateCameraListRequest", zap.Error(err))
+		return nil, err
+	}
 
 	transcoders, err := s.webService.getDeviceById(ctx, []string{req.DeviceId})
 	if err != nil {
@@ -145,7 +170,7 @@ func (s *CommandService) UpdateCameraList(ctx context.Context, req *events.Updat
 	}, nil
 }
 
-func (c *CommandService) DeleteTranscoder(ctx context.Context, req *web.DeleteTranscoderRequest) error {
+func (c *PrivateService) DeleteTranscoder(ctx context.Context, req *web.DeleteTranscoderRequest) error {
 	logger.SInfo("DeleteTranscoder: request", zap.Any("request", req))
 
 	transcoders, err := c.webService.getDeviceById(ctx, []string{req.DeviceId})

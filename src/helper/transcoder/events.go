@@ -18,10 +18,10 @@ type TranscoderEventProcessor interface {
 }
 
 type transcoderEventProcessor struct {
-	commandService *service.CommandService
+	commandService *service.PrivateService
 }
 
-func NewTranscoderEventProcessor(commandService *service.CommandService) TranscoderEventProcessor {
+func NewTranscoderEventProcessor(commandService *service.PrivateService) TranscoderEventProcessor {
 	return &transcoderEventProcessor{
 		commandService: commandService,
 	}
@@ -110,7 +110,7 @@ type TranscoderActor struct {
 
 func newTranscoderActor() actor.Receiver {
 	return &TranscoderActor{
-		handler: NewTranscoderEventProcessor(service.GetCommandService()),
+		handler: NewTranscoderEventProcessor(service.GetPrivateService()),
 	}
 }
 

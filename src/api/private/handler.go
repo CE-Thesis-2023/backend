@@ -26,7 +26,7 @@ func RegisterDevice(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument(err.Error())
 	}
 
-	if err := service.GetCommandService().
+	if err := service.GetPrivateService().
 		RegisterDevice(ctx.Context(), &msg); err != nil {
 		logger.SError("RegisterDevice: service.RegisterDevice error", zap.Error(err))
 		return err
@@ -45,7 +45,7 @@ func GetTranscoderAssignedCameras(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument("missing transcoder_id params")
 	}
 
-	resp, err := service.GetCommandService().UpdateCameraList(ctx.Context(), &msg)
+	resp, err := service.GetPrivateService().UpdateCameraList(ctx.Context(), &msg)
 	if err != nil {
 		logger.SError("GetTranscoderAssignedCameras: service.UpdateCameraList error", zap.Error(err))
 		return err
@@ -109,7 +109,7 @@ func DeleteTranscoder(ctx *fiber.Ctx) error {
 		return custerror.FormatInvalidArgument("missing transcoderId as query string")
 	}
 
-	err := service.GetCommandService().DeleteTranscoder(
+	err := service.GetPrivateService().DeleteTranscoder(
 		ctx.UserContext(),
 		&web.DeleteTranscoderRequest{
 			DeviceId: transcoderId,

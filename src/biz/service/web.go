@@ -45,8 +45,17 @@ func NewWebService() *WebService {
 	}
 }
 
+func (s *WebService) validateGetDevices(_ *web.GetTranscodersRequest) error {
+	return nil
+}
+
 func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequest) (*web.GetTranscodersResponse, error) {
-	logger.SDebug("GetDevices: request", zap.Any("request", req))
+	logger.SDebug("GetDevices: request", zap.Reflect("request", req))
+
+	if err := s.validateGetDevices(req); err != nil {
+		logger.SDebug("GetDevices: validateGetDevices", zap.Error(err))
+		return nil, err
+	}
 
 	devices, err := s.getDeviceById(ctx, req.Ids)
 	if err != nil {
@@ -54,7 +63,7 @@ func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequ
 		return nil, err
 	}
 
-	logger.SDebug("GetDevices: devices", zap.Any("devices", devices))
+	logger.SDebug("GetDevices: devices", zap.Reflect("devices", devices))
 	resp := web.GetTranscodersResponse{
 		Transcoders: devices,
 	}
@@ -62,8 +71,17 @@ func (s *WebService) GetDevices(ctx context.Context, req *web.GetTranscodersRequ
 	return &resp, nil
 }
 
+func (s *WebService) validateGetCameras(_ *web.GetCamerasRequest) error {
+	return nil
+}
+
 func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest) (*web.GetCamerasResponse, error) {
-	logger.SDebug("GetCameras: request", zap.Any("request", req))
+	logger.SDebug("GetCameras: request", zap.Reflect("request", req))
+
+	if err := s.validateGetCameras(req); err != nil {
+		logger.SDebug("GetCameras: validateGetCameras", zap.Error(err))
+		return nil, err
+	}
 
 	cameras, err := s.getCameraById(ctx, req.Ids)
 	if err != nil {
@@ -71,16 +89,28 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 		return nil, err
 	}
 
-	logger.SDebug("GetCameras: cameras", zap.Any("cameras", cameras))
+	logger.SDebug("GetCameras: cameras", zap.Reflect("cameras", cameras))
 	resp := web.GetCamerasResponse{
 		Cameras: cameras,
 	}
 	return &resp, nil
 }
 
+func (s *WebService) validateGetCamerasByOpenGateIdRequest(req *web.GetCameraByOpenGateIdRequest) error {
+	if len(req.OpenGateId) == 0 {
+		return custerror.FormatInvalidArgument("missing open gate id")
+	}
+	return nil
+}
+
 func (s *WebService) GetCamerasByOpenGateId(ctx context.Context, req *web.GetCameraByOpenGateIdRequest) (*web.GetCameraByOpenGateIdResponse, error) {
 	logger.SDebug("GetCamerasByOpenGateId: request",
-		zap.Any("request", req))
+		zap.Reflect("request", req))
+
+	if err := s.validateGetCamerasByOpenGateIdRequest(req); err != nil {
+		logger.SDebug("GetCamerasByOpenGateId: validateGetCamerasByOpenGateIdRequest", zap.Error(err))
+		return nil, err
+	}
 
 	integration, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
 	if err != nil {
@@ -114,8 +144,8 @@ func (s *WebService) getOpenGateIntegrationById(ctx context.Context, id string) 
 		Where("open_gate_id = ?", id)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getOpenGateIntegrationById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var openGate db.OpenGateIntegration
 	if err := s.db.Get(ctx, q, &openGate); err != nil {
@@ -140,8 +170,35 @@ func (s *WebService) getTranscoderById(ctx context.Context, id string) (*db.Tran
 	return &transcoder, nil
 }
 
+func (s *WebService) validateAddCameraRequest(req *web.AddCameraRequest) error {
+	if len(req.Name) == 0 {
+		return custerror.FormatInvalidArgument("missing name")
+	}
+	if len(req.TranscoderId) == 0 {
+		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	if len(req.Ip) == 0 {
+		return custerror.FormatInvalidArgument("missing ip")
+	}
+	if req.Port <= 0 || req.Port > 65535 {
+		return custerror.FormatInvalidArgument("missing port")
+	}
+	if req.Username == "" {
+		return custerror.FormatInvalidArgument("missing username")
+	}
+	if req.Password == "" {
+		return custerror.FormatInvalidArgument("missing password")
+	}
+	return nil
+}
+
 func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (*web.AddCameraResponse, error) {
-	logger.SDebug("AddCamera: request", zap.Any("request", req))
+	logger.SDebug("AddCamera: request", zap.Reflect("request", req))
+
+	if err := s.validateAddCameraRequest(req); err != nil {
+		logger.SDebug("AddCamera: validateAddCamera", zap.Error(err))
+		return nil, err
+	}
 
 	existing, err := s.getCameraByName(ctx, []string{req.Name})
 	if err != nil {
@@ -183,8 +240,8 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 	}
 	entry.SettingsId = openGateCameraSettings.SettingsId
 	logger.SDebug("AddCamera: openGateCameraSettings",
-		zap.Any("settings", openGateCameraSettings),
-		zap.Any("entry", entry))
+		zap.Reflect("settings", openGateCameraSettings),
+		zap.Reflect("entry", entry))
 
 	if err := s.addCamera(ctx, &entry); err != nil {
 		logger.SError("AddCamera: addCamera error", zap.Error(err))
@@ -223,8 +280,20 @@ func (s *WebService) addOpenGateCameraSettings(ctx context.Context, settings *db
 	return nil
 }
 
+func (s *WebService) validateDeleteCameraRequest(req *web.DeleteCameraRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	return nil
+}
+
 func (s *WebService) DeleteCamera(ctx context.Context, req *web.DeleteCameraRequest) error {
-	logger.SDebug("DeleteCamera: request", zap.Any("request", req))
+	logger.SDebug("DeleteCamera: request", zap.Reflect("request", req))
+
+	if err := s.validateDeleteCameraRequest(req); err != nil {
+		logger.SDebug("DeleteCamera: validateDeleteCameraRequest", zap.Error(err))
+		return err
+	}
 
 	c, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
@@ -254,8 +323,20 @@ func (s *WebService) deleteOpenGateCameraSettings(ctx context.Context, cameraId 
 			Where("camera_id = ?", cameraId))
 }
 
+func (s *WebService) validateGetCameraByGroupId(req *web.GetCamerasByGroupIdRequest) error {
+	if len(req.GroupId) == 0 {
+		return custerror.FormatInvalidArgument("missing group id")
+	}
+	return nil
+}
+
 func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCamerasByGroupIdRequest) (*web.GetCamerasByGroupIdResponse, error) {
-	logger.SDebug("getCameraByGroupId: request", zap.Any("request", req))
+	logger.SDebug("getCameraByGroupId: request", zap.Reflect("request", req))
+
+	if err := s.validateGetCameraByGroupId(req); err != nil {
+		logger.SDebug("getCameraByGroupId: validateGetCameraByGroupId", zap.Error(err))
+		return nil, err
+	}
 
 	cameras, err := s.getCameraByGroupId(ctx, req.GroupId)
 	if err != nil {
@@ -263,7 +344,7 @@ func (s *WebService) GetCameraByGroupId(ctx context.Context, req *web.GetCameras
 		return nil, err
 	}
 
-	logger.SDebug("getCameraByGroupId: cameras", zap.Any("cameras", cameras))
+	logger.SDebug("getCameraByGroupId: cameras", zap.Reflect("cameras", cameras))
 	resp := web.GetCamerasByGroupIdResponse{
 		Cameras: cameras,
 	}
@@ -277,8 +358,8 @@ func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByGroupId: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var cameras []db.Camera
 	if err := s.db.Select(ctx, q, &cameras); err != nil {
@@ -291,8 +372,23 @@ func (s *WebService) getCameraByGroupId(ctx context.Context, groupId string) ([]
 	return cameras, nil
 }
 
+func (s *WebService) validateAddCamerasToGroup(req *web.AddCamerasToGroupRequest) error {
+	if len(req.GroupId) == 0 {
+		return custerror.FormatInvalidArgument("missing group id")
+	}
+	if len(req.CameraIds) == 0 {
+		return custerror.FormatInvalidArgument("missing camera ids")
+	}
+	return nil
+}
+
 func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasToGroupRequest) error {
-	logger.SDebug("AddCamerasToGroup: request", zap.Any("request", req))
+	logger.SDebug("AddCamerasToGroup: request", zap.Reflect("request", req))
+
+	if err := s.validateAddCamerasToGroup(req); err != nil {
+		logger.SDebug("AddCamerasToGroup: validateAddCamerasToGroup", zap.Error(err))
+		return err
+	}
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -324,8 +420,22 @@ func (s *WebService) AddCamerasToGroup(ctx context.Context, req *web.AddCamerasT
 	return nil
 }
 
+func (s *WebService) validateDeleteCamerasFromGroupRequest(req *web.RemoveCamerasFromGroupRequest) error {
+	if len(req.GroupId) == 0 {
+		return custerror.FormatInvalidArgument("missing group id")
+	}
+	if len(req.CameraIds) == 0 {
+		return custerror.FormatInvalidArgument("missing camera ids")
+	}
+	return nil
+}
+
 func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.RemoveCamerasFromGroupRequest) error {
-	logger.SDebug("DeleteCamerasFromGroup: request", zap.Any("request", req))
+	logger.SDebug("DeleteCamerasFromGroup: request", zap.Reflect("request", req))
+
+	if err := s.validateDeleteCamerasFromGroupRequest(req); err != nil {
+		return err
+	}
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -356,8 +466,17 @@ func (s *WebService) DeleteCamerasFromGroup(ctx context.Context, req *web.Remove
 	return nil
 }
 
+func (s *WebService) validateGetCameraGroupsByIdsRequest(_ *web.GetCameraGroupsRequest) error {
+	return nil
+}
+
 func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCameraGroupsRequest) (*web.GetCameraGroupsResponse, error) {
-	logger.SDebug("GetCameraGroups: request", zap.Any("request", req))
+	logger.SDebug("GetCameraGroups: request", zap.Reflect("request", req))
+
+	if err := s.validateGetCameraGroupsByIdsRequest(req); err != nil {
+		logger.SDebug("GetCameraGroups: validateGetCameraGroupsByIdsRequest", zap.Error(err))
+		return nil, err
+	}
 
 	groups, err := s.getCameraGroupById(ctx, req.Ids)
 
@@ -366,15 +485,27 @@ func (s *WebService) GetCameraGroupsByIds(ctx context.Context, req *web.GetCamer
 		return nil, err
 	}
 
-	logger.SDebug("GetCameraGroups: groups", zap.Any("groups", groups))
+	logger.SDebug("GetCameraGroups: groups", zap.Reflect("groups", groups))
 	resp := web.GetCameraGroupsResponse{
 		CameraGroups: groups,
 	}
 	return &resp, nil
 }
 
+func (s *WebService) validateAddCameraGroupRequest(req *web.AddCameraGroupRequest) error {
+	if len(req.Name) == 0 {
+		return custerror.FormatInvalidArgument("missing name")
+	}
+	return nil
+}
+
 func (s *WebService) AddCameraGroup(ctx context.Context, req *web.AddCameraGroupRequest) (*web.AddCameraGroupResponse, error) {
-	logger.SDebug("AddCameraGroup: request", zap.Any("request", req))
+	logger.SDebug("AddCameraGroup: request", zap.Reflect("request", req))
+
+	if err := s.validateAddCameraGroupRequest(req); err != nil {
+		logger.SDebug("AddCameraGroup: validateAddCameraGroupRequest", zap.Error(err))
+		return nil, err
+	}
 
 	existing, err := s.getCameraGroupByName(ctx, []string{req.Name})
 	if err != nil {
@@ -404,8 +535,19 @@ func (s *WebService) AddCameraGroup(ctx context.Context, req *web.AddCameraGroup
 	return &web.AddCameraGroupResponse{GroupId: entry.GroupId}, nil
 }
 
+func (s *WebService) validateDeleteCameraGroupRequest(req *web.DeleteCameraGroupRequest) error {
+	if len(req.GroupId) == 0 {
+		return custerror.FormatInvalidArgument("missing group id")
+	}
+	return nil
+}
+
 func (s *WebService) DeleteCameraGroup(ctx context.Context, req *web.DeleteCameraGroupRequest) error {
-	logger.SDebug("DeleteCameraGroup: request", zap.Any("request", req))
+	logger.SDebug("DeleteCameraGroup: request", zap.Reflect("request", req))
+
+	if err := s.validateDeleteCameraGroupRequest(req); err != nil {
+		return err
+	}
 
 	group, err := s.getCameraGroupById(ctx, []string{req.GroupId})
 	if err != nil {
@@ -446,8 +588,8 @@ func (s *WebService) getCameraById(ctx context.Context, id []string) ([]db.Camer
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	cameras := []db.Camera{}
 	if err := s.db.Select(ctx, q, &cameras); err != nil {
@@ -471,8 +613,8 @@ func (s *WebService) getCameraByName(ctx context.Context, names []string) ([]db.
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getCameraByName: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	cameras := []db.Camera{}
 	if err := s.db.Select(ctx, q, &cameras); err != nil {
@@ -502,7 +644,7 @@ func (s *WebService) addCameraToGroup(ctx context.Context, cameras []db.Camera, 
 		sql, args, _ := q.ToSql()
 		logger.SDebug("addCameraToGroup: SQL query",
 			zap.String("query", sql),
-			zap.Any("args", args))
+			zap.Reflect("args", args))
 		if err := s.db.Update(ctx, q); err != nil {
 			return err
 		}
@@ -521,7 +663,7 @@ func (s *WebService) deleteCameraFromGroup(ctx context.Context, cameras []db.Cam
 		sql, args, _ := q.ToSql()
 		logger.SDebug("deleteCameraFromGroup: SQL query",
 			zap.String("query", sql),
-			zap.Any("args", args))
+			zap.Reflect("args", args))
 		if err := s.db.Update(ctx, q); err != nil {
 			return err
 		}
@@ -543,8 +685,8 @@ func (s *WebService) getCameraGroupById(ctx context.Context, ids []string) ([]db
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getGroupByIds: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	groups := []db.CameraGroup{}
 	if err := s.db.Select(ctx, q, &groups); err != nil {
@@ -570,8 +712,8 @@ func (s *WebService) getCameraGroupByName(ctx context.Context, names []string) (
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getGroupByName: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var groups []db.CameraGroup
 	if err := s.db.Select(ctx, q, &groups); err != nil {
@@ -613,8 +755,8 @@ func (s *WebService) getDeviceById(ctx context.Context, id []string) ([]db.Trans
 
 	sql, args, _ := query.ToSql()
 	logger.SDebug("getDeviceById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var transcoders []db.Transcoder
 	if err := s.db.Select(ctx, query, &transcoders); err != nil {
@@ -657,8 +799,24 @@ func (s *WebService) addDevice(ctx context.Context, d *db.Transcoder) error {
 	return nil
 }
 
+func (s *WebService) validateUpdateTranscoderRequest(req *web.UpdateTranscoderRequest) error {
+	if len(req.Id) == 0 {
+		return custerror.FormatInvalidArgument("missing id")
+	}
+	if len(req.Name) == 0 {
+		return custerror.FormatInvalidArgument("missing name")
+	}
+	return nil
+}
+
 func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTranscoderRequest) (*db.Transcoder, error) {
-	logger.SInfo("UpdateTranscoder: request", zap.Any("request", req))
+	logger.SInfo("UpdateTranscoder: request", zap.Reflect("request", req))
+
+	if err := s.validateUpdateTranscoderRequest(req); err != nil {
+		logger.SError("UpdateTranscoder: validateUpdateTranscoderRequest",
+			zap.Error(err))
+		return nil, err
+	}
 
 	transcoders, err := s.getDeviceById(ctx, []string{req.Id})
 	if err != nil {
@@ -673,7 +831,7 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 	transcoder := transcoders[0]
 
 	logger.SDebug("UpdateTranscoder: original",
-		zap.Any("original", transcoder))
+		zap.Reflect("original", transcoder))
 
 	if err := copier.Copy(transcoder, req); err != nil {
 		logger.SError("UpdateTranscoder: copy error", zap.Error(err))
@@ -683,7 +841,7 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 		logger.SError("UpdateTranscoder: update error", zap.Error(err))
 		return nil, err
 	}
-	logger.SDebug("UpdatedTranscoder: updated", zap.Any("updated", transcoder))
+	logger.SDebug("UpdatedTranscoder: updated", zap.Reflect("updated", transcoder))
 	return &transcoder, nil
 }
 
@@ -697,14 +855,28 @@ func (s *WebService) updateDevice(ctx context.Context, d *db.Transcoder) error {
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateDevice: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (s *WebService) validateGetStreamInfoRequest(req *web.GetStreamInfoRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	return nil
+}
+
 func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRequest) (*web.GetStreamInfoResponse, error) {
+	logger.SDebug("GetStreamInfo: request", zap.Reflect("request", req))
+
+	if err := s.validateGetStreamInfoRequest(req); err != nil {
+		logger.SDebug("GetStreamInfo: validateGetStreamInfoRequest", zap.Error(err))
+		return nil, err
+	}
+
 	camera, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
 		logger.SDebug("GetStreamInfo: error", zap.Error(err))
@@ -746,7 +918,21 @@ func (s *WebService) buildStreamUrl(camera *db.Camera) string {
 	return url.String()
 }
 
+func (s *WebService) validateToggleStreamRequest(req *web.ToggleStreamRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	return nil
+}
+
 func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequest) error {
+	logger.SDebug("ToggleStream: request", zap.Reflect("request", req))
+
+	if err := s.validateToggleStreamRequest(req); err != nil {
+		logger.SDebug("ToggleStream: validateToggleStreamRequest", zap.Error(err))
+		return err
+	}
+
 	camera, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
 		logger.SError("ToggleStream: getCameraById error", zap.Error(err))
@@ -758,7 +944,7 @@ func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequ
 		return custerror.FormatNotFound("camera not found")
 	}
 
-	logger.SDebug("ToggleStream: camera", zap.Any("camera", camera[0]))
+	logger.SDebug("ToggleStream: camera", zap.Reflect("camera", camera[0]))
 
 	if camera[0].Enabled == req.Start {
 		logger.SDebug("ToggleStream: stream already started")
@@ -779,12 +965,6 @@ func (s *WebService) ToggleStream(ctx context.Context, req *web.ToggleStreamRequ
 		return nil
 	}
 
-	err = s.requestLtdStreamControl(ctx, &newCamera)
-	if err != nil {
-		logger.SError("ToggleStream: requestLtdStreamControl: error", zap.Error(err))
-		return err
-	}
-
 	logger.SDebug("ToggleStream: success", zap.String("cameraId", req.CameraId))
 	return nil
 }
@@ -803,49 +983,10 @@ func (s *WebService) updateCamera(ctx context.Context, camera *db.Camera) error 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateCamera: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
-	return nil
-}
-
-func (s *WebService) requestLtdStreamControl(ctx context.Context, camera *db.Camera) error {
-	logger.SDebug("requestLtdStreamControl: request",
-		zap.String("cameraId", camera.CameraId),
-		zap.String("transcoderId", camera.TranscoderId))
-	cmd := events.CommandRequest{}
-	if camera.Enabled {
-		logger.SDebug("requestLtdStreamControl: stream start")
-		cmd.CommandType = events.Command_StartFfmpegStream
-		cmd.Info = map[string]interface{}{
-			"cameraId":  camera.CameraId,
-			"channelId": "",
-		}
-	} else {
-		logger.SDebug("requestLtdStreamControl: stream end")
-		cmd.CommandType = events.Command_EndFfmpegStream
-		cmd.Info = map[string]interface{}{
-			"cameraId": camera.CameraId,
-		}
-	}
-	msg, err := json.Marshal(&cmd)
-	if err != nil {
-		logger.SError("requestLtdStreamControl: error", zap.Error(err))
-		return err
-	}
-
-	logger.SDebug("requestLtdStreamControl: msg", zap.String("message", string(msg)))
-	_, err = s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("commands/%s", camera.TranscoderId),
-		QoS:     1,
-		Payload: msg,
-	})
-	if err != nil {
-		logger.SError("requestLtdStreamControl: mqtt publish error", zap.Error(err))
-		return err
-	}
-	logger.SDebug("requestLtdStreamControl: message published successfully")
 	return nil
 }
 
@@ -870,8 +1011,26 @@ func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId 
 	return results, nil
 }
 
+func (s *WebService) validateRemoteControlRequest(req *web.RemoteControlRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	if req.Pan > 360 || req.Pan < -360 {
+		return custerror.FormatInvalidArgument("pan value out of range between -360 to 360")
+	}
+	if req.Tilt > 360 || req.Tilt < -360 {
+		return custerror.FormatInvalidArgument("tilt value out of range between -360 to 360")
+	}
+	return nil
+}
+
 func (s *WebService) RemoteControl(ctx context.Context, req *web.RemoteControlRequest) error {
-	logger.SDebug("biz.RemoteControl: request")
+	logger.SDebug("biz.RemoteControl: request", zap.Reflect("request", req))
+
+	if err := s.validateRemoteControlRequest(req); err != nil {
+		logger.SDebug("RemoteControl: validateRemoteControlRequest error", zap.Error(err))
+		return err
+	}
 
 	c, err := s.getCameraByIdCached(ctx, req.CameraId)
 	if err != nil {
@@ -938,8 +1097,20 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 	return nil
 }
 
+func (s *WebService) validateGetDeviceInfoRequest(req *web.GetCameraDeviceInfoRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	return nil
+}
+
 func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDeviceInfoRequest) (*web.GetCameraDeviceInfo, error) {
-	logger.SInfo("GetDeviceInfo: request", zap.Any("request", req))
+	logger.SInfo("GetDeviceInfo: request", zap.Reflect("request", req))
+
+	if err := s.validateGetDeviceInfoRequest(req); err != nil {
+		logger.SError("GetDeviceInfo: validateGetDeviceInfoRequest error", zap.Error(err))
+		return nil, err
+	}
 
 	cameras, err := s.getCameraById(ctx, []string{req.CameraId})
 	if err != nil {
@@ -979,7 +1150,7 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
-	logger.SDebug("GetDeviceInfo: response", zap.Any("response", resp))
+	logger.SDebug("GetDeviceInfo: response", zap.Reflect("response", resp))
 	if resp == nil {
 		logger.SError("GetDeviceInfo: ltd responded with null")
 		return nil, custerror.ErrorInternal
@@ -990,7 +1161,7 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		return nil, err
 	}
 
-	logger.SInfo("GetDeviceInfo: info", zap.Any("deviceInfo", info))
+	logger.SInfo("GetDeviceInfo: info", zap.Reflect("deviceInfo", info))
 	return &info, nil
 }
 
@@ -1000,110 +1171,21 @@ func (s *WebService) prepareGetDeviceInfoMessage(req *web.GetCameraDeviceInfoReq
 	}
 }
 
-func (s *WebService) SendEventToMqtt(ctx context.Context, request *web.SendEventToMqttRequest) error {
-	logger.SDebug("SendCameraEvent: request", zap.Any("request", request))
-
-	cameras, err := s.getCameraById(ctx, []string{request.CameraId})
-	if err != nil {
-		logger.SError("SendCameraEvent: getCameraById error", zap.Error(err))
-		return err
-	}
-
-	if len(cameras) == 0 {
-		logger.SError("SendCameraEvent: camera not found", zap.String("cameraId", request.CameraId))
-		return custerror.FormatNotFound("camera not found")
-	}
-
-	msg := &web.EventRequest{
-		Event: request.Event,
-	}
-
-	pl, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
-		Topic:   fmt.Sprintf("events/%s/%s", cameras[0].GroupId, cameras[0].CameraId),
-		QoS:     1,
-		Payload: pl,
-	}); err != nil {
-		logger.SError("SendCameraEvent: Publish error", zap.Error(err))
-		return err
-	}
-
-	logger.SDebug("SendCameraEvent: success")
-	return nil
-}
-
-func (s *WebService) PublicEventToOtherCamerasInGroup(ctx context.Context, req *web.PublicEventToOtherCamerasInGroupRequest) error {
-	logger.SDebug("PublicEventToOtherCamerasInGroup: request", zap.Any("request", req))
-
-	camera, err := s.getCameraById(ctx, []string{req.CameraId})
-	if err != nil {
-		logger.SError("PublicEventToOtherCamerasInGroup: getCameraById error", zap.Error(err))
-		return err
-	}
-
-	if len(camera) == 0 {
-		logger.SError("PublicEventToOtherCamerasInGroup: camera not found", zap.String("cameraId", req.CameraId))
-		return custerror.FormatNotFound("camera not found")
-	}
-
-	if err := s.publicEventToOtherCamerasInGroup(ctx, camera[0], req.Event); err != nil {
-		logger.SError("PublicEventToOtherCamerasInGroup: publicEventToOtherCamerasInGroup error", zap.Error(err))
-		return err
-	}
-
-	logger.SDebug("PublicEventToOtherCamerasInGroup: success")
-	return nil
-}
-
-// This function is to public event to other topics of cameras in the same group
-func (s *WebService) publicEventToOtherCamerasInGroup(ctx context.Context, camera db.Camera, event string) error {
-
-	if camera.GroupId == "" {
-		logger.SError("PublicEventToOtherCamerasInGroup: camera is not in any group")
-		return custerror.FormatInternalError("camera is not in any group")
-	}
-
-	cameras, err := s.getCameraByGroupId(ctx, camera.GroupId)
-	if err != nil {
-		logger.SError("PublicEventToOtherCamerasInGroup: getCameraGroupById error", zap.Error(err))
-		return err
-	}
-
-	for _, c := range cameras {
-		if c.CameraId == camera.CameraId {
-			continue
-		}
-
-		msg := &web.EventRequest{
-			Event: fmt.Sprintf("{cameraId: %s, event: %s}", camera.CameraId, event),
-		}
-
-		pl, err := json.Marshal(msg)
-
-		if err != nil {
-			logger.SError("PublicEventToOtherCamerasInGroup: Marshal error", zap.Error(err))
-			return err
-		}
-
-		if _, err := s.mqttClient.Publish(ctx, &paho.Publish{
-			Topic:   fmt.Sprintf("events/%s/%s", c.GroupId, c.CameraId),
-			QoS:     1,
-			Payload: pl,
-		}); err != nil {
-			logger.SError("PublicEventToOtherCamerasInGroup: Publish error", zap.Error(err))
-			return err
-		}
+func (s *WebService) validateGetOpenGateIntegrationById(req *web.GetOpenGateIntegrationByIdRequest) error {
+	if req.OpenGateId == "" {
+		return custerror.FormatInvalidArgument("missing open gate id")
 	}
 	return nil
 }
 
 func (s *WebService) GetOpenGateIntegrationById(ctx context.Context, req *web.GetOpenGateIntegrationByIdRequest) (*web.GetOpenGateIntegrationByIdResponse, error) {
 	logger.SDebug("GetOpenGateIntegrationById: request",
-		zap.Any("request", req))
+		zap.Reflect("request", req))
+
+	if err := s.validateGetOpenGateIntegrationById(req); err != nil {
+		logger.SError("GetOpenGateIntegrationById: validateGetOpenGateIntegrationById error", zap.Error(err))
+		return nil, err
+	}
 
 	opengate, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
 	if err != nil {
@@ -1115,9 +1197,47 @@ func (s *WebService) GetOpenGateIntegrationById(ctx context.Context, req *web.Ge
 	}, nil
 }
 
+func (s *WebService) validateUpdateOpenGateIntegrationById(req *web.UpdateOpenGateIntegrationRequest) error {
+	if req.OpenGateId == "" {
+		return custerror.FormatInvalidArgument("missing open gate id")
+	}
+	switch req.LogLevel {
+	case "debug":
+	case "info":
+	case "warning":
+	default:
+		return custerror.FormatInvalidArgument("invalid log level, must be one of debug, info, warning")
+	}
+	if req.SnapshotRetentionDays <= 0 {
+		return custerror.FormatInvalidArgument("invalid snapshot retention days")
+	}
+	mqtt := req.Mqtt
+	if mqtt == nil {
+		return custerror.FormatInvalidArgument("missing mqtt configuration")
+	}
+	if mqtt.Host == "" {
+		return custerror.FormatInvalidArgument("missing mqtt host")
+	}
+	if mqtt.Port <= 0 {
+		return custerror.FormatInvalidArgument("invalid mqtt port")
+	}
+	if mqtt.Username == "" {
+		return custerror.FormatInvalidArgument("missing mqtt username")
+	}
+	if mqtt.Password == "" {
+		return custerror.FormatInvalidArgument("missing mqtt password")
+	}
+	return nil
+}
+
 func (s *WebService) UpdateOpenGateIntegrationById(ctx context.Context, req *web.UpdateOpenGateIntegrationRequest) error {
 	logger.SDebug("UpdateOpenGateIntegrationById: request",
-		zap.Any("request", req))
+		zap.Reflect("request", req))
+
+	if err := s.validateUpdateOpenGateIntegrationById(req); err != nil {
+		logger.SError("UpdateOpenGateIntegrationById: validateUpdateOpenGateIntegrationById error", zap.Error(err))
+		return err
+	}
 
 	integration, err := s.getOpenGateIntegrationById(ctx, req.OpenGateId)
 	if err != nil {
@@ -1190,8 +1310,8 @@ func (s *WebService) getOpenGateMqttConfigurationById(ctx context.Context, id st
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getOpenGateMqttConfigurationById: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var config db.OpenGateMqttConfiguration
 	if err := s.db.Get(ctx, q, &config); err != nil {
@@ -1214,7 +1334,7 @@ func (s *WebService) updateOpenGateIntegration(ctx context.Context, integration 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateOpenGateIntegration: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
@@ -1235,15 +1355,27 @@ func (s *WebService) updateOpenGateMqttConfiguration(ctx context.Context, mqtt *
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateOpenGateMqttConfiguration: SQL query",
 		zap.String("query", sql),
-		zap.Any("args", args))
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (s *WebService) updateGetOpenGateCameraSettingsRequest(req *web.GetOpenGateCameraSettingsRequest) error {
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
+	}
+	return nil
+}
+
 func (s *WebService) GetOpenGateCameraSettings(ctx context.Context, req *web.GetOpenGateCameraSettingsRequest) (*web.GetOpenGateCameraSettingsResponse, error) {
-	logger.SDebug("GetOpenGateCameraSettings: request", zap.Any("request", req))
+	logger.SDebug("GetOpenGateCameraSettings: request", zap.Reflect("request", req))
+
+	if err := s.updateGetOpenGateCameraSettingsRequest(req); err != nil {
+		logger.SError("GetOpenGateCameraSettings: updateGetOpenGateCameraSettingsRequest error", zap.Error(err))
+		return nil, err
+	}
 
 	cameras, err := s.getCameraById(ctx, req.CameraId)
 	if err != nil {
@@ -1288,8 +1420,8 @@ func (s *WebService) getOpenGateCameraSettings(ctx context.Context, ids []string
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getOpenGateCameraSettings: SQL",
-		zap.Any("q", sql),
-		zap.Any("args", args))
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
 
 	var settings []db.OpenGateCameraSettings
 	if err := s.db.Select(ctx, q, &settings); err != nil {
@@ -1299,8 +1431,20 @@ func (s *WebService) getOpenGateCameraSettings(ctx context.Context, ids []string
 	return settings, nil
 }
 
+func (s *WebService) validateGetOpenGateMqttSettingsRequest(req *web.GetOpenGateMqttSettingsRequest) error {
+	if req.ConfigurationId == "" {
+		return custerror.FormatInvalidArgument("missing configuration id")
+	}
+	return nil
+}
+
 func (s *WebService) GetOpenGateMqttConfigurationById(ctx context.Context, req *web.GetOpenGateMqttSettingsRequest) (*web.GetOpenGateMqttSettingsResponse, error) {
-	logger.SDebug("GetOpenGateMqttConfigurationById: request", zap.Any("request", req))
+	logger.SDebug("GetOpenGateMqttConfigurationById: request", zap.Reflect("request", req))
+
+	if err := s.validateGetOpenGateMqttSettingsRequest(req); err != nil {
+		logger.SError("GetOpenGateMqttConfigurationById: validateGetOpenGateMqttSettingsRequest error", zap.Error(err))
+		return nil, err
+	}
 
 	config, err := s.getOpenGateMqttConfigurationById(ctx, req.ConfigurationId)
 	if err != nil {

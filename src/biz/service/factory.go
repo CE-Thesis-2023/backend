@@ -5,18 +5,18 @@ import "sync"
 var once sync.Once
 
 var (
-	commandService *CommandService
+	commandService *PrivateService
 	webService     *WebService
 )
 
 func Init() {
 	once.Do(func() {
 		webService = NewWebService()
-		commandService = NewCommandService()
+		commandService = NewPrivateService()
 	})
 }
 
-func GetCommandService() *CommandService {
+func GetPrivateService() *PrivateService {
 	return commandService
 }
 
