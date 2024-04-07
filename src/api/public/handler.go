@@ -330,7 +330,7 @@ func UpdateOpenGateSettings(ctx *fiber.Ctx) error {
 func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
 	logger.SDebug("GetObjectTrackingEvent: request")
 
-	eventId := ctx.Query("eventId")
+	eventId := ctx.Query("event_id")
 	openGateEventId := ctx.Query("openGateEventId")
 
 	req := &web.GetObjectTrackingEventByIdRequest{}
@@ -355,7 +355,7 @@ func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
 func DeleteObjectTrackingEvent(ctx *fiber.Ctx) error {
 	logger.SDebug("DeleteObjectTrackingEvent: request")
 
-	eventId := ctx.Query("eventId")
+	eventId := ctx.Query("id")
 	if len(eventId) == 0 {
 		return custerror.FormatInvalidArgument("missing eventId as query string")
 	}
