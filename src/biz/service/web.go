@@ -1567,8 +1567,21 @@ func (s *WebService) updateObjectTrackingEvent(ctx context.Context, event *db.Ob
 	return nil
 }
 
+func (s *WebService) validateDeleteObjectTrackingEventRequest(req *web.DeleteObjectTrackingEventRequest) error {
+	if req.EventId == "" {
+		return custerror.FormatInvalidArgument("missing event id")
+	}
+	return nil
+}
+
 func (s *WebService) DeleteObjectTrackingEvent(ctx context.Context, req *web.DeleteObjectTrackingEventRequest) error {
 	logger.SInfo("commandService.DeleteObjectTrackingEvent: request", zap.Any("request", req))
+
+	if err := s.validateDeleteObjectTrackingEventRequest(req); err != nil {
+		logger.SError("commandService.DeleteObjectTrackingEvent: validateDeleteObjectTrackingEventRequest error",
+			zap.Error(err))
+		return err
+	}
 
 	_, err := s.getObjectTrackingEventById(ctx, []string{req.EventId}, nil)
 	if err != nil {

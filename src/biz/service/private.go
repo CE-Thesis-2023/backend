@@ -215,13 +215,21 @@ func (c *PrivateService) DeleteTranscoder(ctx context.Context, req *web.DeleteTr
 	return nil
 }
 
+func (s *PrivateService) validateAddObjectTrackingEventRequest(req *web.AddObjectTrackingEventRequest) error {
+	if req.Event == nil {
+		return custerror.FormatInvalidArgument("missing event")
+	}
+	return nil
+}
+
 func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.AddObjectTrackingEventRequest) (*web.AddObjectTrackingEventResponse, error) {
 	logger.SInfo("commandService.AddEvent: request", zap.Any("request", req))
 
-	if req.Event == nil {
-		logger.SError("AddEvent: missing event")
-		return nil, custerror.FormatInvalidArgument("missing event")
+	if err := s.validateAddObjectTrackingEventRequest(req); err != nil {
+		logger.SDebug("AddEvent: validateAddObjectTrackingEventRequest", zap.Error(err))
+		return nil, err
 	}
+
 	before := req.Event.Before
 
 	var event db.ObjectTrackingEvent
