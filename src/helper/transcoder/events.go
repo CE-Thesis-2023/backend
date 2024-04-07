@@ -2,7 +2,6 @@ package transcoder
 
 import (
 	"context"
-	"sync"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -30,7 +29,6 @@ func NewTranscoderEventProcessor(privateService *service.PrivateService, webServ
 }
 
 type TranscoderActorsPool struct {
-	mu     sync.Mutex
 	engine *actor.Engine
 }
 

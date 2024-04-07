@@ -215,7 +215,7 @@ func (c *PrivateService) DeleteTranscoder(ctx context.Context, req *web.DeleteTr
 	return nil
 }
 
-func (s *PrivateService) AddEvent(ctx context.Context, req *web.AddObjectTrackingEventRequest) (*web.AddObjectTrackingEventResponse, error) {
+func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.AddObjectTrackingEventRequest) (*web.AddObjectTrackingEventResponse, error) {
 	logger.SInfo("commandService.AddEvent: request", zap.Any("request", req))
 
 	if req.Event == nil {
@@ -231,7 +231,7 @@ func (s *PrivateService) AddEvent(ctx context.Context, req *web.AddObjectTrackin
 	}
 	event.EventId = uuid.NewString()
 
-	if err := s.webService.addEvent(ctx, &event); err != nil {
+	if err := s.webService.addObjectTrackingEvent(ctx, &event); err != nil {
 		logger.SDebug("AddEvent: addEventToDatabase", zap.Error(err))
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (s *PrivateService) AddEvent(ctx context.Context, req *web.AddObjectTrackin
 	}, nil
 }
 
-func (s *PrivateService) UpdateEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
+func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
 	logger.SInfo("commandService.UpdateEvent: request", zap.Any("request", req))
 
 	if req.Event == nil {
@@ -257,24 +257,8 @@ func (s *PrivateService) UpdateEvent(ctx context.Context, req *web.UpdateObjectT
 	}
 	event.EventId = req.EventId
 
-	if err := s.webService.updateEvent(ctx, &event); err != nil {
+	if err := s.webService.updateObjectTrackingEvent(ctx, &event); err != nil {
 		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
-		return err
-	}
-
-	return nil
-}
-
-func (s *PrivateService) DeleteEvent(ctx context.Context, req *web.DeleteObjectTrackingEventRequest) error {
-	logger.SInfo("commandService.DeleteEvent: request", zap.Any("request", req))
-
-	if req.EventId == "" {
-		logger.SError("DeleteEvent: missing event_id")
-		return custerror.FormatInvalidArgument("missing event_id")
-	}
-
-	if err := s.webService.deleteEvent(ctx, req.EventId); err != nil {
-		logger.SDebug("DeleteEvent: deleteEvent", zap.Error(err))
 		return err
 	}
 

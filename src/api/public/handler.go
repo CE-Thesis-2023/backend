@@ -324,3 +324,47 @@ func UpdateOpenGateSettings(ctx *fiber.Ctx) error {
 
 	return ctx.SendStatus(http.StatusAccepted)
 }
+
+func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
+	logger.SDebug("GetObjectTrackingEvent: request")
+
+	eventId := ctx.Query("eventId")
+	openGateEventId := ctx.Query("openGateEventId")
+	if eventId == "" && openGateEventId == "" {
+		return custerror.FormatInvalidArgument("missing eventId or openGateEventId as query string")
+	}
+	req := &web.GetObjectTrackingEventByIdRequest{}
+	if eventId != "" {
+		req.EventId = []string{eventId}
+	}
+	if openGateEventId != "" {
+		req.OpenGateEventId = []string{openGateEventId}
+	}
+
+	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx.UserContext(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func DeleteObjectTrackingEvent(ctx *fiber.Ctx) error {
+	logger.SDebug("DeleteObjectTrackingEvent: request")
+
+	eventId := ctx.Query("eventId")
+	if len(eventId) == 0 {
+		return custerror.FormatInvalidArgument("missing eventId as query string")
+	}
+	req := &web.DeleteObjectTrackingEventRequest{}
+	if eventId != "" {
+		req.EventId = eventId
+	}
+
+	err := service.GetWebService().DeleteObjectTrackingEvent(ctx.UserContext(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.SendStatus(http.StatusAccepted)
+}

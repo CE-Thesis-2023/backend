@@ -41,6 +41,9 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Get("/api/cameras/:cameraId/info", timeout.NewWithContext(
 			GetCameraDeviceInfo, time.Second*3))
 
+		app.Get("/api/events/object_tracking", GetObjectTrackingEvent)
+		app.Delete("/api/events/object_tracking", DeleteObjectTrackingEvent)
+
 		app.Use("/ws/ltd/:id", communicator.HandleRegisterRequest)
 		app.Get("/ws/ltd/:id", communicator.CreateWebsocketHandler())
 	}

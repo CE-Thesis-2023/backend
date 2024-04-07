@@ -1536,7 +1536,7 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []strin
 	return events, nil
 }
 
-func (s *WebService) addEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
+func (s *WebService) addObjectTrackingEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
 	q := s.builder.Insert("object_tracking_events").
 		Columns(event.Fields()...).
 		Values(event.Values()...)
@@ -1546,7 +1546,7 @@ func (s *WebService) addEvent(ctx context.Context, event *db.ObjectTrackingEvent
 	return nil
 }
 
-func (s *WebService) updateEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
+func (s *WebService) updateObjectTrackingEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
 	valueMap := map[string]interface{}{}
 	fields := event.Fields()
 	values := event.Values()
@@ -1567,7 +1567,30 @@ func (s *WebService) updateEvent(ctx context.Context, event *db.ObjectTrackingEv
 	return nil
 }
 
-func (s *WebService) deleteEvent(ctx context.Context, id string) error {
+func (s *WebService) DeleteObjectTrackingEvent(ctx context.Context, req *web.DeleteObjectTrackingEventRequest) error {
+	logger.SInfo("commandService.DeleteObjectTrackingEvent: request", zap.Any("request", req))
+
+	_, err := s.getObjectTrackingEventById(ctx, []string{req.EventId}, nil)
+	if err != nil {
+		logger.SError("commandService.DeleteObjectTrackingEvent: getObjectTrackingEventById error",
+			zap.Error(err))
+		return err
+	}
+
+	if req.EventId == "" {
+		logger.SError("DeleteObjectTrackingEvent: missing event_id")
+		return custerror.FormatInvalidArgument("missing event_id")
+	}
+
+	if err := s.deleteObjectTrackingEvent(ctx, req.EventId); err != nil {
+		logger.SDebug("DeleteObjectTrackingEvent: deleteEvent", zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *WebService) deleteObjectTrackingEvent(ctx context.Context, id string) error {
 	return s.db.Delete(ctx,
 		s.builder.Delete("object_tracking_events").
 			Where("event_id = ?", id))
