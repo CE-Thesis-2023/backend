@@ -31,6 +31,7 @@ func NewPrivateService() *PrivateService {
 		db:          custdb.Layered(),
 		webService:  GetWebService(),
 		mediaHelper: media.NewMediaHelper(&configs.Get().MediaEngine),
+		mqttConfigs: &configs.Get().EventStore,
 	}
 }
 
