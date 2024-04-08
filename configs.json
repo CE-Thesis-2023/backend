@@ -41,6 +41,7 @@
   },
   "mediaEngine": {
     "host": "api.mediamtx.ntranlab.com",
+    "mediaUrl": "103.165.142.15",
     "providerPorts": {
       "srt": 8890
     },

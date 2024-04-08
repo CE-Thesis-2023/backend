@@ -102,6 +102,7 @@ type DatabaseConfigs struct {
 
 type MediaMtxConfigs struct {
 	Host          string   `json:"host,omitempty" yaml:"host,omitempty"`
+	MediaUrl      string   `json:"mediaUrl,omitempty" yaml:"mediaUrl,omitempty"`
 	PublishPorts  MtxPorts `json:"publishPorts,omitempty" yaml:"port,omitempty"`
 	ProviderPorts MtxPorts `json:"providerPorts,omitempty" yaml:"providerPorts,omitempty"`
 	Api           int      `json:"api,omitempty" yaml:"api,omitempty"`

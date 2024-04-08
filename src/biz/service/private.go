@@ -287,3 +287,9 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 
 	return nil
 }
+
+func (s *PrivateService) GetTranscoderOpenGateConfiguration(ctx context.Context, req *web.GetTranscoderOpenGateConfigurationRequest) (*web.GetTranscoderOpenGateConfigurationResponse, error) {
+	logger.SInfo("GetTranscoderOpenGateConfiguration: request",
+		zap.Any("request", req))
+	return nil, nil
+}

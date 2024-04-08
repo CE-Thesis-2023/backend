@@ -255,3 +255,11 @@ type UpdateObjectTrackingEventResponse struct {
 type DeleteObjectTrackingEventRequest struct {
 	EventId string `json:"eventId"`
 }
+
+type GetTranscoderOpenGateConfigurationRequest struct {
+	TranscoderId string `json:"transcoderId"`
+}
+
+type GetTranscoderOpenGateConfigurationResponse struct {
+	Base64 string `json:"base64"`
+}

@@ -908,15 +908,6 @@ func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRe
 	}, nil
 }
 
-func (s *WebService) buildStreamUrl(camera *db.Camera) string {
-	configs := configs.Get().MediaEngine
-	url := &url.URL{}
-	url.Scheme = "http"
-	url.Host = fmt.Sprintf("%s:%d", configs.Host, configs.PublishPorts.WebRTC)
-	url = url.JoinPath(camera.CameraId)
-	return url.String()
-}
-
 func (s *WebService) validateToggleStreamRequest(req *web.ToggleStreamRequest) error {
 	if len(req.CameraId) == 0 {
 		return custerror.FormatInvalidArgument("missing camera id")
