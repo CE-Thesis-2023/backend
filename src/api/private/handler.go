@@ -180,3 +180,22 @@ func GetTranscoderOpenGateConfiguration(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+func GetTranscoderMQTTConfigurations(ctx *fiber.Ctx) error {
+	logger.SInfo("GetTranscoderMQTTConfig: request")
+
+	transcoderId := ctx.Query("transcoder_id")
+	if len(transcoderId) == 0 {
+		return custerror.FormatInvalidArgument("missing transcoder_id as query string")
+	}
+
+	resp, err := service.GetPrivateService().GetMQTTEventEndpoint(ctx.Context(), &web.GetMQTTEventEndpointRequest{
+		TranscoderId: transcoderId,
+	})
+	if err != nil {
+		logger.SError("GetTranscoderMQTTConfig: service.GetTranscoderMQTTConfig error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}

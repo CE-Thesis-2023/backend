@@ -60,3 +60,10 @@ type ObjectSubLabel struct {
 	Double *float64
 	String *string
 }
+
+type PTZCtrlRequest struct {
+	CameraId string `json:"cameraId"`
+	Pan      int    `json:"pan"`
+	Tilt     int    `json:"tilt"`
+	Duration int    `json:"duration"`
+}

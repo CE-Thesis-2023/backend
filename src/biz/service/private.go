@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"path/filepath"
 
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	"github.com/CE-Thesis-2023/backend/src/helper/opengate"
@@ -22,6 +23,7 @@ type PrivateService struct {
 	db          *custdb.LayeredDb
 	webService  *WebService
 	mediaHelper *media.MediaHelper
+	mqttConfigs *configs.EventStoreConfigs
 }
 
 func NewPrivateService() *PrivateService {
@@ -392,5 +394,28 @@ func (s *PrivateService) GetStreamConfigurations(ctx context.Context, req *web.G
 
 	return &web.GetStreamConfigurationsResponse{
 		StreamConfigurations: configurations,
+	}, nil
+}
+
+func (s *PrivateService) GetMQTTEventEndpoint(ctx context.Context, req *web.GetMQTTEventEndpointRequest) (*web.GetMQTTEventEndpointResponse, error) {
+	logger.SInfo("GetMQTTEventEndpoint: request",
+		zap.Any("request", req))
+
+	transcoder, err := s.webService.getDeviceById(ctx, []string{req.TranscoderId})
+	if err != nil {
+		logger.SDebug("GetMQTTEventEndpoint: getDeviceById", zap.Error(err))
+		return nil, err
+	}
+	if len(transcoder) == 0 {
+		logger.SError("GetMQTTEventEndpoint: transcoder not found")
+		return nil, custerror.ErrorNotFound
+	}
+
+	return &web.GetMQTTEventEndpointResponse{
+		Host:        s.mqttConfigs.Host,
+		Port:        s.mqttConfigs.Port,
+		TlsEnabled:  true,
+		SubscribeOn: filepath.Join("commands", transcoder[0].DeviceId),
+		PublishOn:   filepath.Join("events", transcoder[0].DeviceId),
 	}, nil
 }

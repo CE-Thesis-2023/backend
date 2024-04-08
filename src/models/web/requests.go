@@ -271,3 +271,15 @@ type GetStreamConfigurationsRequest struct {
 type GetStreamConfigurationsResponse struct {
 	StreamConfigurations []TranscoderStreamConfiguration `json:"streamConfigurations"`
 }
+
+type GetMQTTEventEndpointRequest struct {
+	TranscoderId string `json:"transcoderId"`
+}
+
+type GetMQTTEventEndpointResponse struct {
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	TlsEnabled  bool   `json:"tlsEnabled"`
+	SubscribeOn string `json:"subscribeOn"`
+	PublishOn   string `json:"publishOn"`
+}
