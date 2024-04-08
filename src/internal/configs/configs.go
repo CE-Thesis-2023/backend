@@ -19,7 +19,6 @@ type Configs struct {
 	Public        HttpConfigs       `json:"public,omitempty" yaml:"public,omitempty"`
 	Private       HttpConfigs       `json:"private,omitempty" yaml:"private,omitempty"`
 	Logger        LoggerConfigs     `json:"logger,omitempty" yaml:"logger,omitempty"`
-	EventStore    EventStoreConfigs `json:"eventStore,omitempty" yaml:"eventStore,omitempty"`
 	MqttStore     EventStoreConfigs `json:"mqttStore,omitempty" yaml:"mqttStore,omitempty"`
 	Database      DatabaseConfigs   `json:"database,omitempty" yaml:"sqlite,omitempty"`
 	InfluxConfigs InfluxConfigs     `json:"influx,omitempty" yaml:"influx,omitempty"`

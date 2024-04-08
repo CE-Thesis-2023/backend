@@ -24,17 +24,16 @@
     "encoding": "console"
   },
   "mqttStore": {
-    "host": "haproxy",
+    "host": "mosquitto.mqtt.ntranlab.com",
     "port": 8883,
     "enabled": true,
     "name": "mqtt_store",
     "username": "admin",
     "password": "ctportal2024",
     "level": "info",
-    "listenPrefix": "prod",
     "tls": {
-      "cert": "/configs/certs/cert.pem",
-      "key": "/configs/certs/key.pem"
+      "cert": "certs/cert.pem",
+      "key": "certs/key.pem"
     }
   },
   "database": {
