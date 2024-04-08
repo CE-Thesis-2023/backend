@@ -109,10 +109,10 @@ func (s *PrivateService) initializeOpenGateDefaultConfigurations(ctx context.Con
 	mqttConfigs := db.OpenGateMqttConfiguration{
 		ConfigurationId: uuid.NewString(),
 		Enabled:         true,
-		Host:            "mosquitto.mqtt.ntranlab.com",
-		Username:        "admin",
-		Password:        "ctportal2024",
-		Port:            8883,
+		Host:            s.mqttConfigs.Host,
+		Username:        s.mqttConfigs.Username,
+		Password:        s.mqttConfigs.Password,
+		Port:            s.mqttConfigs.Port,
 		OpenGateId:      openGateIntegration.OpenGateId,
 	}
 	openGateIntegration.MqttId = mqttConfigs.ConfigurationId
@@ -415,6 +415,8 @@ func (s *PrivateService) GetMQTTEventEndpoint(ctx context.Context, req *web.GetM
 	return &web.GetMQTTEventEndpointResponse{
 		Host:        s.mqttConfigs.Host,
 		Port:        s.mqttConfigs.Port,
+		Username:    s.mqttConfigs.Username,
+		Password:    s.mqttConfigs.Password,
 		TlsEnabled:  true,
 		SubscribeOn: filepath.Join("commands", transcoder[0].DeviceId),
 		PublishOn:   filepath.Join("events", transcoder[0].DeviceId),

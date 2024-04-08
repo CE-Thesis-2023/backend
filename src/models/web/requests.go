@@ -279,6 +279,8 @@ type GetMQTTEventEndpointRequest struct {
 type GetMQTTEventEndpointResponse struct {
 	Host        string `json:"host"`
 	Port        int    `json:"port"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
 	TlsEnabled  bool   `json:"tlsEnabled"`
 	SubscribeOn string `json:"subscribeOn"`
 	PublishOn   string `json:"publishOn"`
