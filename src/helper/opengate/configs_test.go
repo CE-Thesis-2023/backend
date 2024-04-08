@@ -3,6 +3,8 @@ package opengate
 import (
 	"testing"
 
+	"github.com/CE-Thesis-2023/backend/src/helper/media"
+	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 )
 
@@ -60,6 +62,17 @@ func TestOpenGate_Configuration(t *testing.T) {
 		mqtt,
 		openGateCameraSettings,
 		cameras,
+		media.NewMediaHelper(&configs.MediaMtxConfigs{
+			Host:     "api.mediamtx.ntranlab.com",
+			MediaUrl: "103.165.142.15",
+			PublishPorts: configs.MtxPorts{
+				WebRTC: 8889,
+			},
+			ProviderPorts: configs.MtxPorts{
+				Srt: 8890,
+			},
+			Api: 9997,
+		}),
 	)
 
 	if err := configuration.build(); err != nil {

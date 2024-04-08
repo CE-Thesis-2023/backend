@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"go.uber.org/zap"
@@ -16,6 +17,7 @@ type Configuration struct {
 	mqtt            *db.OpenGateMqttConfiguration
 	openGateCameras []db.OpenGateCameraSettings
 	cameras         []db.Camera
+	mediaHelper     *media.MediaHelper
 }
 
 func NewConfiguration(
@@ -23,6 +25,7 @@ func NewConfiguration(
 	mqtt *db.OpenGateMqttConfiguration,
 	openGateCameras []db.OpenGateCameraSettings,
 	cameras []db.Camera,
+	mediaHelper *media.MediaHelper,
 ) *Configuration {
 	return &Configuration{
 		c:               make(map[string]interface{}),
@@ -30,6 +33,7 @@ func NewConfiguration(
 		mqtt:            mqtt,
 		openGateCameras: openGateCameras,
 		cameras:         cameras,
+		mediaHelper:     mediaHelper,
 	}
 }
 
@@ -126,12 +130,26 @@ func (c *Configuration) buildCameras() error {
 		ffmpeg := make(map[string]interface{})
 		inputs := make([]map[string]interface{}, 0, 1)
 		input := make(map[string]interface{})
-		input["path"] = "TODO"
-		input["input_args"] = "TODO"
+		input["path"] = c.mediaHelper.BuildRTSPSourceUrl(camera)
+		input["input_args"] = "preset-rtsp-generic"
+		input["output_args"] = "preset-rtsp-generic"
+		input["hwaccel_args"] = []string{"preset-vaapi"}
+		input["retry_interval"] = 10
 		input["roles"] = []string{"detect"}
 		inputs = append(inputs, input)
 		ffmpeg["inputs"] = inputs
 		m["ffmpeg"] = ffmpeg
+
+		onvif := make(map[string]interface{})
+		onvif["host"] = camera.Ip
+		onvif["port"] = camera.Port
+		onvif["username"] = camera.Username
+		onvif["password"] = camera.Password
+		autotracking := make(map[string]interface{})
+		autotracking["enabled"] = true
+		autotracking["zooming"] = "disabled"
+		onvif["autotracking"] = autotracking
+		m["onvif"] = onvif
 
 		detect := make(map[string]interface{})
 		detect["height"] = configs.Height

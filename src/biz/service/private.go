@@ -328,14 +328,12 @@ func (s *PrivateService) GetTranscoderOpenGateConfiguration(ctx context.Context,
 		return nil, err
 	}
 
-	cameraIds := make([]string, 0, len(cameras))
+	settingsIds := make([]string, 0, len(cameras))
 	for _, camera := range cameras {
-		cameraIds = append(cameraIds, camera.CameraId)
+		settingsIds = append(settingsIds, camera.SettingsId)
 	}
-	logger.SDebug("GetTranscoderOpenGateConfiguration: cameraIds",
-		zap.Reflect("cameraIds", cameraIds))
 
-	openGateCameras, err := s.webService.getOpenGateCameraSettings(ctx, cameraIds)
+	openGateCameras, err := s.webService.getOpenGateCameraSettings(ctx, settingsIds)
 	if err != nil {
 		logger.SDebug("GetTranscoderOpenGateConfiguration: getOpenGateCameraSettings", zap.Error(err))
 		return nil, err
@@ -346,6 +344,7 @@ func (s *PrivateService) GetTranscoderOpenGateConfiguration(ctx context.Context,
 		mqtt,
 		openGateCameras,
 		cameras,
+		s.mediaHelper,
 	)
 
 	yamlConfigs, err := configs.YAML()
