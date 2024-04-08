@@ -4,6 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
+	"time"
+
+	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -12,10 +17,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-	"math"
-	"net/url"
-	"strings"
-	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
@@ -26,17 +27,23 @@ import (
 )
 
 type WebService struct {
-	db         *custdb.LayeredDb
-	cache      *ristretto.Cache
-	mqttClient *autopaho.ConnectionManager
-	builder    squirrel.StatementBuilderType
+	db          *custdb.LayeredDb
+	cache       *ristretto.Cache
+	mqttClient  *autopaho.ConnectionManager
+	builder     squirrel.StatementBuilderType
+	mediaHelper *media.MediaHelper
 }
 
 func NewWebService() *WebService {
 	return &WebService{
 		db:         custdb.Layered(),
 		mqttClient: custmqtt.Client(),
-		builder:    squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+		builder: squirrel.
+			StatementBuilder.
+			PlaceholderFormat(squirrel.Dollar),
+		mediaHelper: media.NewMediaHelper(&configs.
+			Get().
+			MediaEngine),
 	}
 }
 
@@ -885,7 +892,7 @@ func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRe
 		return nil, custerror.FormatNotFound("camera not found")
 	}
 
-	streamUrl := s.buildStreamUrl(&camera[0])
+	streamUrl := s.mediaHelper.BuildWebRTCViewStream(camera[0].CameraId)
 	logger.SDebug("GetStreamInfo: streamUrl", zap.String("url", streamUrl))
 
 	transcoder, err := s.getDeviceById(ctx, []string{camera[0].TranscoderId})

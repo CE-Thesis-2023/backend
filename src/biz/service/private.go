@@ -2,8 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 
+	"github.com/CE-Thesis-2023/backend/src/helper/media"
+	"github.com/CE-Thesis-2023/backend/src/helper/opengate"
+	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
@@ -15,14 +19,16 @@ import (
 )
 
 type PrivateService struct {
-	db         *custdb.LayeredDb
-	webService *WebService
+	db          *custdb.LayeredDb
+	webService  *WebService
+	mediaHelper *media.MediaHelper
 }
 
 func NewPrivateService() *PrivateService {
 	return &PrivateService{
-		db:         custdb.Layered(),
-		webService: GetWebService(),
+		db:          custdb.Layered(),
+		webService:  GetWebService(),
+		mediaHelper: media.NewMediaHelper(&configs.Get().MediaEngine),
 	}
 }
 
@@ -291,5 +297,101 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 func (s *PrivateService) GetTranscoderOpenGateConfiguration(ctx context.Context, req *web.GetTranscoderOpenGateConfigurationRequest) (*web.GetTranscoderOpenGateConfigurationResponse, error) {
 	logger.SInfo("GetTranscoderOpenGateConfiguration: request",
 		zap.Any("request", req))
-	return nil, nil
+
+	transcoder, err := s.webService.getDeviceById(ctx, []string{req.TranscoderId})
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: getDeviceById", zap.Error(err))
+		return nil, err
+	}
+	if len(transcoder) == 0 {
+		logger.SError("GetTranscoderOpenGateConfiguration: transcoder not found")
+		return nil, custerror.ErrorNotFound
+	}
+
+	cameras, err := s.webService.getCamerasByTranscoderId(ctx, transcoder[0].DeviceId, nil)
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: getCamerasByTranscoderId", zap.Error(err))
+		return nil, err
+	}
+
+	integration, err := s.webService.getOpenGateIntegrationById(ctx,
+		transcoder[0].
+			OpenGateIntegrationId)
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: getOpenGateIntegrationById", zap.Error(err))
+		return nil, err
+	}
+
+	mqtt, err := s.webService.getOpenGateMqttConfigurationById(ctx, integration.MqttId)
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: getOpenGateMqttConfigurationById", zap.Error(err))
+		return nil, err
+	}
+
+	cameraIds := make([]string, 0, len(cameras))
+	for _, camera := range cameras {
+		cameraIds = append(cameraIds, camera.CameraId)
+	}
+	logger.SDebug("GetTranscoderOpenGateConfiguration: cameraIds",
+		zap.Reflect("cameraIds", cameraIds))
+
+	openGateCameras, err := s.webService.getOpenGateCameraSettings(ctx, cameraIds)
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: getOpenGateCameraSettings", zap.Error(err))
+		return nil, err
+	}
+
+	configs := opengate.NewConfiguration(
+		integration,
+		mqtt,
+		openGateCameras,
+		cameras,
+	)
+
+	yamlConfigs, err := configs.YAML()
+	if err != nil {
+		logger.SDebug("GetTranscoderOpenGateConfiguration: YAML", zap.Error(err))
+		return nil, err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(yamlConfigs)
+
+	return &web.GetTranscoderOpenGateConfigurationResponse{
+		Base64: encoded,
+	}, nil
+}
+
+func (s *PrivateService) GetStreamConfigurations(ctx context.Context, req *web.GetStreamConfigurationsRequest) (*web.GetStreamConfigurationsResponse, error) {
+	logger.SInfo("GetStreamConfigurations: request",
+		zap.Any("request", req))
+
+	cameras, err := s.webService.getCameraById(ctx, req.CameraId)
+	if err != nil {
+		logger.SDebug("GetStreamConfigurations: getCameraGroupById", zap.Error(err))
+		return nil, err
+	}
+
+	configurations := make([]web.TranscoderStreamConfiguration, 0, len(cameras))
+	for _, camera := range cameras {
+		rtspSourceUrl := s.mediaHelper.BuildRTSPSourceUrl(camera)
+		srtPublishUrl, err := s.mediaHelper.BuildSRTPublishUrl(camera.CameraId)
+		if err != nil {
+			logger.SDebug("GetStreamConfigurations: BuildSRTPublishUrl", zap.Error(err))
+			return nil, err
+		}
+		height, width, fps := 720, 1280, 30
+		c := web.TranscoderStreamConfiguration{
+			CameraId:   camera.CameraId,
+			SourceUrl:  rtspSourceUrl,
+			PublishUrl: srtPublishUrl,
+			Height:     height,
+			Width:      width,
+			Fps:        fps,
+		}
+		configurations = append(configurations, c)
+	}
+
+	return &web.GetStreamConfigurationsResponse{
+		StreamConfigurations: configurations,
+	}, nil
 }

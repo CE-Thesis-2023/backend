@@ -15,5 +15,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		priv.Get("/opengate/cameras", GetOpenGateCameraSettings)
 		priv.Get("/opengate/:id/mqtt", GetOpenGateMqttSettings)
 		priv.Get("/opengate/:id", GetOpenGateIntegrationConfigurations)
+		priv.Get("/transcoders/streams", GetTranscoderStreamConfigurations)
+		priv.Get("/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
 	}
 }

@@ -263,3 +263,11 @@ type GetTranscoderOpenGateConfigurationRequest struct {
 type GetTranscoderOpenGateConfigurationResponse struct {
 	Base64 string `json:"base64"`
 }
+
+type GetStreamConfigurationsRequest struct {
+	CameraId []string `json:"cameraId"`
+}
+
+type GetStreamConfigurationsResponse struct {
+	StreamConfigurations []TranscoderStreamConfiguration `json:"streamConfigurations"`
+}

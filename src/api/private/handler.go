@@ -142,3 +142,41 @@ func GetOpenGateIntegrationConfigurations(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+func GetTranscoderStreamConfigurations(ctx *fiber.Ctx) error {
+	logger.SInfo("GetTranscoderStreamConfigurations: request")
+
+	cameraIds := ctx.Query("camera_id")
+	if len(cameraIds) == 0 {
+		return custerror.FormatInvalidArgument("missing camera_id as query string")
+	}
+	ids := strings.Split(cameraIds, ",")
+	resp, err := service.GetPrivateService().GetStreamConfigurations(ctx.Context(), &web.GetStreamConfigurationsRequest{
+		CameraId: ids,
+	})
+	if err != nil {
+		logger.SError("GetTranscoderStreamConfigurations: service.GetTranscoderStreamConfigurations error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func GetTranscoderOpenGateConfiguration(ctx *fiber.Ctx) error {
+	logger.SInfo("GetTranscoderOpenGateConfiguration: request")
+
+	id := ctx.Params("id")
+	if len(id) == 0 {
+		return custerror.FormatInvalidArgument("missing id params")
+	}
+
+	resp, err := service.GetPrivateService().GetTranscoderOpenGateConfiguration(ctx.Context(), &web.GetTranscoderOpenGateConfigurationRequest{
+		TranscoderId: id,
+	})
+	if err != nil {
+		logger.SError("GetTranscoderOpenGateConfiguration: service.GetTranscoderOpenGateConfiguration error", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(resp)
+}

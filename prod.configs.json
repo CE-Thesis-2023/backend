@@ -42,6 +42,7 @@
   },
   "mediaEngine": {
     "host": "mediamtx",
+    "mediaUrl": "103.165.142.15",
     "providerPorts": {
       "srt": 8890
     },

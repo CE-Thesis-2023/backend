@@ -13,10 +13,10 @@ func TestMediaHelper_RTSPSourceUrl(t *testing.T) {
 		Host:     "api.mediamtx.ntranlab.com",
 		MediaUrl: "103.165.142.15",
 		PublishPorts: configs.MtxPorts{
-			Srt: 8890,
+			WebRTC: 8889,
 		},
 		ProviderPorts: configs.MtxPorts{
-			WebRTC: 8889,
+			Srt: 8890,
 		},
 		Api: 9997,
 	}
@@ -42,10 +42,10 @@ func TestMediaHelper_SRTPublishPort(t *testing.T) {
 		Host:     "api.mediamtx.ntranlab.com",
 		MediaUrl: "103.165.142.15",
 		PublishPorts: configs.MtxPorts{
-			Srt: 8890,
+			WebRTC: 8889,
 		},
 		ProviderPorts: configs.MtxPorts{
-			WebRTC: 8889,
+			Srt: 8890,
 		},
 		Api: 9997,
 	}

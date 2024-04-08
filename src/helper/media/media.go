@@ -10,27 +10,27 @@ import (
 	"go.uber.org/zap"
 )
 
-type mediaHelper struct {
+type MediaHelper struct {
 	configs *configs.MediaMtxConfigs
 }
 
-func NewMediaHelper(configs *configs.MediaMtxConfigs) *mediaHelper {
-	return &mediaHelper{
+func NewMediaHelper(configs *configs.MediaMtxConfigs) *MediaHelper {
+	return &MediaHelper{
 		configs: configs,
 	}
 }
 
-func (m *mediaHelper) BuildSRTPublishUrl(streamName string) (string, error) {
+func (m *MediaHelper) BuildSRTPublishUrl(streamName string) (string, error) {
 	configs := m.configs
 
 	streamUrl := &url.URL{}
 	streamUrl.Scheme = "srt"
 	streamUrl.Host = configs.MediaUrl
-	if configs.PublishPorts.Srt != 0 {
+	if configs.ProviderPorts.Srt != 0 {
 		streamUrl.Host = fmt.Sprintf(
 			"%s:%d",
 			configs.MediaUrl,
-			configs.PublishPorts.Srt)
+			configs.ProviderPorts.Srt)
 	}
 	queries := streamUrl.Query()
 	queries.Add("streamid", fmt.Sprintf("publish:%s", streamName))
@@ -46,7 +46,7 @@ func (m *mediaHelper) BuildSRTPublishUrl(streamName string) (string, error) {
 	return url, nil
 }
 
-func (m *mediaHelper) BuildRTSPSourceUrl(camera db.Camera) string {
+func (m *MediaHelper) BuildRTSPSourceUrl(camera db.Camera) string {
 	u := &url.URL{}
 	u.Scheme = "rtsp"
 	u.Host = camera.Ip
@@ -61,7 +61,7 @@ func (m *mediaHelper) BuildRTSPSourceUrl(camera db.Camera) string {
 	return url
 }
 
-func (m *mediaHelper) BuildWebRTCViewStream(streamName string) string {
+func (m *MediaHelper) BuildWebRTCViewStream(streamName string) string {
 	configs := m.configs
 	url := &url.URL{}
 	url.Scheme = "http"
