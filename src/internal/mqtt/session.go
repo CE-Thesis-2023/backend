@@ -140,7 +140,11 @@ func (s *MQTTSession) Request(ctx context.Context, r *RequestReplyRequest) error
 		return custerror.FormatTimeout("request timeout")
 	case msg := <-c:
 		if err := json.Unmarshal(msg, r.Reply); err != nil {
-			return err
+			// is it an error message?
+			var errMessage events.EventReply
+			if err := json.Unmarshal(msg, &errMessage); err != nil {
+				return errMessage.Err
+			}
 		}
 	}
 
