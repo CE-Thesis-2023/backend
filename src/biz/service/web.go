@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
 	"strings"
 	"time"
 
@@ -1568,4 +1569,48 @@ func (s *WebService) fromObjectTrackingEventToDto(event *events.DetectionEventSt
 	}
 
 	return dto
+}
+
+func (s *WebService) DoDeviceHealthcheck(ctx context.Context, req *web.DeviceHealthcheckRequest) (*web.DeviceHealthcheckResponse, error) {
+	logger.SDebug("DoDeviceHealthcheck: request", zap.Reflect("request", req))
+
+	if err := s.validateDeviceHealthcheckRequest(req); err != nil {
+		logger.SError("DoDeviceHealthcheck: validateDeviceHealthcheckRequest error", zap.Error(err))
+	}
+
+	transcoder, err := s.getDeviceById(ctx, []string{req.TranscoderId})
+	if err != nil {
+		logger.SError("DoDeviceHealthcheck: getDeviceById error", zap.Error(err))
+		return nil, err
+	}
+	if len(transcoder) == 0 {
+		logger.SError("DoDeviceHealthcheck: transcoder not found")
+		return nil, custerror.FormatNotFound("transcoder not found")
+	}
+
+	t := transcoder[0]
+	r := &custmqtt.RequestReplyRequest{
+		Topic: events.Event{
+			Prefix:    "commands",
+			ID:        t.DeviceId,
+			Type:      "healthcheck",
+			Arguments: []string{},
+		},
+		Request:    nil,
+		Reply:      &web.DeviceHealthcheckResponse{},
+		MaxTimeout: 5 * time.Second,
+	}
+	err = s.reqreply.Request(ctx, r)
+	if err != nil {
+		logger.SError("DoDeviceHealthcheck: request error", zap.Error(err))
+		return nil, err
+	}
+	return r.Reply.(*web.DeviceHealthcheckResponse), nil
+}
+
+func (s *WebService) validateDeviceHealthcheckRequest(req *web.DeviceHealthcheckRequest) error {
+	if req.TranscoderId == "" {
+		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	return nil
 }

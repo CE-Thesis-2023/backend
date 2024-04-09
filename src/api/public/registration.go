@@ -14,6 +14,7 @@ func ServiceRegistration() func(app *fiber.App) {
 
 		app.Get("/api/devices", GetTranscoderDevices)
 		app.Put("/api/devices", UpdateTranscoder)
+		app.Get("/api/devices/heathcheck", DoDeviceHealthcheck)
 
 		app.Get("/api/cameras", GetCameras)
 		app.Post("/api/cameras", CreateCamera)

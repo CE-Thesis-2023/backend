@@ -371,3 +371,21 @@ func DeleteObjectTrackingEvent(ctx *fiber.Ctx) error {
 
 	return ctx.SendStatus(http.StatusAccepted)
 }
+
+func DoDeviceHealthcheck(ctx *fiber.Ctx) error {
+	logger.SDebug("DoDeviceHealthcheck: request")
+
+	deviceId := ctx.Query("transcoder_id")
+	if len(deviceId) == 0 {
+		return custerror.FormatInvalidArgument("missing deviceId as parameter")
+	}
+
+	resp, err := service.GetWebService().DoDeviceHealthcheck(ctx.UserContext(), &web.DeviceHealthcheckRequest{
+		TranscoderId: deviceId,
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}

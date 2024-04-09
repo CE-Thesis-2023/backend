@@ -285,3 +285,11 @@ type GetMQTTEventEndpointResponse struct {
 	SubscribeOn string `json:"subscribeOn"`
 	PublishOn   string `json:"publishOn"`
 }
+
+type DeviceHealthcheckRequest struct {
+	TranscoderId string `json:"transcoderId"`
+}
+
+type DeviceHealthcheckResponse struct {
+	Status string `json:"status"`
+}
