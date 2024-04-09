@@ -30,17 +30,21 @@ func NewTranscoderEventProcessor(privateService *service.PrivateService, webServ
 }
 
 type TranscoderActorsPool struct {
-	engine *actor.Engine
+	engine         *actor.Engine
+	privateService *service.PrivateService
+	webService     *service.WebService
 }
 
-func NewTranscoderActorsPool() *TranscoderActorsPool {
+func NewTranscoderActorsPool(privateService *service.PrivateService, webService *service.WebService) *TranscoderActorsPool {
 	engine, err := actor.NewEngine(&actor.EngineConfig{})
 	if err != nil {
 		logger.SFatal("unable to create actor engine",
 			zap.Error(err))
 	}
 	return &TranscoderActorsPool{
-		engine: engine,
+		engine:         engine,
+		privateService: privateService,
+		webService:     webService,
 	}
 }
 
@@ -54,7 +58,9 @@ func (p *TranscoderActorsPool) Allocate(transcoderId string) *actor.PID {
 	if existingPid != nil {
 		return existingPid
 	}
-	pid := p.engine.Spawn(newTranscoderActor,
+	pid := p.engine.Spawn(func() actor.Receiver {
+		return NewTranscoderActor(p.privateService, p.webService)
+	},
 		"transcoder",
 		actor.WithID(transcoderId),
 		actor.WithInboxSize(10))
@@ -86,11 +92,11 @@ type TranscoderActor struct {
 	handler TranscoderEventProcessor
 }
 
-func newTranscoderActor() actor.Receiver {
+func NewTranscoderActor(privateService *service.PrivateService, webService *service.WebService) actor.Receiver {
 	return &TranscoderActor{
 		handler: NewTranscoderEventProcessor(
-			service.GetPrivateService(),
-			service.GetWebService()),
+			privateService,
+			webService),
 	}
 }
 

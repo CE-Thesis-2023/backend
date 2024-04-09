@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
-	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
@@ -20,7 +19,6 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
-	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
@@ -29,21 +27,19 @@ import (
 type WebService struct {
 	db          *custdb.LayeredDb
 	cache       *ristretto.Cache
-	mqttClient  *autopaho.ConnectionManager
 	builder     squirrel.StatementBuilderType
 	mediaHelper *media.MediaHelper
+	reqreply    *custmqtt.MQTTSession
 }
 
-func NewWebService() *WebService {
+func NewWebService(reqreply *custmqtt.MQTTSession, mediaHelper *media.MediaHelper) *WebService {
 	return &WebService{
-		db:         custdb.Layered(),
-		mqttClient: custmqtt.Client(),
+		db: custdb.Layered(),
 		builder: squirrel.
 			StatementBuilder.
 			PlaceholderFormat(squirrel.Dollar),
-		mediaHelper: media.NewMediaHelper(&configs.
-			Get().
-			MediaEngine),
+		mediaHelper: mediaHelper,
+		reqreply:    reqreply,
 	}
 }
 

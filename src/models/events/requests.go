@@ -1,6 +1,12 @@
 package events
 
-import "github.com/CE-Thesis-2023/backend/src/models/db"
+import (
+	"encoding/json"
+	"path/filepath"
+	"strings"
+
+	"github.com/CE-Thesis-2023/backend/src/models/db"
+)
 
 type DeviceRegistrationRequest struct {
 	DeviceId string `json:"deviceId"`
@@ -66,4 +72,56 @@ type PTZCtrlRequest struct {
 	Pan      int    `json:"pan"`
 	Tilt     int    `json:"tilt"`
 	Duration int    `json:"duration"`
+}
+
+type Event struct {
+	Prefix    string
+	ID        string
+	Type      string
+	Arguments []string
+}
+
+func (e *Event) Topic() string {
+	p := e.Prefix
+	if e.ID != "" {
+		p = filepath.Join(p, e.ID)
+	}
+	if e.Type != "" {
+		p = filepath.Join(p, e.Type)
+	}
+	return p
+}
+
+func (e *Event) String() string {
+	return e.Topic()
+}
+
+func (e *Event) Parse(topic string) {
+	parts := strings.Split(topic, "/")
+	if len(parts) == 0 {
+		return
+	}
+	e.Prefix = parts[0]
+	if len(parts) > 1 {
+		e.ID = parts[1]
+	}
+	if len(parts) > 2 {
+		e.Type = parts[2]
+	}
+	if len(parts) > 3 {
+		e.Arguments = parts[3:]
+	}
+}
+
+const (
+	EventReply_OK = `{ "status": "ok" }`
+)
+
+type EventReply struct {
+	Status string `json:"status"`
+	Err    error  `json:"error"`
+}
+
+func (r *EventReply) JSON() ([]byte, error) {
+	return json.Marshal(r)
 }

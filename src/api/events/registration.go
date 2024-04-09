@@ -2,17 +2,35 @@ package eventsapi
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
+	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
 )
+
+var once sync.Once
+
+func Init(configs *configs.Configs, ctx context.Context) {
+	once.Do(func() {
+		custmqtt.NewClient(ctx,
+			custmqtt.WithClientGlobalConfigs(&configs.MqttStore),
+			custmqtt.WithOnReconnection(Register),
+			custmqtt.WithOnConnectError(func(err error) {
+				logger.Error("MQTT Connection failed", zap.Error(err))
+			}),
+			custmqtt.WithClientError(ClientErrorHandler),
+			custmqtt.WithOnServerDisconnect(DisconnectHandler),
+			custmqtt.WithHandlerRegister(RouterHandler()))
+	})
+}
 
 func Register(cm *autopaho.ConnectionManager, connack *paho.Connack) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -66,7 +84,10 @@ func WrapForHandlers(handler func(p *paho.Publish) error) func(p *paho.Publish) 
 }
 
 func registerTranscoderTopics(router paho.Router) {
-	actors := transcoder.NewTranscoderActorsPool()
+	actors := transcoder.NewTranscoderActorsPool(
+		service.GetPrivateService(),
+		service.GetWebService())
+
 	webService := service.GetWebService()
 
 	router.RegisterHandler("opengate/#", WrapForHandlers(func(p *paho.Publish) error {

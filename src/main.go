@@ -13,13 +13,15 @@ import (
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 
 	"go.uber.org/zap"
 )
 
 func main() {
+	// terrible code but a workaround
+	globalCtx, cancelGlobalCtx := context.WithCancel(context.Background())
+
 	app.Run(
 		time.Second*10,
 		func(configs *configs.Configs, zl *zap.Logger) []app.Optioner {
@@ -37,10 +39,7 @@ func main() {
 					custhttp.WithGlobalConfigs(&configs.Private),
 				)),
 				app.WithFactoryHook(func() error {
-					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-					defer cancel()
-
-					custdb.Init(ctx, configs)
+					custdb.Init(globalCtx, configs)
 					custdb.Migrate(custdb.Gorm(),
 						&db.Transcoder{},
 						&db.OpenGateIntegration{},
@@ -51,24 +50,14 @@ func main() {
 						&db.OpenGateIntegration{},
 						&db.OpenGateMqttConfiguration{},
 					)
-					service.Init()
 
-					custmqtt.InitClient(
-						context.Background(),
-						custmqtt.WithClientGlobalConfigs(&configs.MqttStore),
-						custmqtt.WithOnReconnection(eventsapi.Register),
-						custmqtt.WithOnConnectError(func(err error) {
-							logger.Error("MQTT Connection failed", zap.Error(err))
-						}),
-						custmqtt.WithClientError(eventsapi.ClientErrorHandler),
-						custmqtt.WithOnServerDisconnect(eventsapi.DisconnectHandler),
-						custmqtt.WithHandlerRegister(eventsapi.RouterHandler()),
-					)
+					service.Init(configs, globalCtx)
+					eventsapi.Init(configs, globalCtx)
 					return nil
 				}),
 				app.WithShutdownHook(func(ctx context.Context) {
+					cancelGlobalCtx()
 					custdb.Stop(ctx)
-					custmqtt.StopClient(ctx)
 					logger.Close()
 				}),
 			}

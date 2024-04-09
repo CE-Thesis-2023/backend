@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
@@ -15,93 +14,87 @@ import (
 	"github.com/eclipse/paho.golang/paho"
 )
 
-var once sync.Once
+func NewClient(ctx context.Context, options ...ClientOptioner) (*autopaho.ConnectionManager, error) {
+	opts := &ClientOptions{}
+	for _, opt := range options {
+		opt(opts)
+	}
 
-var mqttClient *autopaho.ConnectionManager
+	globalConfigs := opts.globalConfigs
+	connUrl := url.URL{}
+	if globalConfigs.Tls.Enabled() {
+		connUrl.Scheme = "tls"
+	} else {
+		connUrl.Scheme = "mqtt"
+	}
 
-func InitClient(ctx context.Context, options ...ClientOptioner) {
-	once.Do(func() {
-		opts := &ClientOptions{}
-		for _, opt := range options {
-			opt(opts)
-		}
+	hostname := globalConfigs.Host
 
-		globalConfigs := opts.globalConfigs
-		connUrl := url.URL{}
-		if globalConfigs.Tls.Enabled() {
-			connUrl.Scheme = "tls"
-		} else {
-			connUrl.Scheme = "mqtt"
-		}
+	if globalConfigs.Port > 0 {
+		hostname = fmt.Sprintf("%s:%d", globalConfigs.Host, globalConfigs.Port)
+	}
+	connUrl.Host = hostname
 
-		hostname := globalConfigs.Host
+	router := paho.NewStandardRouter()
 
-		if globalConfigs.Port > 0 {
-			hostname = fmt.Sprintf("%s:%d", globalConfigs.Host, globalConfigs.Port)
-		}
-		connUrl.Host = hostname
+	if opts.register != nil {
+		opts.register(router)
+	}
 
-		router := paho.NewStandardRouter()
+	clientConfigs := autopaho.ClientConfig{
+		KeepAlive:         20,
+		ConnectRetryDelay: time.Second * 5,
+		ConnectTimeout:    time.Second * 2,
 
-		if opts.register != nil {
-			opts.register(router)
-		}
+		BrokerUrls: []*url.URL{
+			&connUrl,
+		},
+		ClientConfig: paho.ClientConfig{
+			Router: router,
+		},
+	}
 
-		clientConfigs := autopaho.ClientConfig{
-			KeepAlive:         20,
-			ConnectRetryDelay: time.Second * 5,
-			ConnectTimeout:    time.Second * 2,
-
-			BrokerUrls: []*url.URL{
-				&connUrl,
-			},
-			ClientConfig: paho.ClientConfig{
-				Router: router,
-			},
-		}
-
-		if globalConfigs.Tls.Enabled() {
-			tlsConfigs, err := makeTlsConfigs(globalConfigs)
-			if err != nil {
-				log.Fatalf("mqtt.InitClient: makeTlsConfigs err = %s", err)
-				return
-			}
-			clientConfigs.TlsCfg = tlsConfigs
-		}
-
-		if globalConfigs.HasAuth() {
-			clientConfigs.SetUsernamePassword(globalConfigs.Username, []byte(globalConfigs.Password))
-		}
-
-		if opts.reconCallback != nil {
-			clientConfigs.OnConnectionUp = opts.reconCallback
-		}
-
-		if opts.connErrCallback != nil {
-			clientConfigs.OnConnectError = opts.connErrCallback
-		}
-
-		if opts.clientErr != nil {
-			clientConfigs.ClientConfig.OnClientError = opts.clientErr
-		}
-
-		if opts.serverDisconnect != nil {
-			clientConfigs.ClientConfig.OnServerDisconnect = opts.serverDisconnect
-		}
-
-		connManager, err := autopaho.NewConnection(ctx, clientConfigs)
+	if globalConfigs.Tls.Enabled() {
+		tlsConfigs, err := makeTlsConfigs(globalConfigs)
 		if err != nil {
-			log.Fatalf("mqtt.InitClient: autopaho.NewConnection err = %s", err)
-			return
+			log.Fatalf("mqtt.InitClient: makeTlsConfigs err = %s", err)
+			return nil, err
 		}
+		clientConfigs.TlsCfg = tlsConfigs
+	}
 
-		if err := connManager.AwaitConnection(ctx); err != nil {
-			log.Fatalf("mqtt.InitClient: AwaitConnection err = %s", err)
-			return
-		}
+	if globalConfigs.HasAuth() {
+		clientConfigs.SetUsernamePassword(globalConfigs.Username, []byte(globalConfigs.Password))
+	}
 
-		mqttClient = connManager
-	})
+	if opts.reconCallback != nil {
+		clientConfigs.OnConnectionUp = opts.reconCallback
+	}
+
+	if opts.connErrCallback != nil {
+		clientConfigs.OnConnectError = opts.connErrCallback
+	}
+
+	if opts.clientErr != nil {
+		clientConfigs.ClientConfig.OnClientError = opts.clientErr
+	}
+
+	if opts.serverDisconnect != nil {
+		clientConfigs.ClientConfig.OnServerDisconnect = opts.serverDisconnect
+	}
+
+	connManager, err := autopaho.NewConnection(ctx, clientConfigs)
+	if err != nil {
+		log.Fatalf("mqtt.InitClient: autopaho.NewConnection err = %s", err)
+		return nil, err
+	}
+
+	if err := connManager.AwaitConnection(ctx); err != nil {
+		log.Fatalf("mqtt.InitClient: AwaitConnection err = %s", err)
+		return nil, err
+	}
+
+	return connManager, nil
 }
 
 func makeTlsConfigs(globalConfigs *configs.EventStoreConfigs) (*tls.Config, error) {
@@ -121,16 +114,6 @@ func makeTlsConfigs(globalConfigs *configs.EventStoreConfigs) (*tls.Config, erro
 			credentials,
 		},
 	}, nil
-}
-
-func Client() *autopaho.ConnectionManager {
-	return mqttClient
-}
-
-func StopClient(ctx context.Context) {
-	if mqttClient != nil {
-		mqttClient.Disconnect(ctx)
-	}
 }
 
 type ClientOptions struct {

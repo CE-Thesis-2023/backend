@@ -12,6 +12,7 @@ import (
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
@@ -24,14 +25,16 @@ type PrivateService struct {
 	webService  *WebService
 	mediaHelper *media.MediaHelper
 	mqttConfigs *configs.EventStoreConfigs
+	reqreply    *custmqtt.MQTTSession
 }
 
-func NewPrivateService() *PrivateService {
+func NewPrivateService(reqreply *custmqtt.MQTTSession, webService *WebService, mediaHelper *media.MediaHelper, mqttConfigs *configs.EventStoreConfigs) *PrivateService {
 	return &PrivateService{
 		db:          custdb.Layered(),
-		webService:  GetWebService(),
-		mediaHelper: media.NewMediaHelper(&configs.Get().MediaEngine),
-		mqttConfigs: &configs.Get().MqttStore,
+		webService:  webService,
+		mediaHelper: mediaHelper,
+		mqttConfigs: mqttConfigs,
+		reqreply:    reqreply,
 	}
 }
 
