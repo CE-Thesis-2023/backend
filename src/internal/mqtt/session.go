@@ -32,8 +32,10 @@ func NewMQTTSession(
 	ctx context.Context,
 	configs *configs.EventStoreConfigs) (*MQTTSession, error) {
 	s := &MQTTSession{
-		client:  nil,
-		configs: configs,
+		client:              nil,
+		configs:             configs,
+		currReqReplySession: make(map[uint64]chan []byte),
+		incrementalId:       0,
 	}
 	if err := s.init(ctx); err != nil {
 		return nil, err
@@ -168,6 +170,6 @@ func (s *MQTTSession) allocateChannel() (id uint64) {
 }
 
 func (s *MQTTSession) toReplyTopic(topic events.Event) events.Event {
-	topic.Arguments = append(topic.Arguments, "reply")
+	topic.Prefix = fmt.Sprintf("reply/%s", topic.Prefix)
 	return topic
 }
