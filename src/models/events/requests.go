@@ -103,13 +103,16 @@ func (e *Event) Parse(topic string) {
 	}
 	e.Prefix = parts[0]
 	if len(parts) > 1 {
-		e.ID = parts[1]
+		_ = parts[1]
 	}
 	if len(parts) > 2 {
 		e.Type = parts[2]
 	}
 	if len(parts) > 3 {
-		e.Arguments = parts[3:]
+		e.ID = parts[3]
+	}
+	if len(parts) > 4 {
+		e.Arguments = parts[4:]
 	}
 }
 
