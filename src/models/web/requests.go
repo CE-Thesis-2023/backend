@@ -174,8 +174,8 @@ type GetCamerasByGroupIdResponse struct {
 	Cameras []db.Camera `json:"cameras"`
 }
 
-type GetCameraByOpenGateIdRequest struct {
-	OpenGateId          string   `json:"openGateId"`
+type GetCameraByClientIdRequest struct {
+	ClientId            string   `json:"openGateId"`
 	OpenGateCameraNames []string `json:"openGateCameraNames"`
 }
 

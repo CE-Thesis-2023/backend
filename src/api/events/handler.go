@@ -71,10 +71,10 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 		}
 	}
 
-	resp, err := c.webService.GetCamerasByOpenGateId(
+	resp, err := c.webService.GetCamerasByClientId(
 		ctx,
-		&web.GetCameraByOpenGateIdRequest{
-			OpenGateId:          c.ClientId,
+		&web.GetCameraByClientIdRequest{
+			ClientId:            c.ClientId,
 			OpenGateCameraNames: names,
 		})
 	if err != nil {
