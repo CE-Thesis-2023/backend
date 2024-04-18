@@ -173,3 +173,14 @@ func (m *MediaHelper) getImageBasePath(id string) *string {
 		id)
 	return &p
 }
+
+func (m *MediaHelper) DeleteImage(ctx context.Context, path string) error {
+	_, err := m.s3Client.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
+		Bucket: &m.s3Configs.Bucket,
+		Key:    m.getImageBasePath(path),
+	})
+	if err != nil {
+		return custerror.FormatInternalError("failed to delete image: %v", err)
+	}
+	return nil
+}

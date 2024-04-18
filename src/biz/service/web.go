@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sync"
 
 	"strings"
 	"time"
 
+	"github.com/CE-Thesis-2023/backend/src/helper"
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -17,6 +19,7 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
+	"github.com/Kagami/go-face"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/dgraph-io/ristretto"
@@ -31,9 +34,10 @@ type WebService struct {
 	builder     squirrel.StatementBuilderType
 	mediaHelper *media.MediaHelper
 	reqreply    *custmqtt.MQTTSession
+	cvs         *ComputerVisionService
 }
 
-func NewWebService(reqreply *custmqtt.MQTTSession, mediaHelper *media.MediaHelper) *WebService {
+func NewWebService(reqreply *custmqtt.MQTTSession, mediaHelper *media.MediaHelper, cvs *ComputerVisionService) *WebService {
 	return &WebService{
 		db: custdb.Layered(),
 		builder: squirrel.
@@ -41,6 +45,7 @@ func NewWebService(reqreply *custmqtt.MQTTSession, mediaHelper *media.MediaHelpe
 			PlaceholderFormat(squirrel.Dollar),
 		mediaHelper: mediaHelper,
 		reqreply:    reqreply,
+		cvs:         cvs,
 	}
 }
 
@@ -1735,4 +1740,120 @@ func (s *WebService) validateGetPersonImagePresignedUrlRequest(req *web.GetDetec
 		return custerror.FormatInvalidArgument("missing person id")
 	}
 	return nil
+}
+
+func (s *WebService) AddDetectablePerson(ctx context.Context, req *web.AddDetectablePersonRequest) (*web.AddDetectablePersonResponse, error) {
+	logger.SInfo("AddDetectablePerson: request",
+		zap.String("request", req.String()))
+
+	if err := s.validateAddDetectablePersonRequest(req); err != nil {
+		logger.SError("AddDetectablePerson: validateAddDetectablePersonRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	faces, err := s.cvs.Detect(ctx, &DetectRequest{
+		Base64Image: req.Base64Image,
+	})
+	if err != nil {
+		logger.SError("AddDetectablePerson: detect error",
+			zap.Error(err))
+		return nil, err
+	}
+	if len(faces) == 0 {
+		logger.SError("AddDetectablePerson: no face detected")
+		return nil, custerror.FormatInternalError("no face detected")
+	}
+	if len(faces) > 1 {
+		logger.SError("AddDetectablePerson: multiple faces detected")
+		return nil, custerror.FormatInternalError("multiple faces detected")
+	}
+
+	firstFace := faces[0]
+	similarPeople, err := s.cvs.Search(ctx, &SearchRequest{
+		Vector:     firstFace.Descriptor,
+		TopKResult: 1,
+	})
+	switch {
+	case errors.Is(err, custerror.ErrorNotFound):
+	case err == nil:
+		if len(similarPeople) > 0 {
+			logger.SError("AddDetectablePerson: similar person already exists")
+			return nil, custerror.FormatAlreadyExists("similar person already exists")
+		}
+	default:
+		logger.SError("AddDetectablePerson: search error",
+			zap.Error(err))
+		return nil, err
+	}
+
+	id, err := s.recordDetectablePerson(ctx, req, firstFace)
+	if err != nil {
+		logger.SError("AddDetectablePerson: recordDetectablePerson error",
+			zap.Error(err))
+		return nil, err
+	}
+	return &web.AddDetectablePersonResponse{
+		PersonId: id,
+	}, nil
+}
+
+func (s *WebService) validateAddDetectablePersonRequest(req *web.AddDetectablePersonRequest) error {
+	if req.Name == "" {
+		return custerror.FormatInvalidArgument("missing name")
+	}
+	if req.Age == "" {
+		return custerror.FormatInvalidArgument("missing age")
+	}
+	if req.Base64Image == "" {
+		return custerror.FormatInvalidArgument("missing image path")
+	}
+	return nil
+}
+
+func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDetectablePersonRequest, f face.Face) (string, error) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var s3Error error
+	var postgresError error
+	id := uuid.New().
+		String()
+	go func() {
+		model := db.DetectablePerson{
+			PersonId:  id,
+			Name:      req.Name,
+			Age:       req.Age,
+			ImagePath: id,
+			Embedding: helper.ToPgvector(f.Descriptor),
+		}
+		postgresError = s.cvs.Record(ctx, &model)
+		wg.Done()
+	}()
+	go func() {
+		fileDesc := media.UploadImageRequest{
+			Base64Image: req.Base64Image,
+			Path:        id,
+		}
+		s3Error = s.mediaHelper.UploadImage(ctx, &fileDesc)
+		wg.Done()
+	}()
+	wg.Wait()
+	if s3Error != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = s.cvs.Remove(context.Background(), id)
+		}()
+		return "", s3Error
+	}
+	if postgresError != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = s.mediaHelper.DeleteImage(context.Background(), id)
+		}()
+		return "", postgresError
+	}
+	wg.Wait()
+	return id, nil
 }

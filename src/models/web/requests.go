@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/models/db"
@@ -311,4 +312,22 @@ type GetDetectablePeopleImagePresignedUrlRequest struct {
 type GetDetectablePeopleImagePresignedUrlResponse struct {
 	PresignedUrl string        `json:"presignedUrl"`
 	Expires      time.Duration `json:"expires"`
+}
+
+type AddDetectablePersonRequest struct {
+	Name        string `json:"name"`
+	Age         string `json:"age"`
+	Base64Image string `json:"base64Image"`
+}
+
+func (r AddDetectablePersonRequest) String() string {
+	type req AddDetectablePersonRequest
+	copied := req(r)
+	copied.Base64Image = "LONG_STRING_OMITTED"
+	b, _ := json.Marshal(copied)
+	return string(b)
+}
+
+type AddDetectablePersonResponse struct {
+	PersonId string `json:"personId"`
 }

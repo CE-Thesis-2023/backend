@@ -101,12 +101,25 @@ func (s *ComputerVisionService) Record(ctx context.Context, m *db.DetectablePers
 	return s.recordVector(ctx, m)
 }
 
+func (s *ComputerVisionService) Remove(ctx context.Context, id string) error {
+	return s.removeVector(ctx, id)
+}
+
 func (s *ComputerVisionService) recordVector(ctx context.Context, m *db.DetectablePerson) error {
 	q := s.builder.Insert("detectable_people").
 		Columns(m.Fields()...).
 		Values(m.Values()...)
 	if err := s.db.Insert(ctx, q); err != nil {
 		return custerror.FormatInternalError("failed to record person: %v", err)
+	}
+	return nil
+}
+
+func (s *ComputerVisionService) removeVector(ctx context.Context, id string) error {
+	q := s.builder.Delete("detectable_people").
+		Where(squirrel.Eq{"id": id})
+	if err := s.db.Delete(ctx, q); err != nil {
+		return custerror.FormatInternalError("failed to remove person: %v", err)
 	}
 	return nil
 }

@@ -6,8 +6,10 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
+	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
+	"github.com/Kagami/go-face"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +29,13 @@ func Init(c *configs.Configs, ctx context.Context) {
 			return
 		}
 		mediaHelper := media.NewMediaHelper(&c.MediaEngine, &c.S3)
-		webService = NewWebService(reqreply, mediaHelper)
+		recognizer, err := face.NewRecognizer("./models")
+		if err != nil {
+			logger.SFatal("unable to create face recognizer",
+				zap.Error(err))
+		}
+		computerVisionService := NewComputerVisionService(custdb.Layered(), recognizer)
+		webService = NewWebService(reqreply, mediaHelper, computerVisionService)
 		privateService = NewPrivateService(
 			reqreply,
 			webService,
