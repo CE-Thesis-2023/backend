@@ -1,6 +1,10 @@
 package db
 
-import "time"
+import (
+	"time"
+
+	"github.com/pgvector/pgvector-go"
+)
 
 type Transcoder struct {
 	DeviceId string `json:"deviceId" db:"device_id,primary"`
@@ -290,6 +294,38 @@ func (t *OpenGateCameraSettings) Values() []interface{} {
 		t.Crop,
 		t.OpenGateId,
 		t.CameraId,
+	)
+	return vs
+}
+
+type DetectablePerson struct {
+	PersonId  string          `json:"personId" db:"person_id,primary"`
+	Name      string          `json:"name" db:"name"`
+	Age       string          `json:"age" db:"age"`
+	ImageUrl  string          `json:"imageUrl" db:"image_url"`
+	Embedding pgvector.Vector `json:"embedding" db:"embedding" gorm:"type:vector(128)"`
+}
+
+func (t *DetectablePerson) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"person_id",
+		"name",
+		"age",
+		"image_url",
+		"embedding",
+	)
+	return fs
+}
+
+func (t *DetectablePerson) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.PersonId,
+		t.Name,
+		t.Age,
+		t.ImageUrl,
+		t.Embedding,
 	)
 	return vs
 }

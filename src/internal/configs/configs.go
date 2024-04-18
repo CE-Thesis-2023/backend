@@ -3,10 +3,11 @@ package configs
 import (
 	"context"
 	"encoding/json"
-	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"log"
 	"os"
 	"sync"
+
+	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 
 	"gopkg.in/yaml.v3"
 )

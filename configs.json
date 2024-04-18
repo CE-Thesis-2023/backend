@@ -37,7 +37,7 @@
     }
   },
   "database": {
-    "connection": "user=postgres password=EIxK7UPwkj3Dkp5e dbname=prod_backend host=db.postgres.ntranlab.com port=5432 sslmode=require"
+    "connection": "user=postgres password=EIxK7UPwkj3Dkp5e dbname=backend host=db.postgres.ntranlab.com port=5432 sslmode=require"
   },
   "mediaEngine": {
     "host": "api.mediamtx.ntranlab.com",
@@ -49,10 +49,5 @@
       "webRtc": 8889
     },
     "api": 9997
-  },
-  "redis": {
-    "host": "redis.ctportal.ntranlab.com",
-    "port": 6379,
-    "password": "ctportal2024"
   }
 }

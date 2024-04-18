@@ -1,6 +1,11 @@
 package helper
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/Kagami/go-face"
+	"github.com/pgvector/pgvector-go"
+)
 
 func ToMap(s interface{}) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
@@ -14,4 +19,8 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 
 func Int(i int) *int {
 	return &i
+}
+
+func ToPgvector(d face.Descriptor) pgvector.Vector {
+	return pgvector.NewVector(d[:])
 }

@@ -31,6 +31,8 @@ func NewSqlx(ctx context.Context, options ...Optioner) (*sqlx.DB, error) {
 		return nil, err
 	}
 
+	client.MustExec("CREATE EXTENSION IF NOT EXISTS vector")
+
 	return client, nil
 }
 
@@ -47,6 +49,8 @@ func NewGorm(ctx context.Context, options ...Optioner) (*gorm.DB, error) {
 	if err != nil {
 		return nil, custerror.FormatInternalError("buildGorm: err = %s", err)
 	}
+
+	db.Exec("CREATE EXTENSION IF NOT EXISTS vector")
 
 	return db, nil
 }

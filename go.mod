@@ -3,6 +3,7 @@ module github.com/CE-Thesis-2023/backend
 go 1.21.4
 
 require (
+	github.com/Kagami/go-face v0.0.0-20210630145111-0c14797b4d0e
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/anthdm/hollywood v0.0.0-20231230200740-54133c9bd2b4
 	github.com/eclipse/paho.golang v0.12.0
@@ -10,6 +11,7 @@ require (
 	github.com/jinzhu/copier v0.3.5
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.2.0
+	github.com/pgvector/pgvector-go v0.1.1
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
