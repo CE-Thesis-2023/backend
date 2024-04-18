@@ -1636,3 +1636,103 @@ func (s *WebService) validateDeviceHealthcheckRequest(req *web.DeviceHealthcheck
 	}
 	return nil
 }
+
+func (s *WebService) GetDetectablePeople(ctx context.Context, req *web.GetDetectablePeopleRequest) (*web.GetDetectablePeopleResponse, error) {
+	logger.SInfo("GetDetectablePeople: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateGetDetectablePeopleRequest(req); err != nil {
+		logger.SError("GetDetectablePeople: validateGetDetectablePeopleRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	people, err := s.getPersonById(ctx, req.PersonIds)
+	if err != nil {
+		logger.SError("GetDetectablePeople: getPersonById",
+			zap.Error(err))
+		return nil, err
+	}
+	if len(people) == 0 {
+		return &web.GetDetectablePeopleResponse{
+			People: []db.DetectablePerson{},
+		}, nil
+	}
+
+	return &web.GetDetectablePeopleResponse{
+		People: people,
+	}, nil
+}
+
+func (s *WebService) validateGetDetectablePeopleRequest(_ *web.GetDetectablePeopleRequest) error {
+	return nil
+}
+
+func (s *WebService) getPersonById(ctx context.Context, ids []string) ([]db.DetectablePerson, error) {
+	q := s.builder.Select("*").
+		From("detectable_people")
+
+	if len(ids) > 0 {
+		or := squirrel.Or{}
+		for _, i := range ids {
+			or = append(or, squirrel.Eq{"person_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getPersonById: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var people []db.DetectablePerson
+	if err := s.db.Select(ctx, q, &people); err != nil {
+		return nil, err
+	}
+
+	return people, nil
+}
+
+func (s *WebService) GetDetectablePersonImagePresignedUrl(ctx context.Context, req *web.GetDetectablePeopleImagePresignedUrlRequest) (*web.GetDetectablePeopleImagePresignedUrlResponse, error) {
+	logger.SInfo("GetPersonImagePresignedUrl: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateGetPersonImagePresignedUrlRequest(req); err != nil {
+		logger.SError("GetPersonImagePresignedUrl: validateGetPersonImagePresignedUrlRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	person, err := s.getPersonById(ctx, []string{req.PersonId})
+	if err != nil {
+		logger.SError("GetPersonImagePresignedUrl: getPersonById",
+			zap.Error(err))
+		return nil, err
+	}
+
+	if len(person) == 0 {
+		logger.SError("GetPersonImagePresignedUrl: person not found")
+		return nil, custerror.FormatNotFound("person not found")
+	}
+
+	url, err := s.mediaHelper.GetPresignedUrl(
+		ctx,
+		person[0].
+			ImagePath)
+	if err != nil {
+		logger.SError("GetPersonImagePresignedUrl: getPresignedUrl",
+			zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetDetectablePeopleImagePresignedUrlResponse{
+		PresignedUrl: url,
+	}, nil
+}
+
+func (s *WebService) validateGetPersonImagePresignedUrlRequest(req *web.GetDetectablePeopleImagePresignedUrlRequest) error {
+	if req.PersonId == "" {
+		return custerror.FormatInvalidArgument("missing person id")
+	}
+	return nil
+}

@@ -1,6 +1,8 @@
 package web
 
 import (
+	"time"
+
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 )
@@ -292,4 +294,21 @@ type DeviceHealthcheckRequest struct {
 
 type DeviceHealthcheckResponse struct {
 	Status string `json:"status"`
+}
+
+type GetDetectablePeopleRequest struct {
+	PersonIds []string `json:"personIds"`
+}
+
+type GetDetectablePeopleResponse struct {
+	People []db.DetectablePerson `json:"people"`
+}
+
+type GetDetectablePeopleImagePresignedUrlRequest struct {
+	PersonId string `json:"personId"`
+}
+
+type GetDetectablePeopleImagePresignedUrlResponse struct {
+	PresignedUrl string        `json:"presignedUrl"`
+	Expires      time.Duration `json:"expires"`
 }

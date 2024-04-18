@@ -106,11 +106,12 @@ func TestComputerVisionService_RecordFaces(t *testing.T) {
 	}
 
 	if len(people) == 0 {
+		id := uuid.NewString()
 		if err := biz.Record(context.Background(), &db.DetectablePerson{
-			PersonId: uuid.NewString(),
-			Name:     "Joy",
-			Age:      "25",
-			ImageUrl: "https://example.com/bona.jpg",
+			PersonId:  id,
+			Name:      "Joy",
+			Age:       "25",
+			ImagePath: id,
 			Embedding: helper.ToPgvector(
 				faces[0].
 					Descriptor),

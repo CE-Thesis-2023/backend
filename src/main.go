@@ -49,6 +49,7 @@ func main() {
 						&db.OpenGateCameraSettings{},
 						&db.OpenGateIntegration{},
 						&db.OpenGateMqttConfiguration{},
+						&db.DetectablePerson{},
 					)
 
 					service.Init(configs, globalCtx)

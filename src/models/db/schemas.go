@@ -302,8 +302,8 @@ type DetectablePerson struct {
 	PersonId  string          `json:"personId" db:"person_id,primary"`
 	Name      string          `json:"name" db:"name"`
 	Age       string          `json:"age" db:"age"`
-	ImageUrl  string          `json:"imageUrl" db:"image_url"`
-	Embedding pgvector.Vector `json:"embedding" db:"embedding" gorm:"type:vector(128)"`
+	ImagePath string          `json:"-" db:"image_path"`
+	Embedding pgvector.Vector `json:"-" db:"embedding" gorm:"type:vector(128)"`
 }
 
 func (t *DetectablePerson) Fields() []string {
@@ -312,7 +312,7 @@ func (t *DetectablePerson) Fields() []string {
 		"person_id",
 		"name",
 		"age",
-		"image_url",
+		"image_path",
 		"embedding",
 	)
 	return fs
@@ -324,7 +324,7 @@ func (t *DetectablePerson) Values() []interface{} {
 		t.PersonId,
 		t.Name,
 		t.Age,
-		t.ImageUrl,
+		t.ImagePath,
 		t.Embedding,
 	)
 	return vs

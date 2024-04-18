@@ -103,16 +103,8 @@ func makeTlsConfigs(globalConfigs *configs.EventStoreConfigs) (*tls.Config, erro
 		return nil, nil
 	}
 
-	credentials, err := tls.LoadX509KeyPair(tlsConfigs.Cert, tlsConfigs.Key)
-	if err != nil {
-		return nil, err
-	}
-
 	return &tls.Config{
 		InsecureSkipVerify: true,
-		Certificates: []tls.Certificate{
-			credentials,
-		},
 	}, nil
 }
 
