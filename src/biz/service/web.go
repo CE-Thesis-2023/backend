@@ -1722,8 +1722,11 @@ func (s *WebService) GetDetectablePersonImagePresignedUrl(ctx context.Context, r
 
 	url, err := s.mediaHelper.GetPresignedUrl(
 		ctx,
-		person[0].
-			ImagePath)
+		&media.GetPresignedUrlRequest{
+			Path: person[0].
+				ImagePath,
+			Type: media.AssetsTypePeople,
+		})
 	if err != nil {
 		logger.SError("GetPersonImagePresignedUrl: getPresignedUrl",
 			zap.Error(err))
@@ -1833,6 +1836,7 @@ func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDet
 		fileDesc := media.UploadImageRequest{
 			Base64Image: req.Base64Image,
 			Path:        id,
+			Type:        media.AssetsTypePeople,
 		}
 		s3Error = s.mediaHelper.UploadImage(ctx, &fileDesc)
 		wg.Done()
@@ -1850,7 +1854,10 @@ func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDet
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = s.mediaHelper.DeleteImage(context.Background(), id)
+			_ = s.mediaHelper.DeleteImage(context.Background(), &media.DeleteImageRequest{
+				Path: id,
+				Type: media.AssetsTypePeople,
+			})
 		}()
 		return "", postgresError
 	}
@@ -1906,7 +1913,10 @@ func (s *WebService) deleteDetectablePerson(ctx context.Context, id string) erro
 		wg.Done()
 	}()
 	go func() {
-		s3Error = s.mediaHelper.DeleteImage(ctx, id)
+		s3Error = s.mediaHelper.DeleteImage(ctx, &media.DeleteImageRequest{
+			Path: id,
+			Type: media.AssetsTypePeople,
+		})
 		wg.Done()
 	}()
 	wg.Wait()

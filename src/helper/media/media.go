@@ -109,9 +109,17 @@ func (m *MediaHelper) BuildWebRTCViewStream(streamName string) string {
 	return url.String()
 }
 
+type AssetsType string
+
+var (
+	AssetsTypePeople AssetsType = "people"
+	AssetsTypeEvents AssetsType = "events"
+)
+
 type UploadImageRequest struct {
-	Base64Image string `json:"base64_image"`
-	Path        string `json:"path"`
+	Base64Image string     `json:"base64_image"`
+	Path        string     `json:"path"`
+	Type        AssetsType `json:"type"`
 }
 
 func (m *MediaHelper) UploadImage(ctx context.Context, req *UploadImageRequest) error {
@@ -119,7 +127,7 @@ func (m *MediaHelper) UploadImage(ctx context.Context, req *UploadImageRequest) 
 	if err != nil {
 		return custerror.FormatInvalidArgument("failed to decode image: %v", err)
 	}
-	p := m.getImageBasePath(req.Path)
+	p := m.getImageBasePath(req.Type, req.Path)
 	reader := bytes.NewReader(decodedImg)
 	_, err = m.s3Client.PutObjectWithContext(
 		ctx, &s3.PutObjectInput{
@@ -137,10 +145,15 @@ type GetImageResponse struct {
 	Base64Image string `json:"base64_image"`
 }
 
-func (m *MediaHelper) GetImage(ctx context.Context, path string) (*GetImageResponse, error) {
+type GetImageRequest struct {
+	Path string     `json:"path"`
+	Type AssetsType `json:"type"`
+}
+
+func (m *MediaHelper) GetImage(ctx context.Context, req *GetImageRequest) (*GetImageResponse, error) {
 	objRef, err := m.s3Client.GetObjectWithContext(ctx, &s3.GetObjectInput{
 		Bucket: &m.s3Configs.Bucket,
-		Key:    m.getImageBasePath(path),
+		Key:    m.getImageBasePath(req.Type, req.Path),
 	})
 	if err != nil {
 		return nil, custerror.FormatInternalError("failed to get image: %v", err)
@@ -155,10 +168,15 @@ func (m *MediaHelper) GetImage(ctx context.Context, path string) (*GetImageRespo
 	}, nil
 }
 
-func (m *MediaHelper) GetPresignedUrl(ctx context.Context, path string) (string, error) {
+type GetPresignedUrlRequest struct {
+	Path string     `json:"path"`
+	Type AssetsType `json:"type"`
+}
+
+func (m *MediaHelper) GetPresignedUrl(ctx context.Context, req *GetPresignedUrlRequest) (string, error) {
 	objRef, _ := m.s3Client.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: &m.s3Configs.Bucket,
-		Key:    m.getImageBasePath(path),
+		Key:    m.getImageBasePath(req.Type, req.Path),
 	})
 	presignedUrl, err := objRef.Presign(15 * time.Minute)
 	if err != nil {
@@ -167,18 +185,30 @@ func (m *MediaHelper) GetPresignedUrl(ctx context.Context, path string) (string,
 	return presignedUrl, nil
 }
 
-func (m *MediaHelper) getImageBasePath(id string) *string {
+func (m *MediaHelper) getImageBasePath(t AssetsType, id string) *string {
+	cat := "people"
+	switch t {
+	case AssetsTypeEvents:
+		cat = "events"
+	case AssetsTypePeople:
+		cat = "people"
+	}
 	p := filepath.Join(
 		m.s3Configs.PathPrefix,
-		"people",
+		cat,
 		id) + ".jpg"
 	return &p
 }
 
-func (m *MediaHelper) DeleteImage(ctx context.Context, path string) error {
+type DeleteImageRequest struct {
+	Path string     `json:"path"`
+	Type AssetsType `json:"type"`
+}
+
+func (m *MediaHelper) DeleteImage(ctx context.Context, req *DeleteImageRequest) error {
 	_, err := m.s3Client.DeleteObjectWithContext(ctx, &s3.DeleteObjectInput{
 		Bucket: &m.s3Configs.Bucket,
-		Key:    m.getImageBasePath(path),
+		Key:    m.getImageBasePath(req.Type, req.Path),
 	})
 	if err != nil {
 		return custerror.FormatInternalError("failed to delete image: %v", err)

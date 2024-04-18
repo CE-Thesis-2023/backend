@@ -103,7 +103,10 @@ func TestMediaHelper_GetPresignedUrl(t *testing.T) {
 
 	url, err := mediaHelper.GetPresignedUrl(
 		context.Background(),
-		"bona4.jpg")
+		&media.GetPresignedUrlRequest{
+			Path: "bona4.jpg",
+			Type: media.AssetsTypePeople,
+		})
 	if err != nil {
 		t.Error(err)
 	}
