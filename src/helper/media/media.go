@@ -119,11 +119,12 @@ func (m *MediaHelper) UploadImage(ctx context.Context, req *UploadImageRequest) 
 	if err != nil {
 		return custerror.FormatInvalidArgument("failed to decode image: %v", err)
 	}
+	p := m.getImageBasePath(req.Path)
 	reader := bytes.NewReader(decodedImg)
 	_, err = m.s3Client.PutObjectWithContext(
 		ctx, &s3.PutObjectInput{
 			Bucket: &m.s3Configs.Bucket,
-			Key:    m.getImageBasePath(req.Path),
+			Key:    p,
 			Body:   reader,
 		})
 	if err != nil {
@@ -170,7 +171,7 @@ func (m *MediaHelper) getImageBasePath(id string) *string {
 	p := filepath.Join(
 		m.s3Configs.PathPrefix,
 		"people",
-		id)
+		id) + ".jpg"
 	return &p
 }
 
