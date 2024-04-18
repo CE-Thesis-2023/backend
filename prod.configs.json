@@ -51,11 +51,11 @@
     "api": 9997
   },
   "s3": {
-    "secretKey": "K6tEssiyqquMLAeoyvIERBVps+7wbnucvlpxAsqB",
+    "secret": "K6tEssiyqquMLAeoyvIERBVps+7wbnucvlpxAsqB",
     "accessKeyId": "00e08f03367b32165016",
-    "path_prefix": "dev",
+    "pathPrefix": "prod",
     "region": "hcm",
-    "endpoint": "s3-hcm.sds.vnpaycloud.vn",
+    "endpoint": "https://s3-hcm.sds.vnpaycloud.vn",
     "bucket": "nguyentt1-files"
   }
 }
