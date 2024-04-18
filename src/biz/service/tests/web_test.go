@@ -12,7 +12,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -56,7 +55,7 @@ func TestWebService_GetDetectablePeoplePresignedUrl(t *testing.T) {
 	defer custdb.Stop(context.Background())
 
 	resp, err := biz.GetDetectablePersonImagePresignedUrl(context.Background(), &web.GetDetectablePeopleImagePresignedUrlRequest{
-		PersonId: uuid.NewString(),
+		PersonId: "8de74c24-8aee-4fa3-9f4a-76e4c89981c2",
 	})
 	if err != nil {
 		t.Error(err)
