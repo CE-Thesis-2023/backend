@@ -3,9 +3,7 @@ package service_tests
 import (
 	"context"
 	"log"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
@@ -13,23 +11,13 @@ import (
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	custmqtt "github.com/CE-Thesis-2023/backend/src/internal/mqtt"
-	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 func prepareTestWebBiz() *service.WebService {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	os.Setenv("CONFIG_FILE_PATH", "./configs.json")
-	configs.Init(ctx)
-	logger.Init(ctx,
-		logger.WithGlobalConfigs(&configs.Get().Logger))
-
-	custdb.Init(ctx, configs.Get())
-	custdb.Migrate(custdb.Gorm(), &db.DetectablePerson{})
+	cvs := prepareTestBiz()
 
 	mediaHelper := media.NewMediaHelper(
 		&configs.Get().MediaEngine,
@@ -44,6 +32,7 @@ func prepareTestWebBiz() *service.WebService {
 	return service.NewWebService(
 		sess,
 		mediaHelper,
+		cvs,
 	)
 }
 
@@ -74,5 +63,24 @@ func TestWebService_GetDetectablePeoplePresignedUrl(t *testing.T) {
 	}
 
 	logger.SInfo("GetDetectablePeoplePresignedUrl test passed",
+		zap.Reflect("response", resp))
+}
+
+func TestWebService_AddDetectablePerson(t *testing.T) {
+	biz := prepareTestWebBiz()
+	defer custdb.Stop(context.Background())
+
+	encodedImg := prepareTestImg("joy.jpg")
+
+	resp, err := biz.AddDetectablePerson(context.Background(), &web.AddDetectablePersonRequest{
+		Name:        "Nguyen Tran",
+		Age:         "22",
+		Base64Image: encodedImg,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	logger.SInfo("AddDetectablePerson test passed",
 		zap.Reflect("response", resp))
 }

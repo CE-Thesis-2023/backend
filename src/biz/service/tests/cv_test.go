@@ -25,7 +25,7 @@ func prepareTestBiz() *service.ComputerVisionService {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	os.Setenv("CONFIG_FILE_PATH", "./configs.json")
+	os.Setenv("CONFIG_FILE_PATH", "../../../../configs.json")
 	configs.Init(ctx)
 	logger.Init(ctx,
 		logger.WithGlobalConfigs(&configs.Get().Logger))
@@ -38,7 +38,7 @@ func prepareTestBiz() *service.ComputerVisionService {
 		log.Fatal(err)
 	}
 	return service.NewComputerVisionService(
-		custdb.NewLayeredDb(ctx, configs.Get()),
+		custdb.Layered(),
 		recognizer)
 }
 
