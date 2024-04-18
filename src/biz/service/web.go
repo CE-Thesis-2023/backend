@@ -1857,3 +1857,65 @@ func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDet
 	wg.Wait()
 	return id, nil
 }
+
+func (s *WebService) DeleteDetectablePerson(ctx context.Context, req *web.DeleteDetectablePersonRequest) error {
+	logger.SInfo("DeleteDetectablePerson: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateDeleteDetectablePersonRequest(req); err != nil {
+		logger.SError("DeleteDetectablePerson: validateDeleteDetectablePersonRequest",
+			zap.Error(err))
+		return err
+	}
+
+	person, err := s.getPersonById(ctx, []string{req.PersonId})
+	if err != nil {
+		logger.SError("DeleteDetectablePerson: getPersonById",
+			zap.Error(err))
+		return err
+	}
+
+	if len(person) == 0 {
+		logger.SError("DeleteDetectablePerson: person not found")
+		return custerror.FormatNotFound("person not found")
+	}
+
+	if err := s.deleteDetectablePerson(ctx, req.PersonId); err != nil {
+		logger.SError("DeleteDetectablePerson: deleteDetectablePerson",
+			zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *WebService) validateDeleteDetectablePersonRequest(req *web.DeleteDetectablePersonRequest) error {
+	if req.PersonId == "" {
+		return custerror.FormatInvalidArgument("missing person id")
+	}
+	return nil
+}
+
+func (s *WebService) deleteDetectablePerson(ctx context.Context, id string) error {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	var s3Error error
+	var postgresError error
+	go func() {
+		postgresError = s.cvs.Remove(ctx, id)
+		wg.Done()
+	}()
+	go func() {
+		s3Error = s.mediaHelper.DeleteImage(ctx, id)
+		wg.Done()
+	}()
+	wg.Wait()
+	switch {
+	case s3Error != nil:
+		return s3Error
+	case postgresError != nil:
+		return postgresError
+	default:
+		return nil
+	}
+}

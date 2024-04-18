@@ -331,3 +331,7 @@ func (r AddDetectablePersonRequest) String() string {
 type AddDetectablePersonResponse struct {
 	PersonId string `json:"personId"`
 }
+
+type DeleteDetectablePersonRequest struct {
+	PersonId string `json:"personId"`
+}
