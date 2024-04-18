@@ -24,6 +24,7 @@ type Configs struct {
 	Database      DatabaseConfigs   `json:"database,omitempty" yaml:"sqlite,omitempty"`
 	InfluxConfigs InfluxConfigs     `json:"influx,omitempty" yaml:"influx,omitempty"`
 	MediaEngine   MediaMtxConfigs   `json:"mediaEngine,omitempty" yaml:"mediaEngine,omitempty"`
+	S3            S3Storage         `json:"s3,omitempty" yaml:"s3,omitempty"`
 }
 
 func (c Configs) String() string {
@@ -115,6 +116,15 @@ type MtxPorts struct {
 
 func (c *EventStoreConfigs) HasAuth() bool {
 	return len(c.Username) > 0 && len(c.Password) > 0
+}
+
+type S3Storage struct {
+	Endpoint    string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	AccessKeyID string `json:"accessKeyId,omitempty" yaml:"accessKeyId,omitempty"`
+	Secret      string `json:"secret" yaml:"secret,omitempty"`
+	PathPrefix  string `json:"pathPrefix,omitempty" yaml:"pathPrefix,omitempty"`
+	Region      string `json:"region,omitempty" yaml:"region,omitempty"`
+	Bucket      string `json:"bucket,omitempty" yaml:"bucket,omitempty"`
 }
 
 func readConfig() (*Configs, error) {

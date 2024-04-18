@@ -26,7 +26,7 @@ func Init(c *configs.Configs, ctx context.Context) {
 				zap.Error(err))
 			return
 		}
-		mediaHelper := media.NewMediaHelper(&c.MediaEngine)
+		mediaHelper := media.NewMediaHelper(&c.MediaEngine, &c.S3)
 		webService = NewWebService(reqreply, mediaHelper)
 		privateService = NewPrivateService(
 			reqreply,
