@@ -117,7 +117,7 @@ func (s *ComputerVisionService) recordVector(ctx context.Context, m *db.Detectab
 
 func (s *ComputerVisionService) removeVector(ctx context.Context, id string) error {
 	q := s.builder.Delete("detectable_people").
-		Where(squirrel.Eq{"id": id})
+		Where(squirrel.Eq{"person_id": id})
 	if err := s.db.Delete(ctx, q); err != nil {
 		return custerror.FormatInternalError("failed to remove person: %v", err)
 	}

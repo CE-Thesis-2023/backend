@@ -83,3 +83,15 @@ func TestWebService_AddDetectablePerson(t *testing.T) {
 	logger.SInfo("AddDetectablePerson test passed",
 		zap.Reflect("response", resp))
 }
+
+func TestWebService_DeleteDetectablePerson(t *testing.T) {
+	biz := prepareTestWebBiz()
+	defer custdb.Stop(context.Background())
+
+	err := biz.DeleteDetectablePerson(context.Background(), &web.DeleteDetectablePersonRequest{
+		PersonId: "8de74c24-8aee-4fa3-9f4a-76e4c89981c2",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}
