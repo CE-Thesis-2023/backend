@@ -1,26 +1,36 @@
 package media
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
+	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
+	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 )
 
+func initBiz() *MediaHelper {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	os.Setenv("CONFIG_FILE_PATH", "../../../configs.json")
+	configs.Init(ctx)
+	logger.Init(ctx,
+		logger.WithGlobalConfigs(&configs.Get().Logger))
+
+	custdb.Init(ctx, configs.Get())
+	mediaHelper := NewMediaHelper(
+		&configs.Get().MediaEngine,
+		&configs.Get().S3)
+	return mediaHelper
+}
+
 func TestMediaHelper_RTSPSourceUrl(t *testing.T) {
-	configs := configs.MediaMtxConfigs{
-		Host:     "api.mediamtx.ntranlab.com",
-		MediaUrl: "103.165.142.15",
-		PublishPorts: configs.MtxPorts{
-			WebRTC: 8889,
-		},
-		ProviderPorts: configs.MtxPorts{
-			Srt: 8890,
-		},
-		Api: 9997,
-	}
-	mediaHelper := NewMediaHelper(&configs)
+	mediaHelper := initBiz()
 
 	camera := db.Camera{
 		Ip:       "10.40.30.50",
@@ -38,19 +48,8 @@ func TestMediaHelper_RTSPSourceUrl(t *testing.T) {
 }
 
 func TestMediaHelper_SRTPublishPort(t *testing.T) {
-	configs := configs.MediaMtxConfigs{
-		Host:     "api.mediamtx.ntranlab.com",
-		MediaUrl: "103.165.142.15",
-		PublishPorts: configs.MtxPorts{
-			WebRTC: 8889,
-		},
-		ProviderPorts: configs.MtxPorts{
-			Srt: 8890,
-		},
-		Api: 9997,
-	}
+	mediaHelper := initBiz()
 
-	mediaHelper := NewMediaHelper(&configs)
 	url, err := mediaHelper.BuildSRTPublishUrl("test")
 	if err != nil {
 		t.Error(err)
@@ -64,19 +63,8 @@ func TestMediaHelper_SRTPublishPort(t *testing.T) {
 }
 
 func TestMediaHelper_WebRTCViewUrl(t *testing.T) {
-	configs := configs.MediaMtxConfigs{
-		Host:     "api.mediamtx.ntranlab.com",
-		MediaUrl: "103.165.142.15",
-		PublishPorts: configs.MtxPorts{
-			WebRTC: 8889,
-		},
-		ProviderPorts: configs.MtxPorts{
-			Srt: 8890,
-		},
-		Api: 9997,
-	}
+	mediaHelper := initBiz()
 
-	mediaHelper := NewMediaHelper(&configs)
 	url := mediaHelper.BuildWebRTCViewStream("test")
 
 	if url == "" {
