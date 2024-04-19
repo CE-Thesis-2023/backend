@@ -38,5 +38,10 @@ func ServiceRegistration() func(app *fiber.App) {
 
 		app.Get("/api/events/object_tracking", GetObjectTrackingEvent)
 		app.Delete("/api/events/object_tracking", DeleteObjectTrackingEvent)
+
+		app.Get("/api/people", GetDetectablePeople)
+		app.Post("/api/people", AddDetectablePerson)
+		app.Delete("/api/people", DeleteDetectablePerson)
+		app.Get("/api/people/presigned", GetDetectablePersonPresignedUrl)
 	}
 }

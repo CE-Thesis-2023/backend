@@ -389,3 +389,84 @@ func DoDeviceHealthcheck(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+func AddDetectablePerson(ctx *fiber.Ctx) error {
+	logger.SDebug("AddDetectablePerson: request")
+
+	var msg web.AddDetectablePersonRequest
+	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+		logger.SDebug("AddDetectablePerson: unmarshal msg error", zap.Error(err))
+		return custerror.ErrorInvalidArgument
+	}
+
+	resp, err := service.
+		GetWebService().
+		AddDetectablePerson(ctx.UserContext(), &msg)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func GetDetectablePeople(ctx *fiber.Ctx) error {
+	logger.SDebug("GetDetectablePeople: request")
+
+	queries := ctx.Query("ids")
+	ids := strings.Split(queries, ",")
+
+	if ids[0] == "" {
+		ids = []string{}
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetDetectablePeople(ctx.Context(), &web.GetDetectablePeopleRequest{
+			PersonIds: ids,
+		})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
+
+func DeleteDetectablePerson(ctx *fiber.Ctx) error {
+	logger.SDebug("DeleteDetectablePerson: request")
+
+	personId := ctx.Query("id")
+	if len(personId) == 0 {
+		return custerror.FormatInvalidArgument("missing personId as query")
+	}
+
+	err := service.
+		GetWebService().
+		DeleteDetectablePerson(ctx.UserContext(), &web.DeleteDetectablePersonRequest{
+			PersonId: personId,
+		})
+	if err != nil {
+		return err
+	}
+
+	return ctx.SendStatus(http.StatusAccepted)
+}
+
+func GetDetectablePersonPresignedUrl(ctx *fiber.Ctx) error {
+	logger.SDebug("GetDetectablePersonPresignedUrl: request")
+
+	personId := ctx.Query("id")
+	if len(personId) == 0 {
+		return custerror.FormatInvalidArgument("missing personId as parameter")
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetDetectablePersonImagePresignedUrl(ctx.UserContext(), &web.GetDetectablePeopleImagePresignedUrlRequest{
+			PersonId: personId,
+		})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(resp)
+}
