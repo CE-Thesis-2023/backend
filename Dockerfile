@@ -1,4 +1,4 @@
-FROM golang:1.21.4-alpine3.18 AS builder
+FROM golang:1.21.4-bookworm AS builder
 
 WORKDIR /build
 COPY go.mod go.mod
@@ -7,21 +7,35 @@ RUN go mod download
 
 COPY src src
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN apt update && apt install libdlib-dev \
+    libblas-dev \
+    libatlas-base-dev \
+    liblapack-dev \
+    libjpeg62-turbo-dev -y
+
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
     go build -a \
     -ldflags "-w -s" \
     -o main src/main.go
 
-FROM scratch AS runner
+FROM debian:bookworm AS runner
 
-ENV CONFIG_FILE_PATH=/configs/configs.json
+COPY models /models
+
+COPY configs.json /configs/configs.json
+COPY certs certs/
+
+RUN apt update && apt install libdlib-dev \
+    libblas-dev \
+    libatlas-base-dev \
+    liblapack-dev \
+    libjpeg62-turbo-dev -y
+
+WORKDIR /
+COPY --from=builder /build/main main
 
 EXPOSE 9000
 EXPOSE 9001
-
-COPY configs.json /configs/configs.json
-COPY certs /configs/certs
-COPY --from=builder /build/main main
 
 ENV CONFIG_FILE_PATH=/configs/configs.json
 

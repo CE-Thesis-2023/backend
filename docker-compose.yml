@@ -1,21 +1,21 @@
 services:
   backend:
-    image: 'nguyentrantrung/backend:latest'
+    image: "nguyentrantrung/backend:latest"
     container_name: backend
     deploy:
       resources:
         limits:
-          cpus: '6'
+          cpus: "6"
           memory: 2048m
     ports:
       - 9000:9000
       - 9001:9001
     restart: always
-    pull_policy: always
+    # pull_policy: always
     volumes:
       - ./configs.json:/configs/configs.json:ro
-    networks:
-      - server
-networks:
-  server:
-    external: true
+#     networks:
+#       - server
+# networks:
+#   server:
+#     external: true

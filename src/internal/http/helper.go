@@ -76,14 +76,6 @@ func CommonPrivateMiddlewares(configs *configs.HttpConfigs) []interface{} {
 				return c.SendStatus(http.StatusTooManyRequests)
 			},
 		}),
-		cors.New(cors.Config{
-			AllowOriginsFunc: func(origin string) bool {
-				return true
-			},
-			AllowOrigins: "*",
-			AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-			AllowHeaders: "Origin, Content-Type, Accept-Encoding, Host, Authorization",
-		}),
 		etag.New(),
 		compress.New(compress.Config{
 			Level: compress.LevelBestSpeed,
