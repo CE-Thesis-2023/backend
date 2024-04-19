@@ -1,3 +1,6 @@
 {
-  "backendBaseUrl": "https://api-ctportal.ntranlab.com"
+  "backendBaseUrl": [
+    "https://api-ctportal.ntranlab.com",
+    "https://private-api-ctportal.ntranlab.com"
+  ]
 }

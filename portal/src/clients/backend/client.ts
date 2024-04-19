@@ -2,14 +2,23 @@ import axios from 'axios';
 import configs from '../../../dev.configs.json';
 
 const axiosClient = axios.create({
-    baseURL: configs.backendBaseUrl,
+    baseURL: configs.backendBaseUrl[0],
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
 })
 
-interface Transcoder {
+const privateClient = axios.create({
+    baseURL: configs.backendBaseUrl[1],
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Basic ZGV2OmRldg=='
+    }
+})
+
+export interface Transcoder {
     deviceId: string;
     name: string;
     openGateIntegrationId: string;
@@ -29,7 +38,7 @@ export async function getTranscoders(ids: string[]): Promise<Transcoder[]> {
     return resp.data["transcoders"];
 }
 
-interface Camera {
+export interface Camera {
     cameraId: string;
     name: string;
     ip: string;
@@ -57,7 +66,7 @@ export async function getCameras(ids: string[]): Promise<Camera[]> {
     return resp.data["cameras"];
 }
 
-interface StreamInfo {
+export interface StreamInfo {
     streamUrl: string;
     protocol: string;
     transcoderId: string;
@@ -76,7 +85,7 @@ export async function getCameraStreamInfo(id: string): Promise<StreamInfo> {
     return resp.data;
 }
 
-interface CameraGroup {
+export interface CameraGroup {
     groupId: string;
     name: string;
     createdDate: string;
@@ -94,4 +103,61 @@ export async function getCameraGroup(ids: string[]): Promise<CameraGroup[]> {
     }
     const resp = await axiosClient.get(uri);
     return resp.data["cameraGroups"];
+}
+
+/**
+ * Delete camera
+ * @param id Camera ID
+ */
+export async function deleteCamera(id: string): Promise<void> {
+    const uri = `/api/cameras?id=${id}`;
+    await axiosClient.delete(uri);
+}
+
+export interface OpenGateIntegration {
+    openGateId: string
+    available: boolean
+    isRestarting: boolean
+    logLevel: string
+    snapshotRetentionDays: number
+    mqttId: string
+    transcoderId: string
+}
+
+/**
+ * Get OpenGate configurations
+ * @param id OpenGateID
+ * @returns OpenGate integration configuration
+ */
+export async function getOpenGateConfigurations(id: string): Promise<OpenGateIntegration> {
+    const uri = `/api/opengate/${id}`;
+    const resp = await axiosClient.get(uri);
+    return resp.data["openGateIntegration"];
+}
+
+export interface OpenGateCameraSettings {
+    settingsId: string;
+    height: number;
+    width: number;
+    fps: number;
+    mqttEnabled: boolean;
+    timestamp: boolean;
+    boundingBox: boolean;
+    crop: boolean;
+    openGateId: string;
+    cameraId: string;
+}
+
+/**
+ * Get OpenGate camera settings
+ * @param id Camera ID
+ * @returns OpenGate camera settings
+ */
+export async function getOpenGateCameraSettings(ids: string[]): Promise<OpenGateCameraSettings[]> {
+    let uri = "/private/opengate/cameras";
+    if (ids.length > 0) {
+        uri += '?camera_id=' + ids.join(',');
+    }
+    const resp = await privateClient.get(uri);
+    return resp.data["openGateCameraSettings"];
 }

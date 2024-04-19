@@ -1,0 +1,10 @@
+{
+    "graalvm.home": "/home/ntran/.sdkman/candidates/java/21.0.2-graal",
+    "graalvm.installations": [
+        "/home/ntran/.sdkman/candidates/java/21.0.2-graal"
+    ],
+    "terminal.integrated.env.linux": {
+        "GRAALVM_HOME": "/home/ntran/.sdkman/candidates/java/21.0.2-graal"
+    },
+    "java.home": "/home/ntran/.sdkman/candidates/java/21.0.2-graal"
+}
