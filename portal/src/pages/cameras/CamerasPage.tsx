@@ -1,10 +1,10 @@
 import createDebounce from "@solid-primitives/debounce";
-import { Add, CheckCircleRounded, CircleRounded, Delete, MoreVert, Settings } from "@suid/icons-material";
-import { Box, Button, CircularProgress, Dialog, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
+import { Add, CheckCircleRounded, CircleRounded, Delete, MoreVert, Refresh, Settings } from "@suid/icons-material";
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import green from "@suid/material/colors/green";
 import red from "@suid/material/colors/red";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
-import { Transcoder, getCameras, getOpenGateCameraSettings, getOpenGateConfigurations, getTranscoders } from "../../clients/backend/client";
+import { Transcoder, deleteCamera, getCameras, getOpenGateCameraSettings, getOpenGateConfigurations, getTranscoders } from "../../clients/backend/client";
 import Codeblock from "../../components/Codeblock";
 
 async function fetchData(cameraIds: string[]) {
@@ -31,8 +31,10 @@ export const CamerasPage: Component = () => {
 
     const [menuAnchorEl, setMenuAnchorEl] = createSignal<null | HTMLElement>(null);
     const [menuCurrentlySelectedId, setMenuCurrentlySelectedId] = createSignal<string>("");
+    const [menuDialogCurrentItem, setMenuDialogCurrentItem] = createSignal<any | null>(null);
+
     const [settingsDialogStatus, setSettingsDialogStatus] = createSignal<boolean>(false);
-    const [settingsDialogCurrentItem, setSettingsDialogCurrentItem] = createSignal<any | null>(null);
+    const [deleteDialogStatus, setDeleteDialogStatus] = createSignal<boolean>(false);
 
     const open = () => Boolean(menuAnchorEl());
     const handleClose = () => setMenuAnchorEl(null);
@@ -44,7 +46,7 @@ export const CamerasPage: Component = () => {
             setCamerasIds(m.split(","));
         }
     }, 350);
-    const [cameras] = createResource(cameraIds, fetchData);
+    const [cameras, { refetch }] = createResource(cameraIds, fetchData);
 
     const moreMenuItems = [
         {
@@ -52,7 +54,7 @@ export const CamerasPage: Component = () => {
             name: 'Delete',
             icon: <Delete />,
             onClick: () => {
-                console.log('Delete');
+                setDeleteDialogStatus(true);
             }
         },
         {
@@ -76,6 +78,11 @@ export const CamerasPage: Component = () => {
                     }} />
                     <Button variant="contained" size="medium" color="primary" startIcon={<Add />}>
                         Add Camera
+                    </Button>
+                    <Button variant="contained" size="medium" color="primary" startIcon={<Refresh />} onClick={() => {
+                        refetch();
+                    }}>
+                        Refresh
                     </Button>
                 </div>
             </div>
@@ -130,7 +137,7 @@ export const CamerasPage: Component = () => {
                                                         aria-expanded={open() ? 'true' : undefined}
                                                         aria-haspopup="true"
                                                         onClick={(e) => {
-                                                            setSettingsDialogCurrentItem(camera);
+                                                            setMenuDialogCurrentItem(camera);
                                                             setMenuAnchorEl(e.currentTarget);
                                                         }}
                                                     >
@@ -143,6 +150,7 @@ export const CamerasPage: Component = () => {
                                                         open={open()}
                                                         onClose={() => {
                                                             setMenuCurrentlySelectedId("");
+                                                            setMenuDialogCurrentItem(null);
                                                             handleClose();
                                                         }}
                                                         PaperProps={{
@@ -179,14 +187,27 @@ export const CamerasPage: Component = () => {
                 <CameraSettingsDialog
                     onClose={() => {
                         setSettingsDialogStatus(false);
+                        handleClose();
                     }}
                     open={settingsDialogStatus()}
-                    cameraId={settingsDialogCurrentItem().
+                    cameraId={menuDialogCurrentItem().
                         camera.
                         cameraId}
-                    openGateConfigurationsId={settingsDialogCurrentItem().
+                    openGateConfigurationsId={menuDialogCurrentItem().
                         transcoder.
                         openGateIntegrationId}
+                />
+            }
+            {
+                deleteDialogStatus() &&
+                <DeleteCameraConfirmDialog
+                    cameraId={menuDialogCurrentItem().camera.cameraId}
+                    open={deleteDialogStatus()}
+                    onClose={() => {
+                        setDeleteDialogStatus(false);
+                        handleClose();
+                        refetch();
+                    }}
                 />
             }
         </Paper>
@@ -238,5 +259,36 @@ const CameraSettingsDialog = (props: CameraSettingsDialogProps) => {
                 </Match>
             </Switch>
         </DialogContent>
+    </Dialog>
+}
+
+interface DeleteCameraConfirmDialogProps {
+    cameraId: string;
+    open: boolean;
+    onClose: () => void;
+}
+
+const DeleteCameraConfirmDialog = (props: DeleteCameraConfirmDialogProps) => {
+    const [waitingDelete, setWaitingDelete] = createSignal<boolean>(false);
+    const handleDelete = async () => {
+        setWaitingDelete(true);
+        await deleteCamera(props.cameraId);
+        setWaitingDelete(false);
+        props.onClose();
+    }
+
+    return <Dialog onClose={props.onClose} open={props.open || waitingDelete()}>
+        <DialogTitle id="alert-dialog-title">
+            Delete camera?
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                {`Requested to delete camera with ID: ${props.cameraId}, proceed?`}
+            </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onClose}>Disagree</Button>
+            <Button onClick={handleDelete} disabled={waitingDelete()}>Agree</Button>
+        </DialogActions>
     </Dialog>
 }
