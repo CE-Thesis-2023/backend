@@ -119,6 +119,7 @@ func Run(shutdownTimeout time.Duration, registration RegistrationFunc) {
 type RegistrationFunc func(configs *configs.Configs, logger *zap.Logger) []Optioner
 type FactoryHook func() error
 type ShutdownHook func(ctx context.Context)
+type Scheduler func() error
 
 type Options struct {
 	httpServers []*custhttp.HttpServer

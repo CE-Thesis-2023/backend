@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	custcron "github.com/CE-Thesis-2023/backend/src/internal/cron"
+	"github.com/go-co-op/gocron"
 	"time"
 
 	eventsapi "github.com/CE-Thesis-2023/backend/src/api/events"
@@ -21,7 +23,6 @@ import (
 func main() {
 	// terrible code but a workaround
 	globalCtx, cancelGlobalCtx := context.WithCancel(context.Background())
-
 	app.Run(
 		time.Second*10,
 		func(configs *configs.Configs, zl *zap.Logger) []app.Optioner {
@@ -66,6 +67,23 @@ func main() {
 					custdb.Stop(ctx)
 					logger.Close()
 				}),
+				app.WithScheduling(custcron.New(
+					custcron.WithEnabled(configs.CronSchedule.Enabled),
+					custcron.WithRegisterFunc(
+						func(s *gocron.Scheduler) error {
+							srv := service.GetWebService()
+							_, err := s.Cron(configs.CronSchedule.Cron).Do(srv.DeleteOpengateCameraStats, globalCtx)
+							if err != nil {
+								return err
+							}
+							_, err = s.Cron(configs.CronSchedule.Cron).Do(srv.DeleteOpengateDetectorStats, globalCtx)
+							if err != nil {
+								return err
+							}
+							return nil
+						},
+					),
+				)),
 			}
 		},
 	)

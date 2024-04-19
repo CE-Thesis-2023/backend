@@ -36,6 +36,10 @@
       "key": "certs/key.pem"
     }
   },
+  "cronSchedule": {
+    "enabled": true,
+    "cron": "0 16 * * *"
+  },
   "database": {
     "connection": "user=postgres password=EIxK7UPwkj3Dkp5e dbname=backend host=db.postgres.ntranlab.com port=5432 sslmode=require"
   },

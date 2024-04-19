@@ -25,6 +25,7 @@ type Configs struct {
 	InfluxConfigs InfluxConfigs     `json:"influx,omitempty" yaml:"influx,omitempty"`
 	MediaEngine   MediaMtxConfigs   `json:"mediaEngine,omitempty" yaml:"mediaEngine,omitempty"`
 	S3            S3Storage         `json:"s3,omitempty" yaml:"s3,omitempty"`
+	CronSchedule  CronSchedule      `json:"cronSchedule,omitempty" yaml:"cronSchedule,omitempty"`
 }
 
 func (c Configs) String() string {
@@ -125,6 +126,11 @@ type S3Storage struct {
 	PathPrefix  string `json:"pathPrefix,omitempty" yaml:"pathPrefix,omitempty"`
 	Region      string `json:"region,omitempty" yaml:"region,omitempty"`
 	Bucket      string `json:"bucket,omitempty" yaml:"bucket,omitempty"`
+}
+
+type CronSchedule struct {
+	Enabled bool
+	Cron    string
 }
 
 func readConfig() (*Configs, error) {

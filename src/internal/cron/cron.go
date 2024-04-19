@@ -9,6 +9,7 @@ import (
 
 type Options struct {
 	register RegisterFunc
+	enabled  bool
 }
 
 type Optioner func(o *Options)
@@ -18,6 +19,12 @@ type RegisterFunc func(s *gocron.Scheduler) error
 func WithRegisterFunc(f RegisterFunc) Optioner {
 	return func(o *Options) {
 		o.register = f
+	}
+}
+
+func WithEnabled(enabled bool) Optioner {
+	return func(o *Options) {
+		o.enabled = enabled
 	}
 }
 
@@ -42,6 +49,11 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) Start() error {
+	// Check if scheduler is enabled before starting
+	if !s.options.enabled {
+		return nil
+	}
+
 	reg := s.options.register
 
 	if reg != nil {

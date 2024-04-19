@@ -1880,6 +1880,18 @@ func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context) (*db.Op
 	return &stats[0], nil
 }
 
+func (s *WebService) DeleteOpengateCameraStats(ctx context.Context) error {
+	logger.SInfo("DeleteOpengateCameraStats: cron job")
+	return s.db.Delete(ctx,
+		s.builder.Delete("open_gate_camera_stats"))
+}
+
+func (s *WebService) DeleteOpengateDetectorStats(ctx context.Context) error {
+	logger.SInfo("DeleteOpengateDetectorStats: cron job")
+	return s.db.Delete(ctx,
+		s.builder.Delete("open_gate_detector_stats"))
+}
+
 func (s *WebService) GetDetectablePeople(ctx context.Context, req *web.GetDetectablePeopleRequest) (*web.GetDetectablePeopleResponse, error) {
 	logger.SInfo("GetDetectablePeople: request",
 		zap.Reflect("request", req))
