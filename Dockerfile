@@ -5,13 +5,13 @@ COPY go.mod go.mod
 COPY go.sum go.sum
 RUN go mod download
 
-COPY src src
-
 RUN apt update && apt install libdlib-dev \
     libblas-dev \
     libatlas-base-dev \
     liblapack-dev \
     libjpeg62-turbo-dev -y
+
+COPY src src
 
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
     go build -a \

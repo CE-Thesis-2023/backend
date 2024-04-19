@@ -1,0 +1,53 @@
+{
+  "name": "ts-jest-template-solid",
+  "version": "0.0.0",
+  "description": "Portal for Video Surveillance as a Service",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "jest"
+  },
+  "type": "module",
+  "jest": {
+    "preset": "solid-jest/preset/browser",
+    "setupFilesAfterEnv": [
+      "<rootDir>/node_modules/@testing-library/jest-dom"
+    ],
+    "moduleNameMapper": {
+      "^axios$": "axios/dist/node/axios.cjs"
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.23.7",
+    "@babel/preset-env": "^7.23.8",
+    "@babel/preset-typescript": "^7.23.3",
+    "@solidjs/testing-library": "^0.8.5",
+    "@testing-library/jest-dom": "^6.2.0",
+    "@types/jest": "^29.5.12",
+    "@types/testing-library__jest-dom": "^5.14.9",
+    "axios": "^1.6.8",
+    "babel-jest": "^29.7.0",
+    "babel-preset-jest": "^29.6.3",
+    "babel-preset-solid": "^1.8.9",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^23.2.0",
+    "regenerator-runtime": "0.14.1",
+    "solid-devtools": "^0.29.2",
+    "solid-jest": "^0.2.0",
+    "solid-testing-library": "^0.5.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.9",
+    "vite-plugin-solid": "^2.10.2"
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.13.2",
+    "@suid/icons-material": "^0.7.0",
+    "@suid/material": "^0.16.0",
+    "@suid/vite-plugin": "^0.2.0",
+    "solid-js": "^1.8.11"
+  }
+}
