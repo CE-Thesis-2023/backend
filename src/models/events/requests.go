@@ -74,6 +74,22 @@ type PTZCtrlRequest struct {
 	Duration int    `json:"duration"`
 }
 
+type OpenGateCameraStats struct {
+	CameraFPS    float64 `json:"camera_fps"`
+	DetectionFPS float64 `json:"detection_fps"`
+	CapturePID   int     `json:"capture_pid"`
+	PID          int     `json:"pid"`
+	ProcessFPS   float64 `json:"process_fps"`
+	SkippedFPS   float64 `json:"skipped_fps"`
+}
+
+type OpenGateDetectorsStats struct {
+	DetectionName  string  `json:"detection_name"`
+	DetectionStart float64 `json:"detection_start"`
+	InferenceSpeed float64 `json:"inference_speed"`
+	PID            int     `json:"pid"`
+}
+
 type Event struct {
 	Prefix    string
 	ID        string
@@ -115,10 +131,6 @@ func (e *Event) Parse(topic string) {
 		e.Arguments = parts[4:]
 	}
 }
-
-const (
-	EventReply_OK = `{ "status": "ok" }`
-)
 
 type EventReply struct {
 	Status string `json:"status"`

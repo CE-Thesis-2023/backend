@@ -40,7 +40,7 @@ func main() {
 				)),
 				app.WithFactoryHook(func() error {
 					custdb.Init(globalCtx, configs)
-					custdb.Migrate(custdb.Gorm(),
+					err := custdb.Migrate(custdb.Gorm(),
 						&db.Transcoder{},
 						&db.OpenGateIntegration{},
 						&db.Camera{},
@@ -49,8 +49,13 @@ func main() {
 						&db.OpenGateCameraSettings{},
 						&db.OpenGateIntegration{},
 						&db.OpenGateMqttConfiguration{},
+						&db.OpenGateCameraStats{},
+						&db.OpenGateDetectorStats{},
 						&db.DetectablePerson{},
 					)
+					if err != nil {
+						return err
+					}
 
 					service.Init(configs, globalCtx)
 					eventsapi.Init(configs, globalCtx)

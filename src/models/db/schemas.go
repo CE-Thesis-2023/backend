@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/pgvector/pgvector-go"
@@ -326,6 +327,85 @@ func (t *DetectablePerson) Values() []interface{} {
 		t.Age,
 		t.ImagePath,
 		t.Embedding,
+	)
+	return vs
+}
+
+type OpenGateCameraStats struct {
+	CameraStatId uuid.UUID `json:"camera_stat_id" db:"camera_stat_id,primary"`
+	CameraName   string    `json:"camera_name" db:"camera_name"`
+	CameraFPS    float64   `json:"camera_fps" db:"camera_fps"`
+	DetectionFPS float64   `json:"detection_fps" db:"detection_fps"`
+	CapturePID   int       `json:"capture_pid" db:"capture_p_id"`
+	ProcessID    int       `json:"process_id" db:"process_id"`
+	ProcessFPS   float64   `json:"process_fps" db:"process_fps"`
+	SkippedFPS   float64   `json:"skipped_fps" db:"skipped_fps"`
+	Timestamp    time.Time `json:"timestamp" db:"timestamp"`
+}
+
+func (t *OpenGateCameraStats) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"camera_stat_id",
+		"camera_name",
+		"camera_fps",
+		"detection_fps",
+		"capture_p_id",
+		"process_id",
+		"process_fps",
+		"skipped_fps",
+		"timestamp",
+	)
+	return fs
+}
+
+func (t *OpenGateCameraStats) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.CameraStatId,
+		t.CameraName,
+		t.CameraFPS,
+		t.DetectionFPS,
+		t.CapturePID,
+		t.ProcessID,
+		t.ProcessFPS,
+		t.SkippedFPS,
+		t.Timestamp,
+	)
+	return vs
+}
+
+type OpenGateDetectorStats struct {
+	DetectorStatId uuid.UUID `json:"detector_stat_id" db:"detector_stat_id,primary"`
+	DetectorName   string    `json:"detector_name" db:"detector_name"`
+	DetectorStart  float64   `json:"detector_start" db:"detector_start"`
+	InferenceSpeed float64   `json:"inference_speed" db:"inference_speed"`
+	ProcessID      int       `json:"process_id" db:"process_id"`
+	Timestamp      time.Time `json:"timestamp" db:"timestamp"`
+}
+
+func (t *OpenGateDetectorStats) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"detector_stat_id",
+		"detector_name",
+		"detector_start",
+		"inference_speed",
+		"process_id",
+		"timestamp",
+	)
+	return fs
+}
+
+func (t *OpenGateDetectorStats) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.DetectorStatId,
+		t.DetectorName,
+		t.DetectorStart,
+		t.InferenceSpeed,
+		t.ProcessID,
+		t.Timestamp,
 	)
 	return vs
 }

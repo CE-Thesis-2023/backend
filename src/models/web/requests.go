@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/models/db"
@@ -295,6 +296,31 @@ type DeviceHealthcheckRequest struct {
 
 type DeviceHealthcheckResponse struct {
 	Status string `json:"status"`
+}
+
+type AddOpenGateCameraStatsRequest struct {
+	CameraName   string  `json:"camera_name"`
+	CameraFPS    float64 `json:"camera_fps"`
+	DetectionFPS float64 `json:"detection_fps"`
+	CapturePID   int     `json:"capture_pid"`
+	ProcessID    int     `json:"process_id"`
+	ProcessFPS   float64 `json:"process_fps"`
+	SkippedFPS   float64 `json:"skipped_fps"`
+}
+
+type AddOpenGateCameraStatsResponse struct {
+	CameraStatId uuid.UUID `json:"cameraStatId"`
+}
+
+type AddOpenGateDetectorsStatsResponse struct {
+	DetectorStatId uuid.UUID `json:"detectorStatId"`
+}
+
+type AddOpenGateDetectorsStatsRequest struct {
+	DetectorName   string  `json:"detect_name"`
+	DetectorStart  float64 `json:"detector_start"`
+	InferenceSpeed float64 `json:"inference_speed"`
+	ProcessID      int     `json:"process_id"`
 }
 
 type GetDetectablePeopleRequest struct {

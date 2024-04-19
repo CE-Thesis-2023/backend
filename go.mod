@@ -54,7 +54,7 @@ require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/go-co-op/gocron v1.36.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

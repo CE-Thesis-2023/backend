@@ -3,6 +3,7 @@ package eventsapi
 import (
 	"context"
 	"encoding/json"
+	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"strings"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
@@ -24,6 +25,13 @@ type Command struct {
 
 	actorPool  *transcoder.TranscoderActorsPool
 	webService *service.WebService
+}
+
+type OpenGateStats struct {
+	Cameras      map[string]events.OpenGateCameraStats    `json:"cameras"`
+	DetectionFPS float64                                  `json:"detection_fps"`
+	Detectors    map[string]events.OpenGateDetectorsStats `json:"detectors"`
+	Service      map[string]interface{}                   `json:"service"`
 }
 
 func CommandFromPath(pub *paho.Publish, pool *transcoder.TranscoderActorsPool, webService *service.WebService) (*Command, error) {
@@ -55,47 +63,102 @@ func (c *Command) Run(ctx context.Context, pub *paho.Publish) error {
 }
 
 const (
-	OPENGATE_AVAILABLE = "available"
-	OPENGATE_EVENTS    = "events"
+	OPENGATE_EVENTS = "events"
+	OPENGATE_STATS  = "stats"
 )
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-	names := make([]string, 0)
-	if c.Action == OPENGATE_EVENTS {
-		names = append(names, c.extractCameraNameFromEvent(pub.Payload))
+
+	if c.Action == OPENGATE_STATS {
+		return c.runOpenGateStats(ctx, pub)
 	} else {
-		splittedAction := strings.Split(c.Action, "/")
-		if len(splittedAction) > 1 {
-			names = append(names, splittedAction[0])
+		names := make([]string, 0)
+		if c.Action == OPENGATE_EVENTS {
+			names = append(names, c.extractCameraNameFromEvent(pub.Payload))
+		} else {
+			splittedAction := strings.Split(c.Action, "/")
+			if len(splittedAction) > 1 {
+				names = append(names, splittedAction[0])
+			}
 		}
+
+		resp, err := c.webService.GetCamerasByClientId(
+			ctx,
+			&web.GetCameraByClientIdRequest{
+				ClientId:            c.ClientId,
+				OpenGateCameraNames: names,
+			})
+		if err != nil {
+			return err
+		}
+		cameras := resp.Cameras
+
+		for _, cam := range cameras {
+			err = c.actorPool.Send(transcoder.TranscoderEventMessage{
+				CameraId:     cam.CameraId,
+				TranscoderId: cam.TranscoderId,
+				OpenGateId:   c.ClientId,
+				Type:         c.Type,
+				Action:       c.Action,
+				Payload:      pub.Payload,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func (c *Command) runOpenGateStats(ctx context.Context, pub *paho.Publish) error {
+
+	stats := c.extractStatFromStatsResponse(pub.Payload)
+
+	if stats == nil {
+		return custerror.FormatInvalidArgument("failed to extract stats from payload")
 	}
 
-	resp, err := c.webService.GetCamerasByClientId(
-		ctx,
-		&web.GetCameraByClientIdRequest{
-			ClientId:            c.ClientId,
-			OpenGateCameraNames: names,
+	for cameraName, cameraStats := range stats.Cameras {
+		_, err := c.webService.AddOpenGateCameraStats(ctx, &web.AddOpenGateCameraStatsRequest{
+			CameraName:   cameraName,
+			CameraFPS:    cameraStats.CameraFPS,
+			DetectionFPS: cameraStats.DetectionFPS,
+			CapturePID:   cameraStats.CapturePID,
+			ProcessID:    cameraStats.PID,
+			ProcessFPS:   cameraStats.ProcessFPS,
+			SkippedFPS:   cameraStats.SkippedFPS,
 		})
-	if err != nil {
-		return err
-	}
-	cameras := resp.Cameras
 
-	for _, cam := range cameras {
-		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
-			CameraId:     cam.CameraId,
-			TranscoderId: cam.TranscoderId,
-			OpenGateId:   c.ClientId,
-			Type:         c.Type,
-			Action:       c.Action,
-			Payload:      pub.Payload,
-		})
 		if err != nil {
 			return err
 		}
 	}
+
+	for detectorName, detectorStats := range stats.Detectors {
+		_, err := c.webService.AddOpenGateDetectorStats(ctx, &web.AddOpenGateDetectorsStatsRequest{
+			DetectorName:   detectorName,
+			DetectorStart:  detectorStats.DetectionStart,
+			InferenceSpeed: detectorStats.InferenceSpeed,
+			ProcessID:      detectorStats.PID,
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (c *Command) extractStatFromStatsResponse(stats []byte) *OpenGateStats {
+	var statStruct OpenGateStats
+	// Unmarshal the JSON into a map[string]interface{}
+	if err := json.Unmarshal(stats, &statStruct); err != nil {
+		return nil
+	}
+
+	return &statStruct
 }
 
 func (c *Command) extractCameraNameFromEvent(event []byte) string {

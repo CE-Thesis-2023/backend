@@ -1498,14 +1498,14 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 		return nil, err
 	}
 
-	events, err := s.getObjectTrackingEventById(ctx, req.EventId, req.OpenGateEventId)
+	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.EventId, req.OpenGateEventId)
 	if err != nil {
 		logger.SError("GetObjectTrackingEventById: getObjectTrackingEventById error", zap.Error(err))
 		return nil, err
 	}
 
 	return &web.GetObjectTrackingEventByIdResponse{
-		ObjectTrackingEvents: events,
+		ObjectTrackingEvents: trackingEvents,
 	}, nil
 }
 
@@ -1534,12 +1534,12 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []strin
 		zap.Reflect("q", sql),
 		zap.Reflect("args", args))
 
-	var events []db.ObjectTrackingEvent
-	if err := s.db.Select(ctx, q, &events); err != nil {
+	var trackingEvent []db.ObjectTrackingEvent
+	if err := s.db.Select(ctx, q, &trackingEvent); err != nil {
 		return nil, err
 	}
 
-	return events, nil
+	return trackingEvent, nil
 }
 
 func (s *WebService) addObjectTrackingEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
@@ -1685,6 +1685,138 @@ func (s *WebService) DoDeviceHealthcheck(ctx context.Context, req *web.DeviceHea
 func (s *WebService) validateDeviceHealthcheckRequest(req *web.DeviceHealthcheckRequest) error {
 	if req.TranscoderId == "" {
 		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	return nil
+}
+
+func (s *WebService) validateOpenGateStatsRequest(req *web.AddOpenGateCameraStatsRequest) error {
+	if req.CameraName == "" {
+		return custerror.FormatInvalidArgument("missing camera name")
+	}
+	if req.CameraFPS < 0 {
+		return custerror.FormatInvalidArgument("invalid camera fps")
+	}
+
+	if req.DetectionFPS < 0 {
+		return custerror.FormatInvalidArgument("invalid detection fps")
+	}
+
+	if req.CapturePID < 0 {
+		return custerror.FormatInvalidArgument("invalid capture pid")
+	}
+
+	if req.ProcessID <= 0 {
+		return custerror.FormatInvalidArgument("invalid invalid")
+	}
+
+	if req.ProcessFPS < 0 {
+		return custerror.FormatInvalidArgument("invalid process fps")
+	}
+
+	if req.SkippedFPS < 0 {
+		return custerror.FormatInvalidArgument("invalid skipped fps")
+	}
+
+	return nil
+}
+
+func (s *WebService) AddOpenGateCameraStats(ctx context.Context, req *web.AddOpenGateCameraStatsRequest) (*web.AddOpenGateCameraStatsResponse, error) {
+	logger.SDebug("OpenGateCameraStats: add stats", zap.Reflect("request", req))
+
+	err := s.validateOpenGateStatsRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var entry db.OpenGateCameraStats
+
+	entry.CameraStatId = uuid.New()
+	entry.Timestamp = time.Now()
+
+	if err = copier.Copy(&entry, req); err != nil {
+		logger.SError("AddOpenGateCameraStats: copier.Copy error", zap.Error(err))
+		return nil, err
+	}
+
+	if err = s.addOpenGateCameraStats(ctx, &entry); err != nil {
+		return nil, err
+	}
+
+	return &web.AddOpenGateCameraStatsResponse{
+		CameraStatId: entry.CameraStatId,
+	}, nil
+}
+
+func (s *WebService) addOpenGateCameraStats(ctx context.Context, stats *db.OpenGateCameraStats) error {
+	q := s.builder.Insert("open_gate_camera_stats").
+		Columns(stats.Fields()...).
+		Values(stats.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) AddOpenGateDetectorStats(ctx context.Context, req *web.AddOpenGateDetectorsStatsRequest) (*web.AddOpenGateDetectorsStatsResponse, error) {
+	logger.SDebug("OpenGateDetectorStats: add stats", zap.Reflect("request", req))
+
+	err := s.validateAddOpenGateDetectorStatsRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var entry db.OpenGateDetectorStats
+
+	entry.DetectorStatId = uuid.New()
+	entry.Timestamp = time.Now()
+
+	if err = copier.Copy(&entry, req); err != nil {
+		logger.SError("AddOpenGateDetectorStats: copier.Copy error", zap.Error(err))
+		return nil, err
+	}
+
+	if err = s.addOpenGateDetectorStats(ctx, &entry); err != nil {
+		return nil, err
+	}
+
+	return &web.AddOpenGateDetectorsStatsResponse{
+		DetectorStatId: entry.DetectorStatId,
+	}, nil
+}
+
+func (s *WebService) validateAddOpenGateDetectorStatsRequest(req *web.AddOpenGateDetectorsStatsRequest) error {
+
+	if req.DetectorName == "" {
+		return custerror.FormatInvalidArgument("missing camera name")
+	}
+
+	if req.DetectorStart < 0 {
+		return custerror.FormatInvalidArgument("invalid detection start time")
+	}
+
+	if req.InferenceSpeed < 0 {
+		return custerror.FormatInvalidArgument("invalid inference speed")
+	}
+
+	if req.ProcessID <= 0 {
+		return custerror.FormatInvalidArgument("invalid PID")
+	}
+
+	return nil
+}
+
+func (s *WebService) addOpenGateDetectorStats(ctx context.Context, stats *db.OpenGateDetectorStats) error {
+	q := s.builder.Insert("open_gate_detector_stats").
+		Columns(stats.Fields()...).
+		Values(stats.Values()...)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("addOpenGateDetectorStats: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
 	}
 	return nil
 }
