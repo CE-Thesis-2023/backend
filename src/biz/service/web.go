@@ -1098,7 +1098,26 @@ func (s *WebService) getCameraByIdCached(ctx context.Context, cameraId string) (
 }
 
 func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.RemoteControlRequest, camera *db.Camera) error {
-	// TODO: Request reply to the device
+	ptzCtrlRequest := events.PTZCtrlRequest{
+		CameraId: camera.CameraId,
+		Pan:      req.Pan,
+		Tilt:     req.Tilt,
+	}
+	response := map[string]string{}
+	reqReplyRequest := custmqtt.RequestReplyRequest{
+		Topic: events.Event{
+			Prefix:    "commands",
+			ID:        camera.TranscoderId,
+			Type:      "ptz",
+			Arguments: []string{camera.CameraId},
+		},
+		Request:    ptzCtrlRequest,
+		Reply:      response,
+		MaxTimeout: time.Second * 3,
+	}
+	if err := s.reqreply.Request(ctx, &reqReplyRequest); err != nil {
+		return custerror.FormatInternalError("request-reply error: %s", err)
+	}
 	return nil
 }
 
@@ -1131,8 +1150,36 @@ func (s *WebService) GetDeviceInfo(ctx context.Context, req *web.GetCameraDevice
 		logger.SError("GetDeviceInfo: cameraId not found")
 	}
 
-	// TODO: Request-reply to the device
-	return &web.GetCameraDeviceInfo{}, nil
+	var resp interface{}
+	if err := s.sendDeviceInfoRequest(ctx, req, &cameras[0], &resp); err != nil {
+		logger.SError("GetDeviceInfo: sendDeviceInfoRequest error",
+			zap.Error(err))
+		return nil, err
+	}
+	apiResp := &web.GetCameraDeviceInfo{}
+	if err := copier.Copy(apiResp, resp); err != nil {
+		logger.SError("GetDeviceInfo: copier.Copy error", zap.Error(err))
+		return nil, err
+	}
+	return apiResp, nil
+}
+
+func (s *WebService) sendDeviceInfoRequest(ctx context.Context, _ *web.GetCameraDeviceInfoRequest, camera *db.Camera, res interface{}) error {
+	reqreplyRequest := custmqtt.RequestReplyRequest{
+		Topic: events.Event{
+			Prefix:    "commands",
+			ID:        camera.TranscoderId,
+			Type:      "info",
+			Arguments: []string{camera.CameraId},
+		},
+		Request:    map[string]interface{}{},
+		Reply:      res,
+		MaxTimeout: time.Second * 3,
+	}
+	if err := s.reqreply.Request(ctx, &reqreplyRequest); err != nil {
+		return custerror.FormatInternalError("request-reply error: %s", err)
+	}
+	return nil
 }
 
 func (s *WebService) validateGetOpenGateIntegrationById(req *web.GetOpenGateIntegrationByIdRequest) error {
