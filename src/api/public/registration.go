@@ -43,5 +43,7 @@ func ServiceRegistration() func(app *fiber.App) {
 		app.Post("/api/people", AddDetectablePerson)
 		app.Delete("/api/people", DeleteDetectablePerson)
 		app.Get("/api/people/presigned", GetDetectablePersonPresignedUrl)
+
+		app.Get("/api/stats", GetLatestOpenGateCameraStats)
 	}
 }

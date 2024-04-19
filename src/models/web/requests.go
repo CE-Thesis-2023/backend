@@ -361,3 +361,8 @@ type AddDetectablePersonResponse struct {
 type DeleteDetectablePersonRequest struct {
 	PersonId string `json:"personId"`
 }
+
+type GetLatestOpenGateStatsResponse struct {
+	CameraStats   db.OpenGateCameraStats   `json:"cameraStats"`
+	DetectorStats db.OpenGateDetectorStats `json:"detectorStats"`
+}

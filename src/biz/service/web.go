@@ -1821,6 +1821,65 @@ func (s *WebService) addOpenGateDetectorStats(ctx context.Context, stats *db.Ope
 	return nil
 }
 
+func (s *WebService) GetLatestOpenGateCameraStats(ctx context.Context) (*web.GetLatestOpenGateStatsResponse, error) {
+	logger.SDebug("GetLatestOpenGateCameraStats: request")
+
+	cameraStats, err := s.getLatestOpenGateCameraStats(ctx)
+	if err != nil {
+		logger.SError("GetLatestOpenGateCameraStats: getLatestOpenGateCameraStats error", zap.Error(err))
+		return nil, err
+	}
+
+	detectorStats, err := s.getLatestOpenGateDetectorStats(ctx)
+	if err != nil {
+		logger.SError("GetLatestOpenGateCameraStats: getLatestOpenGateDetectorStats error", zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetLatestOpenGateStatsResponse{
+		CameraStats:   *cameraStats,
+		DetectorStats: *detectorStats,
+	}, nil
+}
+
+func (s *WebService) getLatestOpenGateCameraStats(ctx context.Context) (*db.OpenGateCameraStats, error) {
+	q := s.builder.Select("*").
+		From("open_gate_camera_stats").
+		OrderByClause("? DESC", "timestamp").
+		Limit(1)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateCameraStats: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var stats []db.OpenGateCameraStats
+	if err := s.db.Select(ctx, q, &stats); err != nil {
+		return nil, err
+	}
+
+	return &stats[0], nil
+}
+
+func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context) (*db.OpenGateDetectorStats, error) {
+	q := s.builder.Select("*").
+		From("open_gate_detector_stats").
+		OrderByClause("? DESC", "timestamp").
+		Limit(1)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateDetectorStats: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var stats []db.OpenGateDetectorStats
+	if err := s.db.Select(ctx, q, &stats); err != nil {
+		return nil, err
+	}
+
+	return &stats[0], nil
+}
+
 func (s *WebService) GetDetectablePeople(ctx context.Context, req *web.GetDetectablePeopleRequest) (*web.GetDetectablePeopleResponse, error) {
 	logger.SInfo("GetDetectablePeople: request",
 		zap.Reflect("request", req))

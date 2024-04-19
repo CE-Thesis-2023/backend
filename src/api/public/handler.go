@@ -470,3 +470,13 @@ func GetDetectablePersonPresignedUrl(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(resp)
 }
+
+func GetLatestOpenGateCameraStats(ctx *fiber.Ctx) error {
+	logger.SDebug("GetStats: request")
+
+	resp, err := service.GetWebService().GetLatestOpenGateCameraStats(ctx.UserContext())
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(resp)
+}
