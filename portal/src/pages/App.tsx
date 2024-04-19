@@ -80,27 +80,28 @@ export const App: ParentComponent = (props) => {
         </List>
     </Box>
 
-    return <>
-
-        <Box sx={{ flexGrow: 1 }}>
-            <AppBar position="static">
-                <Toolbar>
-                    <IconButton
-                        size="large" edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={toggleDrawer(!state.drawer)}>
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" component={"div"} sx={{ flexGrow: 1 }}>
-                        Portal
-                    </Typography>
-                    <IconButton color="inherit" aria-label="github-ref" size="small" >
-                        <SourceIcon />
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-        </Box>
-        <Drawer variant="persistent" anchor="left" open={state.drawer} onClose={toggleDrawer(false)}>{items()}</Drawer>
-        <main>
+    return <div class="flex flex-col h-full">
+        <div class="flex">
+            <Box sx={{ flexGrow: 1 }}>
+                <AppBar position="static">
+                    <Toolbar>
+                        <IconButton
+                            size="large" edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={toggleDrawer(!state.drawer)}>
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography variant="h6" component={"div"} sx={{ flexGrow: 1 }}>
+                            Portal
+                        </Typography>
+                        <IconButton color="inherit" aria-label="github-ref" size="small" >
+                            <SourceIcon />
+                        </IconButton>
+                    </Toolbar>
+                </AppBar>
+            </Box>
+            <Drawer anchor="left" open={state.drawer} onClose={toggleDrawer(false)}>{items()}</Drawer>
+        </div>
+        <main class="flex-1">
             {props.children}
         </main>
-    </>
+    </div>
 }
