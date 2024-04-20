@@ -35,7 +35,6 @@ func GetTranscoderDevices(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetCameras(ctx *gin.Context) {
@@ -54,7 +53,6 @@ func GetCameras(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func CreateCamera(ctx *gin.Context) {
@@ -73,7 +71,6 @@ func CreateCamera(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func DeleteCamera(ctx *gin.Context) {
@@ -96,7 +93,6 @@ func DeleteCamera(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusAccepted)
-	return
 }
 
 func GetCamerasByGroupId(ctx *gin.Context) {
@@ -123,7 +119,6 @@ func GetCamerasByGroupId(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetCameraGroups(ctx *gin.Context) {
@@ -143,7 +138,6 @@ func GetCameraGroups(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func AddCameraGroup(ctx *gin.Context) {
@@ -164,7 +158,6 @@ func AddCameraGroup(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func DeleteCameraGroup(ctx *gin.Context) {
@@ -185,7 +178,6 @@ func DeleteCameraGroup(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusAccepted)
-	return
 }
 
 func AddCamerasToGroup(ctx *gin.Context) {
@@ -206,7 +198,6 @@ func AddCamerasToGroup(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, &web.AddCamerasToGroupResponse{GroupId: msg.GroupId})
-	return
 }
 
 func RemoveCamerasFromGroup(ctx *gin.Context) {
@@ -227,7 +218,6 @@ func RemoveCamerasFromGroup(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, &web.RemoveCamerasFromGroupResponse{GroupId: msg.GroupId})
-	return
 }
 
 func UpdateTranscoder(ctx *gin.Context) {
@@ -248,7 +238,6 @@ func UpdateTranscoder(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetStreamInfo(ctx *gin.Context) {
@@ -274,7 +263,6 @@ func GetStreamInfo(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func ToggleStream(ctx *gin.Context) {
@@ -311,7 +299,6 @@ func ToggleStream(ctx *gin.Context) {
 		return
 	}
 	ctx.Status(200)
-	return
 }
 
 func RemoteControl(ctx *gin.Context) {
@@ -331,7 +318,6 @@ func RemoteControl(ctx *gin.Context) {
 	}
 
 	ctx.Status(200)
-	return
 }
 
 func GetCameraDeviceInfo(ctx *gin.Context) {
@@ -364,7 +350,6 @@ func GetCameraDeviceInfo(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetOpenGateSettings(ctx *gin.Context) {
@@ -395,7 +380,6 @@ func GetOpenGateSettings(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func UpdateOpenGateSettings(ctx *gin.Context) {
@@ -431,7 +415,6 @@ func UpdateOpenGateSettings(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusAccepted)
-	return
 }
 
 func GetObjectTrackingEvent(ctx *gin.Context) {
@@ -458,7 +441,6 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func DeleteObjectTrackingEvent(ctx *gin.Context) {
@@ -482,7 +464,6 @@ func DeleteObjectTrackingEvent(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusAccepted)
-	return
 }
 
 func DoDeviceHealthcheck(ctx *gin.Context) {
@@ -504,7 +485,6 @@ func DoDeviceHealthcheck(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func AddDetectablePerson(ctx *gin.Context) {
@@ -528,7 +508,6 @@ func AddDetectablePerson(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetDetectablePeople(ctx *gin.Context) {
@@ -551,7 +530,6 @@ func GetDetectablePeople(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func DeleteDetectablePerson(ctx *gin.Context) {
@@ -575,7 +553,6 @@ func DeleteDetectablePerson(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusAccepted)
-	return
 }
 
 func GetDetectablePersonPresignedUrl(ctx *gin.Context) {
@@ -599,7 +576,6 @@ func GetDetectablePersonPresignedUrl(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
-	return
 }
 
 func GetLatestOpenGateCameraStats(ctx *gin.Context) {
@@ -611,5 +587,4 @@ func GetLatestOpenGateCameraStats(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(200, resp)
-	return
 }

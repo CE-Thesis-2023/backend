@@ -29,7 +29,9 @@ func New(options ...Optioner) *HttpServer {
 	app := gin.New()
 
 	if len(configs.middlewares) > 0 {
-		app.Use(configs.middlewares...)
+		for _, middleware := range configs.middlewares {
+			app.Use(middleware)
+		}
 	}
 	configs.registration(app)
 
