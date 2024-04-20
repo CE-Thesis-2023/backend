@@ -112,13 +112,13 @@ func (s *WebService) GetCamerasByTranscoderId(ctx context.Context, req *web.GetC
 		zap.Reflect("request", req))
 
 	if err := s.validateGetCamerasByTranscoderId(req); err != nil {
-		logger.SDebug("GetCamerasByClientId: validateGetCamerasByClientIdRequest", zap.Error(err))
+		logger.SDebug("GetCamerasByTranscoderId: validateGetCamerasByTranscoderId", zap.Error(err))
 		return nil, err
 	}
 
-	transcoder, err := s.getTranscoderById(ctx, req.ClientId)
+	transcoder, err := s.getTranscoderById(ctx, req.TranscoderId)
 	if err != nil {
-		logger.SError("GetCamerasByClientId: getTranscoderById", zap.Error(err))
+		logger.SError("GetCamerasByTranscoderId: getTranscoderById", zap.Error(err))
 		return nil, err
 	}
 
