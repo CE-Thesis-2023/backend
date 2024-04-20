@@ -116,19 +116,7 @@ func (s *WebService) GetCamerasByTranscoderId(ctx context.Context, req *web.GetC
 		return nil, err
 	}
 
-	OpenGateIntegration, err := s.getOpenGateIdbyTranscoderId(ctx, req.TranscoderId)
-	if err != nil {
-		logger.SError("GetOpenGateIdbyTranscoderId: getOpenGateIntegrationById", zap.Error(err))
-		return nil, err
-	}
-
-	integration, err := s.getOpenGateIntegrationById(ctx, OpenGateIntegration.OpenGateId)
-	if err != nil {
-		logger.SError("GetCamerasByClientId: getOpenGateIntegrationById", zap.Error(err))
-		return nil, err
-	}
-
-	transcoder, err := s.getTranscoderById(ctx, integration.TranscoderId)
+	transcoder, err := s.getTranscoderById(ctx, req.ClientId)
 	if err != nil {
 		logger.SError("GetCamerasByClientId: getTranscoderById", zap.Error(err))
 		return nil, err
@@ -162,22 +150,6 @@ func (s *WebService) getOpenGateIntegrationById(ctx context.Context, id string) 
 		return nil, err
 	}
 	return &openGate, nil
-}
-
-func (s *WebService) getOpenGateIdbyTranscoderId(ctx context.Context, id string) (*db.OpenGateIntegration, error) {
-	q := s.builder.Select("*").
-		From("open_gate_integrations").
-		Where("transcoder_id = $1", id)
-	sql, args, _ := q.ToSql()
-	logger.SDebug("getTranscoderById: SQL",
-		zap.Reflect("q", sql),
-		zap.Reflect("args", args))
-
-	var openGateIntegration db.OpenGateIntegration
-	if err := s.db.Get(ctx, q, &openGateIntegration); err != nil {
-		return nil, err
-	}
-	return &openGateIntegration, nil
 }
 
 func (s *WebService) getTranscoderById(ctx context.Context, id string) (*db.Transcoder, error) {

@@ -38,6 +38,7 @@ type OpenGateMqttConfiguration struct {
 type ObjectTrackingEvent struct {
 	EventId         string `json:"eventId" db:"event_id,primary"`
 	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id"`
+	OpenGateId      string `json:"openGateId" db:"open_gate_id"`
 	EventType       string `json:"eventType" db:"event_type"`
 
 	CameraId      string     `json:"cameraId" db:"camera_id"`
