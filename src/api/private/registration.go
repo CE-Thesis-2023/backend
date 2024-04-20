@@ -8,15 +8,14 @@ import (
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
 		app.Use("/", custhttp.SetCors())
-		priv := app.Group("/private")
-		priv.Post("/registers", RegisterDevice)
-		priv.Delete("/deregisters", DeleteTranscoder)
-		priv.Get("/transcoders/:id/cameras", GetTranscoderAssignedCameras)
-		priv.Get("/opengate/cameras", GetOpenGateCameraSettings)
-		priv.Get("/opengate/:id/mqtt", GetOpenGateMqttSettings)
-		priv.Get("/opengate/:id", GetOpenGateIntegrationConfigurations)
-		priv.Get("/transcoders/streams", GetTranscoderStreamConfigurations)
-		priv.Get("/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
-		priv.Get("/transcoders/mqtt", GetTranscoderMQTTConfigurations)
+		app.Post("/private/registers", RegisterDevice)
+		app.Delete("/private/deregisters", DeleteTranscoder)
+		app.Get("/private/transcoders/:id/cameras", GetTranscoderAssignedCameras)
+		app.Get("/private/opengate/cameras", GetOpenGateCameraSettings)
+		app.Get("/private/opengate/:id/mqtt", GetOpenGateMqttSettings)
+		app.Get("/private/opengate/:id", GetOpenGateIntegrationConfigurations)
+		app.Get("/private/transcoders/streams", GetTranscoderStreamConfigurations)
+		app.Get("/private/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
+		app.Get("/private/transcoders/mqtt", GetTranscoderMQTTConfigurations)
 	}
 }
