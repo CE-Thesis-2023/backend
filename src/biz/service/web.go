@@ -100,23 +100,23 @@ func (s *WebService) GetCameras(ctx context.Context, req *web.GetCamerasRequest)
 	return &resp, nil
 }
 
-func (s *WebService) validateGetCamerasByClientIdRequest(req *web.GetCameraByClientIdRequest) error {
-	if len(req.ClientId) == 0 {
+func (s *WebService) validateGetCamerasByTranscoderId(req *web.GetCameraByTranscoderId) error {
+	if len(req.TranscoderId) == 0 {
 		return custerror.FormatInvalidArgument("missing client")
 	}
 	return nil
 }
 
-func (s *WebService) GetCamerasByClientId(ctx context.Context, req *web.GetCameraByClientIdRequest) (*web.GetCameraByOpenGateIdResponse, error) {
+func (s *WebService) GetCamerasByTranscoderId(ctx context.Context, req *web.GetCameraByTranscoderId) (*web.GetCameraByOpenGateIdResponse, error) {
 	logger.SDebug("GetCamerasByClientId: request",
 		zap.Reflect("request", req))
 
-	if err := s.validateGetCamerasByClientIdRequest(req); err != nil {
+	if err := s.validateGetCamerasByTranscoderId(req); err != nil {
 		logger.SDebug("GetCamerasByClientId: validateGetCamerasByClientIdRequest", zap.Error(err))
 		return nil, err
 	}
 
-	OpenGateIntegration, err := s.getOpenGateIdbyTranscoderId(ctx, req.ClientId)
+	OpenGateIntegration, err := s.getOpenGateIdbyTranscoderId(ctx, req.TranscoderId)
 	if err != nil {
 		logger.SError("GetOpenGateIdbyTranscoderId: getOpenGateIntegrationById", zap.Error(err))
 		return nil, err

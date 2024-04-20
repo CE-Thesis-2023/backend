@@ -69,50 +69,47 @@ const (
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-
-	if c.Action == OPENGATE_STATS {
+	switch c.Action {
+	case OPENGATE_EVENTS:
+		return c.runOpenGateEvents(ctx, pub)
+	case OPENGATE_STATS:
 		return c.runOpenGateStats(ctx, pub)
-	} else {
-		names := make([]string, 0)
-		if c.Action == OPENGATE_EVENTS {
-			names = append(names, c.extractCameraNameFromEvent(pub.Payload))
-		} else {
-			splittedAction := strings.Split(c.Action, "/")
-			if len(splittedAction) > 1 {
-				names = append(names, splittedAction[0])
-			}
-		}
-
-		resp, err := c.webService.GetCamerasByClientId(
-			ctx,
-			&web.GetCameraByClientIdRequest{
-				ClientId:            c.ClientId,
-				OpenGateCameraNames: names,
-			})
-		if err != nil {
-			return err
-		}
-		cameras := resp.Cameras
-
-		for _, cam := range cameras {
-			err = c.actorPool.Send(transcoder.TranscoderEventMessage{
-				CameraId:     cam.CameraId,
-				TranscoderId: cam.TranscoderId,
-				OpenGateId:   c.ClientId,
-				Type:         c.Type,
-				Action:       c.Action,
-				Payload:      pub.Payload,
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+	default:
+		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
 	}
 }
 
-func (c *Command) runOpenGateStats(ctx context.Context, pub *paho.Publish) error {
+func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) error {
+	names := []string{c.extractCameraNameFromEvent(pub.Payload)}
+	resp, err := c.webService.GetCamerasByTranscoderId(
+		ctx,
+		&web.GetCameraByTranscoderId{
+			TranscoderId:        c.ClientId,
+			OpenGateCameraNames: names,
+		})
+	if err != nil {
+		return err
+	}
+	cameras := resp.Cameras
 
+	for _, cam := range cameras {
+		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
+			CameraId:     cam.CameraId,
+			TranscoderId: cam.TranscoderId,
+			OpenGateId:   c.ClientId,
+			Type:         c.Type,
+			Action:       c.Action,
+			Payload:      pub.Payload,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Command) runOpenGateStats(ctx context.Context, pub *paho.Publish) error {
 	stats := c.extractStatFromStatsResponse(pub.Payload)
 
 	if stats == nil {
