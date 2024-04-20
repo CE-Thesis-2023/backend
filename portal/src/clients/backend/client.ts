@@ -161,3 +161,56 @@ export async function getOpenGateCameraSettings(ids: string[]): Promise<OpenGate
     const resp = await privateClient.get(uri);
     return resp.data["openGateCameraSettings"];
 }
+
+interface Person {
+    personId: string;
+    name: string;
+    age: string;
+    imagePath: string;
+}
+
+/**
+ * Get detectable people
+ * @param ids Person IDs
+ * @returns People
+ */
+export async function getPeople(ids: string[]): Promise<Person[]> {
+    let uri = "/api/people";
+    if (ids.length > 0) {
+        uri += '?ids=' + ids.join(',');
+    }
+    const resp = await axiosClient.get(uri);
+    return resp.data["people"];
+}
+
+interface ObjectTrackingEvent {
+    eventId: string;
+    openGateEventId: string;
+    eventType: string;
+    cameraId: string;
+    cameraName: string;
+    frameTime: string;
+    label: string;
+    topScore: number;
+    score: number;
+    hasSnapshot: boolean;
+    hasClip: boolean;
+    stationary: boolean;
+    falsePositive: boolean;
+    startTime: string;
+    endTime: string;
+}
+
+/**
+ * Get object tracking events
+ * @param ids Event IDs
+ * @returns Object tracking events
+ */
+export async function getObjectTrackingEvents(ids: string[]): Promise<ObjectTrackingEvent[]> {
+    let uri = "/api/events/object_tracking";
+    if (ids.length > 0) {
+        uri += '?ids=' + ids.join(',');
+    }
+    const resp = await axiosClient.get(uri);
+    return resp.data["objectTrackingEvents"];
+}

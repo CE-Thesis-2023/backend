@@ -414,8 +414,7 @@ func GetDetectablePeople(ctx *fiber.Ctx) error {
 
 	queries := ctx.Query("ids")
 	ids := strings.Split(queries, ",")
-
-	if ids[0] == "" {
+	if len(ids) == 0 {
 		ids = []string{}
 	}
 
