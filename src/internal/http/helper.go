@@ -12,7 +12,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -29,14 +28,6 @@ func CommonPublicMiddlewares(configs *configs.HttpConfigs) []interface{} {
 			LimitReached: func(c *fiber.Ctx) error {
 				return c.SendStatus(http.StatusTooManyRequests)
 			},
-		}),
-		cors.New(cors.Config{
-			AllowOriginsFunc: func(origin string) bool {
-				return true
-			},
-			AllowOrigins: "*",
-			AllowMethods: "GET,HEAD,POST,DELETE,PUT,PATCH,OPTIONS",
-			AllowHeaders: "Origin, Content-Type, Accept-Encoding, Host",
 		}),
 		etag.New(),
 		compress.New(compress.Config{

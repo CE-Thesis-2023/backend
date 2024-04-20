@@ -183,7 +183,7 @@ export async function getPeople(ids: string[]): Promise<Person[]> {
     return resp.data["people"];
 }
 
-interface ObjectTrackingEvent {
+export interface ObjectTrackingEvent {
     eventId: string;
     openGateEventId: string;
     eventType: string;
@@ -213,4 +213,22 @@ export async function getObjectTrackingEvents(ids: string[]): Promise<ObjectTrac
     }
     const resp = await axiosClient.get(uri);
     return resp.data["objectTrackingEvents"];
+}
+
+export interface AddCameraParams {
+    name: string;
+    ip: string;
+    port: number;
+    username: string;
+    password: string;
+
+    transcoderId: string;
+}
+
+/**
+ * Add camera
+ * @param camera Camera parameters
+ */
+export async function addCamera(camera: AddCameraParams): Promise<void> {
+    await axiosClient.post('/api/cameras', camera);
 }
