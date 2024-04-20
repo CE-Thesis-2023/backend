@@ -3,6 +3,7 @@ import { render } from 'solid-js/web';
 import './index.css';
 import { App } from './pages/App';
 import { CamerasPage } from './pages/cameras/CamerasPage';
+import { CameraViewerPage } from './pages/cameras/ViewerPage';
 import { EventsPage } from './pages/events/EventsPage';
 import { GroupsPage } from './pages/groups/GroupsPage';
 import { PeoplePage } from './pages/people/PeoplePage';
@@ -20,4 +21,5 @@ render(() => <Router root={App}>
   <Route path="/people" component={PeoplePage} />
   <Route path="/groups" component={GroupsPage} />
   <Route path="/events" component={EventsPage} />
+  <Route path="/cameras/:cameraId" component={CameraViewerPage} />
 </Router>, root!);
