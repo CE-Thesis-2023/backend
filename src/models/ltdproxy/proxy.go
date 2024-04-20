@@ -7,8 +7,7 @@ type EventSnapshot struct {
 }
 
 type UploadEventRequest struct {
-	CameraName   string                 `json:"cameraName"`
-	TranscoderId string                 `json:"transcoderId"`
-	Event        *events.DetectionEvent `json:"event"`
-	Snapshot     *EventSnapshot         `json:"snapshot,omitempty"`
+	Topic    string                 `json:"topic"`
+	Event    *events.DetectionEvent `json:"event"`
+	Snapshot *EventSnapshot         `json:"snapshot,omitempty"`
 }
