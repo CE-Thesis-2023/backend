@@ -118,7 +118,7 @@ func (s *WebService) GetCamerasByClientId(ctx context.Context, req *web.GetCamer
 
 	OpenGateIntegration, err := s.getOpenGateIdbyTranscoderId(ctx, req.ClientId)
 	if err != nil {
-		logger.SError("GetCamerasByClientId: getOpenGateIntegrationById", zap.Error(err))
+		logger.SError("GetOpenGateIdbyTranscoderId: getOpenGateIntegrationById", zap.Error(err))
 		return nil, err
 	}
 
@@ -167,7 +167,7 @@ func (s *WebService) getOpenGateIntegrationById(ctx context.Context, id string) 
 func (s *WebService) getOpenGateIdbyTranscoderId(ctx context.Context, id string) (*db.OpenGateIntegration, error) {
 	q := s.builder.Select("*").
 		From("open_gate_integrations").
-		Where("transcoder_id = ?", id)
+		Where("transcoder_id = $1", id)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getTranscoderById: SQL",
 		zap.Reflect("q", sql),
@@ -1027,8 +1027,13 @@ func (s *WebService) getCamerasByTranscoderId(ctx context.Context, transcoderId 
 		q = q.Where(or)
 	}
 
-	results := []db.Camera{}
-	if err := s.db.Select(ctx, q, &results); err != nil {
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getCamerasByTranscoderId: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
+
+	var results []db.Camera
+	if err := s.db.Select(ctx, q.PlaceholderFormat(squirrel.Dollar), &results); err != nil {
 		return nil, err
 	}
 
