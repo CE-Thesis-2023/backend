@@ -1,7 +1,7 @@
 import { useParams } from "@solidjs/router";
 import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
 import { Button, CircularProgress, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, Paper, Switch as SWButton, Typography } from "@suid/material";
-import { Component, Match, Switch, createResource } from "solid-js";
+import { Component, For, Match, Switch, createResource } from "solid-js";
 import { getCameraStreamInfo, getCameras } from "../../clients/backend/client";
 
 async function fetchCameraData(cameraId: string) {
@@ -14,9 +14,14 @@ async function fetchCameraData(cameraId: string) {
     };
 }
 
+async function fetchCameraEvents(cameraId: string) {
+    return [];
+}
+
 export const CameraViewerPage: Component = () => {
     const routeParams = useParams();
     const [data, { refetch }] = createResource(routeParams.cameraId, fetchCameraData);
+    const [events, { refetch: eventRefetch }] = createResource(routeParams.cameraId, fetchCameraEvents);
 
     return <Switch>
         <Match when={data.loading}>
@@ -44,14 +49,16 @@ export const CameraViewerPage: Component = () => {
                                 <IconButton size="small" aria-label="camera-info-button">
                                     <Visibility />
                                 </IconButton>
-                                <Button size="small" onClick={() => refetch()} startIcon={<Refresh />} variant="contained">
+                                <Button size="small" onClick={() => eventRefetch()} startIcon={<Refresh />} variant="contained">
                                     {"Refresh"}
                                 </Button>
                             </div>
                         </div>
                     </Paper>
                     <Paper sx={{ width: '100%', height: "100%" }}>
-
+                        <For each={events()}>
+                            {event => <div>{event}</div>}
+                        </For>
                     </Paper>
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }} class="flex flex-row gap-4">
                         <div class="flex flex-row gap-4 flex-1">
