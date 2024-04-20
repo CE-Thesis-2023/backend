@@ -4,19 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/CE-Thesis-2023/backend/src/internal/configs"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	"github.com/gin-gonic/gin"
 
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type RegistrationFunc func(app *fiber.App)
+type RegistrationFunc func(app *gin.Engine)
 
 type HttpServer struct {
 	configs *HttpServerConfigs
-	app     *fiber.App
+	app     *http.Server
 }
 
 func New(options ...Optioner) *HttpServer {
@@ -24,24 +26,19 @@ func New(options ...Optioner) *HttpServer {
 	for _, option := range options {
 		option(configs)
 	}
-
-	globalConfigs := configs.configs
-	httpConfigs := fiber.Config{
-		Network:               "tcp",
-		AppName:               globalConfigs.Name,
-		ErrorHandler:          configs.errorHandler,
-		DisableStartupMessage: true,
-	}
-
-	app := fiber.New(httpConfigs)
+	app := gin.New()
 
 	if len(configs.middlewares) > 0 {
 		app.Use(configs.middlewares...)
 	}
 	configs.registration(app)
 
+	httpServer := &http.Server{
+		Handler: app,
+	}
+
 	return &HttpServer{
-		app:     app,
+		app:     httpServer,
 		configs: configs,
 	}
 }
@@ -50,7 +47,7 @@ type HttpServerConfigs struct {
 	configs      *configs.HttpConfigs
 	registration RegistrationFunc
 	errorHandler fiber.ErrorHandler
-	middlewares  []interface{}
+	middlewares  []gin.HandlerFunc
 	templatePath string
 }
 
@@ -74,7 +71,7 @@ func WithRegistration(handler RegistrationFunc) Optioner {
 	}
 }
 
-func WithMiddleware(middlewares ...interface{}) Optioner {
+func WithMiddleware(middlewares ...gin.HandlerFunc) Optioner {
 	return func(configs *HttpServerConfigs) {
 		configs.middlewares = middlewares
 	}
@@ -90,16 +87,17 @@ func (s *HttpServer) Start() error {
 	globalConfigs := s.configs.configs
 	tlsConfigs := globalConfigs.Tls
 	port := fmt.Sprintf(":%d", globalConfigs.Port)
+	s.app.Addr = port
 
 	if tlsConfigs.Enabled() {
-		if err := s.app.ListenTLS(port, tlsConfigs.Cert, tlsConfigs.Key); err != nil {
+		if err := s.app.ListenAndServeTLS(tlsConfigs.Cert, tlsConfigs.Key); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
 			return custerror.FormatInternalError("HttpServer.Start: err = %s", err)
 		}
 	} else {
-		if err := s.app.Listen(port); err != nil {
+		if err := s.app.ListenAndServe(); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
 				return err
 			}
@@ -117,7 +115,7 @@ func (s *HttpServer) Name() string {
 func (s *HttpServer) Stop(ctx context.Context) error {
 	globalConfigs := s.configs.configs
 
-	if err := s.app.ShutdownWithContext(ctx); err != nil {
+	if err := s.app.Shutdown(ctx); err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return custerror.FormatTimeout("HttpServer.Stop: server stopping deadline exceeded name = %s", globalConfigs.Name)
 		}

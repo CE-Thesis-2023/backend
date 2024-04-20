@@ -14,7 +14,7 @@ func EventHandlerErrorHandler(err error) {
 	if ok {
 		logger.SInfo(commonEventMessage,
 			zap.Error(err),
-			zap.Uint32("type", custError.Code))
+			zap.Int("type", custError.Code))
 	} else {
 		logger.SInfo(commonEventMessage,
 			zap.Error(err))

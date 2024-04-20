@@ -29,12 +29,10 @@ func main() {
 			return []app.Optioner{
 				app.WithHttpServer(custhttp.New(
 					custhttp.WithGlobalConfigs(&configs.Public),
-					custhttp.WithErrorHandler(custhttp.GlobalErrorHandler()),
 					custhttp.WithRegistration(publicapi.ServiceRegistration()),
 					custhttp.WithMiddleware(custhttp.CommonPublicMiddlewares(&configs.Public)...),
 				)),
 				app.WithHttpServer(custhttp.New(
-					custhttp.WithErrorHandler(custhttp.GlobalErrorHandler()),
 					custhttp.WithMiddleware(custhttp.CommonPrivateMiddlewares(&configs.Private)...),
 					custhttp.WithRegistration(privateapi.ServiceRegistration()),
 					custhttp.WithGlobalConfigs(&configs.Private),

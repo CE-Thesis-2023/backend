@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 )
 
 type CustomError struct {
 	Msg  string
-	Code uint32
+	Code int
 }
 
 func (e *CustomError) String() string {
@@ -53,10 +53,8 @@ func (e *CustomError) Parent() *CustomError {
 	}
 }
 
-func (e *CustomError) Fiber(ctx *fiber.Ctx) error {
-	return ctx.
-		Status(int(e.Code)).
-		JSON(e.Response())
+func (e *CustomError) Gin(ctx *gin.Context) {
+	ctx.JSON(e.Code, e.Response())
 }
 
 func (e *CustomError) Response() *ErrorResponse {
@@ -68,10 +66,10 @@ func (e *CustomError) Response() *ErrorResponse {
 
 type ErrorResponse struct {
 	Message string `json:"message" msgpack:"message"`
-	Code    uint32 `json:"code" msgpack:"code"`
+	Code    int    `json:"code" msgpack:"code"`
 }
 
-func NewError(msg string, code uint32) *CustomError {
+func NewError(msg string, code int) *CustomError {
 	return &CustomError{
 		Msg:  msg,
 		Code: code,

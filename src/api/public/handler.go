@@ -7,17 +7,15 @@ import (
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
-
-	"encoding/json"
-
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
-func GetTranscoderDevices(ctx *fiber.Ctx) error {
+func GetTranscoderDevices(ctx *gin.Context) {
 	logger.SDebug("GetTranscoderDevices: request")
 
 	queries := ctx.Query("id")
@@ -28,17 +26,19 @@ func GetTranscoderDevices(ctx *fiber.Ctx) error {
 
 	resp, err := service.
 		GetWebService().
-		GetDevices(ctx.UserContext(), &web.GetTranscodersRequest{
+		GetDevices(ctx, &web.GetTranscodersRequest{
 			Ids: ids,
 		})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetCameras(ctx *fiber.Ctx) error {
+func GetCameras(ctx *gin.Context) {
 	logger.SDebug("GetCameras: request")
 
 	queries := ctx.Query("id")
@@ -47,69 +47,86 @@ func GetCameras(ctx *fiber.Ctx) error {
 		ids = []string{}
 	}
 
-	resp, err := service.GetWebService().GetCameras(ctx.UserContext(), &web.GetCamerasRequest{Ids: ids})
+	resp, err := service.GetWebService().GetCameras(ctx, &web.GetCamerasRequest{Ids: ids})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func CreateCamera(ctx *fiber.Ctx) error {
-	logger.SDebug("CreateCamera: request",
-		zap.String("request", string(ctx.Body())))
-
+func CreateCamera(ctx *gin.Context) {
 	var msg web.AddCameraRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("CreateCamera: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	resp, err := service.GetWebService().AddCamera(ctx.UserContext(), &msg)
+	resp, err := service.GetWebService().AddCamera(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func DeleteCamera(ctx *fiber.Ctx) error {
+func DeleteCamera(ctx *gin.Context) {
 	logger.SDebug("DeleteCamera: request")
 
 	id := ctx.Query("id")
 	if len(id) == 0 {
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
 
-	err := service.GetWebService().DeleteCamera(ctx.UserContext(), &web.DeleteCameraRequest{
+	err := service.GetWebService().DeleteCamera(ctx, &web.DeleteCameraRequest{
 		CameraId: id,
 	})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(http.StatusAccepted)
+	ctx.Status(http.StatusAccepted)
+	return
 }
 
-func GetCamerasByGroupId(ctx *fiber.Ctx) error {
+func GetCamerasByGroupId(ctx *gin.Context) {
 	logger.SDebug("GetCamerasInGroup: request")
 
-	groupId := ctx.Params("id")
+	groupId, found := ctx.Params.Get("id")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing groupId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
 	if len(groupId) == 0 {
-		return custerror.FormatInvalidArgument("missing groupId as parameter")
+		err := custerror.FormatInvalidArgument("missing groupId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
 	}
 
-	resp, err := service.GetWebService().GetCameraByGroupId(ctx.UserContext(), &web.GetCamerasByGroupIdRequest{
+	resp, err := service.GetWebService().GetCameraByGroupId(ctx, &web.GetCamerasByGroupIdRequest{
 		GroupId: groupId,
 	})
 
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetCameraGroups(ctx *fiber.Ctx) error {
+func GetCameraGroups(ctx *gin.Context) {
 	logger.SDebug("GetCameraGroups: request")
 
 	queries := ctx.Query("ids")
@@ -119,215 +136,305 @@ func GetCameraGroups(ctx *fiber.Ctx) error {
 		ids = []string{}
 	}
 
-	resp, err := service.GetWebService().GetCameraGroupsByIds(ctx.UserContext(), &web.GetCameraGroupsRequest{Ids: ids})
+	resp, err := service.GetWebService().GetCameraGroupsByIds(ctx, &web.GetCameraGroupsRequest{Ids: ids})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func AddCameraGroup(ctx *fiber.Ctx) error {
+func AddCameraGroup(ctx *gin.Context) {
 	logger.SDebug("AddCameraGroup: request")
 
 	var msg web.AddCameraGroupRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("AddCameraGroup: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	resp, err := service.GetWebService().AddCameraGroup(ctx.UserContext(), &msg)
+	resp, err := service.GetWebService().AddCameraGroup(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func DeleteCameraGroup(ctx *fiber.Ctx) error {
+func DeleteCameraGroup(ctx *gin.Context) {
 	logger.SDebug("DeleteCameraGroup: request")
 
 	var msg web.DeleteCameraGroupRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("DeleteCameraGroup: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	err := service.GetWebService().DeleteCameraGroup(ctx.UserContext(), &msg)
+	err := service.GetWebService().DeleteCameraGroup(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(http.StatusAccepted)
+	ctx.Status(http.StatusAccepted)
+	return
 }
 
-func AddCamerasToGroup(ctx *fiber.Ctx) error {
+func AddCamerasToGroup(ctx *gin.Context) {
 	logger.SDebug("AddCamerasToGroup: request")
 
 	var msg web.AddCamerasToGroupRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("AddCamerasToGroup: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	err := service.GetWebService().AddCamerasToGroup(ctx.UserContext(), &msg)
+	err := service.GetWebService().AddCamerasToGroup(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(&web.AddCamerasToGroupResponse{GroupId: msg.GroupId})
+	ctx.JSON(200, &web.AddCamerasToGroupResponse{GroupId: msg.GroupId})
+	return
 }
 
-func RemoveCamerasFromGroup(ctx *fiber.Ctx) error {
+func RemoveCamerasFromGroup(ctx *gin.Context) {
 	logger.SDebug("RemoveCamerasFromGroup: request")
 
 	var msg web.RemoveCamerasFromGroupRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("RemoveCamerasFromGroup: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	err := service.GetWebService().DeleteCamerasFromGroup(ctx.UserContext(), &msg)
+	err := service.GetWebService().DeleteCamerasFromGroup(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(&web.RemoveCamerasFromGroupResponse{GroupId: msg.GroupId})
-
+	ctx.JSON(200, &web.RemoveCamerasFromGroupResponse{GroupId: msg.GroupId})
+	return
 }
 
-func UpdateTranscoder(ctx *fiber.Ctx) error {
+func UpdateTranscoder(ctx *gin.Context) {
 	logger.SDebug("UpdateTranscoder: request")
 
 	var msg web.UpdateTranscoderRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("UpdateTranscoder: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
-	resp, err := service.GetWebService().UpdateTranscoder(ctx.UserContext(), &msg)
+	resp, err := service.GetWebService().UpdateTranscoder(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetStreamInfo(ctx *fiber.Ctx) error {
+func GetStreamInfo(ctx *gin.Context) {
 	logger.SDebug("GetStreamInfo: request")
 
-	cameraId := ctx.Params("id")
+	cameraId, found := ctx.Params.Get("id")
+	if !found {
+		err := custerror.FormatInvalidArgument("cameraId not found")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
 	if cameraId == "" {
-		return custerror.FormatInvalidArgument("cameraId not found")
+		err := custerror.FormatInvalidArgument("cameraId not found")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
-	resp, err := service.GetWebService().GetStreamInfo(ctx.UserContext(), &web.GetStreamInfoRequest{
+	resp, err := service.GetWebService().GetStreamInfo(ctx, &web.GetStreamInfoRequest{
 		CameraId: cameraId,
 	})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func ToggleStream(ctx *fiber.Ctx) error {
+func ToggleStream(ctx *gin.Context) {
 	logger.SDebug("ToggleStream: request")
-	cameraId := ctx.Params("id")
-	if len(cameraId) == 0 {
-		return custerror.FormatInvalidArgument("missing cameraId as query string")
+	cameraId, found := ctx.Params.Get("id")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing cameraId as query string")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
-	enable := ctx.QueryBool("enable")
-	err := service.GetWebService().ToggleStream(ctx.UserContext(), &web.ToggleStreamRequest{
+	if len(cameraId) == 0 {
+		err := custerror.FormatInvalidArgument("missing cameraId as query string")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+	enable := ctx.Query("enable")
+	isEnable := true
+	switch {
+	case enable == "false":
+		isEnable = false
+	case enable == "true":
+		isEnable = true
+	default:
+		err := custerror.FormatInvalidArgument("missing enable as query string")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+	err := service.GetWebService().ToggleStream(ctx, &web.ToggleStreamRequest{
 		CameraId: cameraId,
-		Start:    enable,
+		Start:    isEnable,
 	})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
-	return ctx.SendStatus(200)
+	ctx.Status(200)
+	return
 }
 
-func RemoteControl(ctx *fiber.Ctx) error {
+func RemoteControl(ctx *gin.Context) {
 	logger.SDebug("RemoteControl: request")
 
 	var msg web.RemoteControlRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SError("RemoteControl: unmarshal error", zap.Error(err))
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	err := service.GetWebService().RemoteControl(ctx.UserContext(), &msg)
+	err := service.GetWebService().RemoteControl(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(200)
+	ctx.Status(200)
+	return
 }
 
-func GetCameraDeviceInfo(ctx *fiber.Ctx) error {
+func GetCameraDeviceInfo(ctx *gin.Context) {
 	logger.SDebug("GetCameraDeviceInfo: request")
 
-	cameraId := ctx.Params("cameraId")
+	cameraId, found := ctx.Params.Get("cameraId")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing cameraId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
 	if len(cameraId) == 0 {
-		return custerror.FormatInvalidArgument("missing cameraId as parameter")
+		err := custerror.FormatInvalidArgument("missing cameraId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
 	resp, err := service.GetWebService().
-		GetDeviceInfo(ctx.UserContext(), &web.GetCameraDeviceInfoRequest{
+		GetDeviceInfo(ctx, &web.GetCameraDeviceInfoRequest{
 			CameraId: cameraId,
 		})
 	if err != nil {
 		if errors.Is(err, custerror.ErrorFailedPrecondition) {
-			return ctx.SendStatus(http.StatusExpectationFailed)
+			ctx.Status(http.StatusExpectationFailed)
+			custhttp.ToHTTPErr(err, ctx)
+			return
 		}
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetOpenGateSettings(ctx *fiber.Ctx) error {
+func GetOpenGateSettings(ctx *gin.Context) {
 	logger.SDebug("GetOpenGateSettings: request")
 
-	openGateId := ctx.Params("openGateId")
+	openGateId, found := ctx.Params.Get("openGateId")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing openGateId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
 	if len(openGateId) == 0 {
-		return custerror.FormatInvalidArgument("missing openGateId as parameter")
+		err := custerror.FormatInvalidArgument("missing openGateId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
 	resp, err := service.
 		GetWebService().
 		GetOpenGateIntegrationById(
-			ctx.UserContext(),
+			ctx,
 			&web.GetOpenGateIntegrationByIdRequest{
 				OpenGateId: openGateId,
 			})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func UpdateOpenGateSettings(ctx *fiber.Ctx) error {
+func UpdateOpenGateSettings(ctx *gin.Context) {
 	logger.SDebug("UpdateOpenGateSettings: request")
 
-	openGateId := ctx.Params("openGateId")
+	openGateId, found := ctx.Params.Get("openGateId")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing openGateId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
 	if len(openGateId) == 0 {
-		return custerror.FormatInvalidArgument("missing openGateId as parameter")
+		err := custerror.FormatInvalidArgument("missing openGateId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
 	var msg web.UpdateOpenGateIntegrationRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("UpdateOpenGateSettings: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
 
 	if err := service.
 		GetWebService().
-		UpdateOpenGateIntegrationById(ctx.UserContext(), &msg); err != nil {
+		UpdateOpenGateIntegrationById(ctx, &msg); err != nil {
 		logger.SDebug("UpdateOpenGateSettings: update error", zap.Error(err))
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(http.StatusAccepted)
+	ctx.Status(http.StatusAccepted)
+	return
 }
 
-func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
+func GetObjectTrackingEvent(ctx *gin.Context) {
 	logger.SDebug("GetObjectTrackingEvent: request")
 
 	eventId := ctx.Query("event_id")
@@ -341,75 +448,90 @@ func GetObjectTrackingEvent(ctx *fiber.Ctx) error {
 		req.OpenGateEventId = []string{openGateEventId}
 	}
 
-	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx.UserContext(), req)
+	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx, req)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 	if resp.ObjectTrackingEvents == nil {
 		resp.ObjectTrackingEvents = []db.ObjectTrackingEvent{}
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func DeleteObjectTrackingEvent(ctx *fiber.Ctx) error {
+func DeleteObjectTrackingEvent(ctx *gin.Context) {
 	logger.SDebug("DeleteObjectTrackingEvent: request")
 
 	eventId := ctx.Query("id")
 	if len(eventId) == 0 {
-		return custerror.FormatInvalidArgument("missing eventId as query string")
+		err := custerror.FormatInvalidArgument("missing eventId as query string")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 	req := &web.DeleteObjectTrackingEventRequest{}
 	if eventId != "" {
 		req.EventId = eventId
 	}
 
-	err := service.GetWebService().DeleteObjectTrackingEvent(ctx.UserContext(), req)
+	err := service.GetWebService().DeleteObjectTrackingEvent(ctx, req)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(http.StatusAccepted)
+	ctx.Status(http.StatusAccepted)
+	return
 }
 
-func DoDeviceHealthcheck(ctx *fiber.Ctx) error {
+func DoDeviceHealthcheck(ctx *gin.Context) {
 	logger.SDebug("DoDeviceHealthcheck: request")
 
 	deviceId := ctx.Query("transcoder_id")
 	if len(deviceId) == 0 {
-		return custerror.FormatInvalidArgument("missing deviceId as parameter")
+		err := custerror.FormatInvalidArgument("missing deviceId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	resp, err := service.GetWebService().DoDeviceHealthcheck(ctx.UserContext(), &web.DeviceHealthcheckRequest{
+	resp, err := service.GetWebService().DoDeviceHealthcheck(ctx, &web.DeviceHealthcheckRequest{
 		TranscoderId: deviceId,
 	})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func AddDetectablePerson(ctx *fiber.Ctx) error {
+func AddDetectablePerson(ctx *gin.Context) {
 	logger.SDebug("AddDetectablePerson: request")
 
 	var msg web.AddDetectablePersonRequest
-	if err := json.Unmarshal(ctx.Body(), &msg); err != nil {
+	if err := ctx.BindJSON(&msg); err != nil {
 		logger.SDebug("AddDetectablePerson: unmarshal msg error", zap.Error(err))
-		return custerror.ErrorInvalidArgument
+		custhttp.ToHTTPErr(
+			custerror.ErrorInvalidArgument,
+			ctx)
+		return
 	}
 
 	resp, err := service.
 		GetWebService().
-		AddDetectablePerson(ctx.UserContext(), &msg)
+		AddDetectablePerson(ctx, &msg)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetDetectablePeople(ctx *fiber.Ctx) error {
+func GetDetectablePeople(ctx *gin.Context) {
 	logger.SDebug("GetDetectablePeople: request")
 
 	queries := ctx.Query("ids")
@@ -420,62 +542,74 @@ func GetDetectablePeople(ctx *fiber.Ctx) error {
 
 	resp, err := service.
 		GetWebService().
-		GetDetectablePeople(ctx.Context(), &web.GetDetectablePeopleRequest{
+		GetDetectablePeople(ctx, &web.GetDetectablePeopleRequest{
 			PersonIds: ids,
 		})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func DeleteDetectablePerson(ctx *fiber.Ctx) error {
+func DeleteDetectablePerson(ctx *gin.Context) {
 	logger.SDebug("DeleteDetectablePerson: request")
 
 	personId := ctx.Query("id")
 	if len(personId) == 0 {
-		return custerror.FormatInvalidArgument("missing personId as query")
+		err := custerror.FormatInvalidArgument("missing personId as query")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
 	err := service.
 		GetWebService().
-		DeleteDetectablePerson(ctx.UserContext(), &web.DeleteDetectablePersonRequest{
+		DeleteDetectablePerson(ctx, &web.DeleteDetectablePersonRequest{
 			PersonId: personId,
 		})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.SendStatus(http.StatusAccepted)
+	ctx.Status(http.StatusAccepted)
+	return
 }
 
-func GetDetectablePersonPresignedUrl(ctx *fiber.Ctx) error {
+func GetDetectablePersonPresignedUrl(ctx *gin.Context) {
 	logger.SDebug("GetDetectablePersonPresignedUrl: request")
 
 	personId := ctx.Query("id")
 	if len(personId) == 0 {
-		return custerror.FormatInvalidArgument("missing personId as parameter")
+		err := custerror.FormatInvalidArgument("missing personId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
 	resp, err := service.
 		GetWebService().
-		GetDetectablePersonImagePresignedUrl(ctx.UserContext(), &web.GetDetectablePeopleImagePresignedUrlRequest{
+		GetDetectablePersonImagePresignedUrl(ctx, &web.GetDetectablePeopleImagePresignedUrlRequest{
 			PersonId: personId,
 		})
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
 
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }
 
-func GetLatestOpenGateCameraStats(ctx *fiber.Ctx) error {
+func GetLatestOpenGateCameraStats(ctx *gin.Context) {
 	logger.SDebug("GetStats: request")
 
-	resp, err := service.GetWebService().GetLatestOpenGateCameraStats(ctx.UserContext())
+	resp, err := service.GetWebService().GetLatestOpenGateCameraStats(ctx)
 	if err != nil {
-		return err
+		custhttp.ToHTTPErr(err, ctx)
+		return
 	}
-	return ctx.JSON(resp)
+	ctx.JSON(200, resp)
+	return
 }

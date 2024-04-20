@@ -1,19 +1,19 @@
 package privateapi
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 )
 
-func ServiceRegistration() func(app *fiber.App) {
-	return func(app *fiber.App) {
-		app.Post("/private/registers", RegisterDevice)
-		app.Delete("/private/deregisters", DeleteTranscoder)
-		app.Get("/private/transcoders/:id/cameras", GetTranscoderAssignedCameras)
-		app.Get("/private/opengate/cameras", GetOpenGateCameraSettings)
-		app.Get("/private/opengate/:id/mqtt", GetOpenGateMqttSettings)
-		app.Get("/private/opengate/:id", GetOpenGateIntegrationConfigurations)
-		app.Get("/private/transcoders/streams", GetTranscoderStreamConfigurations)
-		app.Get("/private/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
-		app.Get("/private/transcoders/mqtt", GetTranscoderMQTTConfigurations)
+func ServiceRegistration() func(app *gin.Engine) {
+	return func(app *gin.Engine) {
+		app.POST("/private/registers", RegisterDevice)
+		app.DELETE("/private/deregisters", DeleteTranscoder)
+		app.GET("/private/transcoders/:id/cameras", GetTranscoderAssignedCameras)
+		app.GET("/private/opengate/cameras", GetOpenGateCameraSettings)
+		app.GET("/private/opengate/:id/mqtt", GetOpenGateMqttSettings)
+		app.GET("/private/opengate/:id", GetOpenGateIntegrationConfigurations)
+		app.GET("/private/transcoders/streams", GetTranscoderStreamConfigurations)
+		app.GET("/private/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
+		app.GET("/private/transcoders/mqtt", GetTranscoderMQTTConfigurations)
 	}
 }
