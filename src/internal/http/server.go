@@ -35,10 +35,10 @@ func New(options ...Optioner) *HttpServer {
 
 	app := fiber.New(httpConfigs)
 
-	configs.registration(app)
 	if len(configs.middlewares) > 0 {
 		app.Use(configs.middlewares...)
 	}
+	configs.registration(app)
 
 	return &HttpServer{
 		app:     app,

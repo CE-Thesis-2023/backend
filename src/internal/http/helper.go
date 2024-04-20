@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
@@ -22,6 +23,11 @@ import (
 
 func CommonPublicMiddlewares(configs *configs.HttpConfigs) []interface{} {
 	return []interface{}{
+		cors.New(cors.Config{
+			AllowOrigins: "*",
+			AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+			AllowHeaders: "Origin, Content-Type, Accept",
+		}),
 		limiter.New(limiter.Config{
 			Max:        10,
 			Expiration: 1 * time.Second,
@@ -60,6 +66,11 @@ func CommonPrivateMiddlewares(configs *configs.HttpConfigs) []interface{} {
 	token := configs.Auth.Token
 
 	return []interface{}{
+		cors.New(cors.Config{
+			AllowOrigins: "*",
+			AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+			AllowHeaders: "Origin, Content-Type, Accept",
+		}),
 		limiter.New(limiter.Config{
 			Max:        5,
 			Expiration: 1 * time.Second,
@@ -109,14 +120,5 @@ func GlobalErrorHandler() func(c *fiber.Ctx, err error) error {
 		return customError.
 			Parent().
 			Fiber(c)
-	}
-}
-
-func SetCors() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		ctx.Append("Access-Control-Allow-Origin", "*")
-		ctx.Append("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, HEAD, PATCH")
-		ctx.Append("Access-Control-Allow-Headers", "Accept, Accept-Language, Content-Type")
-		return ctx.Next()
 	}
 }

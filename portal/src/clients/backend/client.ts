@@ -159,6 +159,7 @@ export async function getOpenGateCameraSettings(ids: string[]): Promise<OpenGate
         uri += '?camera_id=' + ids.join(',');
     }
     const resp = await privateClient.get(uri);
+    console.log(resp.data);
     return resp.data["openGateCameraSettings"];
 }
 

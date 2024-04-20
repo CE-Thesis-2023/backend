@@ -1,13 +1,11 @@
 package privateapi
 
 import (
-	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/gofiber/fiber/v2"
 )
 
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
-		app.Use("/", custhttp.SetCors())
 		app.Post("/private/registers", RegisterDevice)
 		app.Delete("/private/deregisters", DeleteTranscoder)
 		app.Get("/private/transcoders/:id/cameras", GetTranscoderAssignedCameras)

@@ -3,15 +3,12 @@ package publicapi
 import (
 	"time"
 
-	custhttp "github.com/CE-Thesis-2023/backend/src/internal/http"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
 )
 
 func ServiceRegistration() func(app *fiber.App) {
 	return func(app *fiber.App) {
-		app.Use("/", custhttp.SetCors())
-
 		app.Get("/api/devices", GetTranscoderDevices)
 		app.Put("/api/devices", UpdateTranscoder)
 		app.Get("/api/devices/healthcheck", DoDeviceHealthcheck)
