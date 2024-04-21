@@ -1,32 +1,34 @@
 package db
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/pgvector/pgvector-go"
 )
 
 type Transcoder struct {
-	DeviceId string `json:"deviceId" db:"device_id,primary"`
+	DeviceId string `json:"deviceId" db:"device_id,primary" gorm:"index"`
 	Name     string `json:"name" db:"name"`
 
 	OpenGateIntegrationId string `json:"openGateIntegrationId" db:"open_gate_integration_id"`
 }
 
 type OpenGateIntegration struct {
-	OpenGateId            string `json:"openGateId" db:"open_gate_id,primary"`
+	OpenGateId            string `json:"openGateId" db:"open_gate_id,primary" gorm:"index"`
 	Available             bool   `json:"available" db:"available"`
 	IsRestarting          bool   `json:"isRestarting" db:"is_restarting"`
 	LogLevel              string `json:"logLevel" db:"log_level"`
 	SnapshotRetentionDays int    `json:"snapshotRetentionDays" db:"snapshot_retention_days"`
 
 	MqttId       string `json:"mqttId" db:"mqtt_id"`
-	TranscoderId string `json:"transcoderId" db:"transcoder_id"`
+	TranscoderId string `json:"transcoderId" db:"transcoder_id" gorm:"index"`
 }
 
 type OpenGateMqttConfiguration struct {
-	ConfigurationId string `json:"configurationId" db:"configuration_id,primary"`
+	ConfigurationId string `json:"configurationId" db:"configuration_id,primary" gorm:"index"`
 	Enabled         bool   `json:"enabled" db:"enabled"`
 	Host            string `json:"host" db:"host"`
 	Port            int    `json:"port" db:"port"`
@@ -36,8 +38,8 @@ type OpenGateMqttConfiguration struct {
 }
 
 type ObjectTrackingEvent struct {
-	EventId         string `json:"eventId" db:"event_id,primary"`
-	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id"`
+	EventId         string `json:"eventId" db:"event_id,primary" gorm:"index"`
+	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id" gorm:"index"`
 	OpenGateId      string `json:"openGateId" db:"open_gate_id"`
 	EventType       string `json:"eventType" db:"event_type"`
 
@@ -103,7 +105,7 @@ func (s *ObjectTrackingEvent) Values() []interface{} {
 }
 
 type Camera struct {
-	CameraId string `json:"cameraId" db:"camera_id,primary"`
+	CameraId string `json:"cameraId" db:"camera_id,primary" gorm:"index"`
 	Name     string `json:"name" db:"name"`
 
 	Ip       string `json:"ip" db:"ip"`
@@ -114,12 +116,12 @@ type Camera struct {
 
 	OpenGateCameraName string `json:"openGateCameraName" db:"open_gate_camera_name"`
 	GroupId            string `json:"groupId" db:"group_id,omitempty"`
-	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty"`
+	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty" gorm:"index"`
 	SettingsId         string `json:"settingsId omitempty" db:"settings_id,omitempty"`
 }
 
 type OpenGateCameraSettings struct {
-	SettingsId  string `json:"settingsId" db:"settings_id,primary"`
+	SettingsId  string `json:"settingsId" db:"settings_id,primary" gorm:"index"`
 	Height      int    `json:"height" db:"height"`
 	Width       int    `json:"width" db:"width"`
 	Fps         int    `json:"fps" db:"fps"`
@@ -133,7 +135,7 @@ type OpenGateCameraSettings struct {
 }
 
 type CameraGroup struct {
-	GroupId     string    `json:"groupId" db:"group_id,primary"`
+	GroupId     string    `json:"groupId" db:"group_id,primary" gorm:"index"`
 	Name        string    `json:"name" db:"name"`
 	CreatedDate time.Time `json:"createdDate" db:"created_date"`
 }
@@ -304,11 +306,15 @@ func (t *OpenGateCameraSettings) Values() []interface{} {
 }
 
 type DetectablePerson struct {
-	PersonId  string          `json:"personId" db:"person_id,primary"`
+	PersonId  string          `json:"personId" db:"person_id,primary" gorm:"index"`
 	Name      string          `json:"name" db:"name"`
 	Age       string          `json:"age" db:"age"`
 	ImagePath string          `json:"-" db:"image_path"`
 	Embedding pgvector.Vector `json:"-" db:"embedding" gorm:"type:vector(128)"`
+}
+
+func (t *DetectablePerson) Index(d *gorm.DB) {
+	d.Exec("CREATE INDEX ON items USING hnsw (embedding vector_l2_ops)")
 }
 
 func (t *DetectablePerson) Fields() []string {
@@ -336,8 +342,8 @@ func (t *DetectablePerson) Values() []interface{} {
 }
 
 type OpenGateCameraStats struct {
-	CameraStatId uuid.UUID `json:"camera_stat_id" db:"camera_stat_id,primary"`
-	TranscoderId string    `json:"transcoder_id" db:"transcoder_id"`
+	CameraStatId uuid.UUID `json:"camera_stat_id" db:"camera_stat_id,primary" gorm:"index"`
+	TranscoderId string    `json:"transcoder_id" db:"transcoder_id" gorm:"index"`
 	CameraName   string    `json:"camera_name" db:"camera_name"`
 	CameraFPS    float64   `json:"camera_fps" db:"camera_fps"`
 	DetectionFPS float64   `json:"detection_fps" db:"detection_fps"`
@@ -381,9 +387,9 @@ func (t *OpenGateCameraStats) Values() []interface{} {
 }
 
 type OpenGateDetectorStats struct {
-	DetectorStatId uuid.UUID `json:"detector_stat_id" db:"detector_stat_id,primary"`
+	DetectorStatId uuid.UUID `json:"detector_stat_id" db:"detector_stat_id,primary" gorm:"index"`
 	DetectorName   string    `json:"detector_name" db:"detector_name"`
-	TranscoderId   string    `json:"transcoder_id" db:"transcoder_id"`
+	TranscoderId   string    `json:"transcoder_id" db:"transcoder_id" gorm:"index"`
 	DetectorStart  float64   `json:"detector_start" db:"detector_start"`
 	InferenceSpeed float64   `json:"inference_speed" db:"inference_speed"`
 	ProcessID      int       `json:"process_id" db:"process_id"`

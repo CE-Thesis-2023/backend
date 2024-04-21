@@ -56,6 +56,8 @@ func main() {
 					if err != nil {
 						return err
 					}
+					person := &db.DetectablePerson{}
+					person.Index(custdb.Gorm())
 
 					service.Init(configs, globalCtx)
 					eventsapi.Init(configs, globalCtx)
