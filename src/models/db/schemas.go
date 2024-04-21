@@ -314,7 +314,7 @@ type DetectablePerson struct {
 }
 
 func (t *DetectablePerson) Index(d *gorm.DB) {
-	d.Exec("CREATE INDEX ON embedding USING hnsw (embedding vector_l2_ops)")
+	d.Exec("CREATE INDEX ON detectable_people USING hnsw (embedding vector_l2_ops)")
 }
 
 func (t *DetectablePerson) Fields() []string {
