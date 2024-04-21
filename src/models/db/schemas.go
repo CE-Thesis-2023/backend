@@ -415,9 +415,10 @@ func (t *OpenGateDetectorStats) Values() []interface{} {
 }
 
 type Snapshot struct {
-	SnapshotId       string    `json:"snapshotId" db:"snapshot_id,primary"`
+	SnapshotId       string    `json:"snapshotId" db:"snapshot_id,primary" gorm:"index"`
 	Timestamp        time.Time `json:"timestamp" db:"timestamp"`
-	Path             *string   `json:"path,omitempty" db:"path"`
+	TranscoderId     string    `json:"transcoderId" db:"transcoder_id"`
+	OpenGateEventId  string    `json:"openGateEventId" db:"open_gate_event_id" gorm:"index"`
 	DetectedPeopleId *string   `json:"detectedPeopleId,omitempty" db:"detected_people_id"`
 }
 
@@ -426,7 +427,10 @@ func (t *Snapshot) Fields() []string {
 	fs = append(fs,
 		"snapshot_id",
 		"timestamp",
-		"path",
+		"detected_people_id",
+		"event_id",
+		"transcoder_id",
+		"open_gate_event_id",
 		"detected_people_id",
 	)
 	return fs
@@ -437,7 +441,9 @@ func (t *Snapshot) Values() []interface{} {
 	vs = append(vs,
 		t.SnapshotId,
 		t.Timestamp,
-		t.Path,
+		t.DetectedPeopleId,
+		t.TranscoderId,
+		t.OpenGateEventId,
 		t.DetectedPeopleId,
 	)
 	return vs

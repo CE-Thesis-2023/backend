@@ -2,14 +2,17 @@ package eventsapi
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"strings"
+
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/eclipse/paho.golang/paho"
-	"strings"
 )
 
 var (
@@ -101,8 +104,10 @@ func (c *Command) Run(ctx context.Context, pub *paho.Publish) error {
 }
 
 const (
-	OPENGATE_EVENTS = "events"
-	OPENGATE_STATS  = "stats"
+	OPENGATE_EVENTS    = "events"
+	OPENGATE_STATS     = "stats"
+	OPENGATE_AVAILABLE = "available"
+	OPENGATE_SNAPSHOT  = "snapshot"
 )
 
 // https://docs.frigate.video/integrations/mqtt
@@ -112,17 +117,13 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 		return c.runOpenGateEvents(ctx, pub)
 	case OPENGATE_STATS:
 		return c.runOpenGateStats(ctx, pub)
-	default:
-		parts := strings.Split(c.topic.Action, "/")
-		if len(parts) < 3 {
-			// If not, return an error indicating an invalid action format
-			return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
-		}
-		if parts[2] == "snapshot" {
-			return c.runOpenGateSnapshot(ctx, pub)
-		}
-		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
+	case OPENGATE_SNAPSHOT:
+		return c.runOpenGateSnapshot(ctx, pub)
+	case OPENGATE_AVAILABLE:
+		// TODO: Change status of transcoder device
+		logger.SInfo("OpenGate available")
 	}
+	return nil
 }
 
 func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) error {
@@ -155,27 +156,23 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 	return nil
 }
 
+func (c *Command) snapshotToBase64(snapshot []byte) string {
+	return base64.
+		StdEncoding.
+		EncodeToString(snapshot)
+}
+
 func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) error {
-	eventId := strings.Split(c.topic.Action, "/")[1]
+	transcoderId := c.topic.SenderId
+	eventId := c.topic.ExtraIds[0]
 
-	if eventId == "" {
-		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
+	if err := c.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
+		TranscoderId:    transcoderId,
+		OpenGateEventId: eventId,
+		RawImage:        string(pub.Payload),
+	}); err != nil {
+		return err
 	}
-
-	result, err := c.webService.AddSnapshot(
-		ctx,
-		&web.AddSnapshotRequest{
-			Base64Image: string(pub.Payload[:]),
-		})
-
-	if err != nil {
-		return custerror.FormatInvalidArgument("failed to get event by id")
-	}
-
-	_, err = c.webService.UpdateSnapshotToEvent(ctx, &web.UpdateSnapshotToEventRequest{
-		SnapshotId: result.SnapshotId,
-		EventId:    eventId,
-	})
 	return nil
 }
 

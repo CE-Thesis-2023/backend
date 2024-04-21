@@ -2198,51 +2198,128 @@ func (s *WebService) validateGetSnapshotPresignedUrlRequest(req *web.GetSnapshot
 	return nil
 }
 
-func (s *WebService) AddSnapshot(ctx context.Context, req *web.AddSnapshotRequest) (*web.AddSnapshotResponse, error) {
-	logger.SInfo("AddSnapshot: request")
-	//zap.Reflect("request", req))
-
-	if err := s.validateAddSnapShotRequest(req); err != nil {
-		logger.SError("UpdateSnapshot: validateUpdateSnapshotRequest",
+func (s *WebService) UpsertSnapshot(ctx context.Context, req *web.UpsertSnapshotRequest) error {
+	if err := s.validateUpsertSnapshot(req); err != nil {
+		logger.SError("UpsertSnapshot: validateUpdateSnapshotRequest",
 			zap.Error(err))
-		return nil, err
+		return err
 	}
-	snapshotId := (uuid.New()).String()
-	var snapshotPath string
+	snapshotId := ""
+	needDetection := true
+	currentSnapshot, err := s.getCurrentSnapshot(ctx,
+		req.OpenGateEventId,
+		req.TranscoderId)
+	switch {
+	case errors.Is(err, custerror.ErrorNotFound):
+		snapshot := s.buildSnapshotModel(req)
 
-	if req.Path == nil {
-		snapshotPath = s.MediaHelper.GetImageBasePath(media.AssetsTypeSnapshot, snapshotId)
-	} else {
-		snapshotPath = *req.Path
-	}
-
-	snapshot := &db.Snapshot{
-		SnapshotId: snapshotId,
-		Path:       &snapshotPath,
-		Timestamp:  time.Now(),
-	}
-
-	if err := s.addSnapshot(ctx, snapshot); err != nil {
-		logger.SError("UpdateSnapshot: updateSnapshot",
+		snapshotId = snapshot.SnapshotId
+		needDetection = true
+		detectionRes, err := s.asyncUploadToS3AndDetectPerson(
+			ctx,
+			needDetection,
+			snapshotId,
+			req.RawImage)
+		if err != nil {
+			logger.SError("UpsertSnapshot: updateSnapshotToS3",
+				zap.Error(err))
+			return err
+		}
+		if detectionRes.detectedPerson != nil {
+			snapshot.DetectedPeopleId = &detectionRes.
+				detectedPerson.
+				PersonId
+		}
+		if err := s.addSnapshot(ctx, snapshot); err != nil {
+			logger.SError("UpsertSnapshot: addSnapshot",
+				zap.Error(err))
+			return err
+		}
+	case err == nil:
+		currentSnapshot.Timestamp = time.Now()
+		snapshotId = currentSnapshot.SnapshotId
+		if currentSnapshot.DetectedPeopleId != nil {
+			needDetection = false
+		}
+		detectionRes, err := s.asyncUploadToS3AndDetectPerson(
+			ctx,
+			needDetection,
+			snapshotId,
+			req.RawImage)
+		if err != nil {
+			logger.SError("UpsertSnapshot: updateSnapshotToS3",
+				zap.Error(err))
+			return err
+		}
+		if detectionRes.detectedPerson != nil {
+			currentSnapshot.DetectedPeopleId = &detectionRes.
+				detectedPerson.
+				PersonId
+		}
+		if err := s.updateSnapshot(ctx, currentSnapshot); err != nil {
+			logger.SError("UpsertSnapshot: updateSnapshot",
+				zap.Error(err))
+			return err
+		}
+	default:
+		logger.SError("UpsertSnapshot: getCurrentSnapshot",
 			zap.Error(err))
-		return nil, err
+		return err
 	}
 
-	if _, err := s.updateSnapshotToS3(ctx, snapshotId, req.Base64Image); err != nil {
-		return nil, err
+	if err := s.updateEventSnapshotReference(ctx, req.OpenGateEventId, snapshotId); err != nil {
+		logger.SError("UpsertSnapshot: updateEventSnapshotReference",
+			zap.Error(err))
+		return err
 	}
 
-	return &web.AddSnapshotResponse{
-		SnapshotId: snapshotId,
-	}, nil
-
+	return nil
 }
 
-func (s *WebService) validateAddSnapShotRequest(req *web.AddSnapshotRequest) error {
-	if req.Base64Image == "" {
+func (s *WebService) updateEventSnapshotReference(ctx context.Context, openGateEventId string, snapshotId string) error {
+	events, err := s.getObjectTrackingEventById(ctx, nil, []string{openGateEventId})
+	if err != nil {
+		logger.SError("updateEventSnapshotReference: getEventByOpenGateEventId",
+			zap.Error(err))
+		if errors.Is(err, custerror.ErrorNotFound) {
+			logger.SInfo("updateEventSnapshotReference: event not found")
+			return nil
+		}
+		return err
+	}
+	if len(events) == 0 {
+		logger.SInfo("updateEventSnapshotReference: event not found")
+		return nil
+	}
+	event := events[0]
+	if event.SnapshotId != nil {
+		if *event.SnapshotId != snapshotId {
+			event.SnapshotId = &snapshotId
+			if err := s.updateObjectTrackingEvent(ctx, &event); err != nil {
+				logger.SError("updateEventSnapshotReference: updateEvent",
+					zap.Error(err))
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (s *WebService) validateUpsertSnapshot(req *web.UpsertSnapshotRequest) error {
+	if req.RawImage == "" {
 		return custerror.FormatInvalidArgument("missing image raw bytes")
 	}
 	return nil
+}
+
+func (s *WebService) buildSnapshotModel(req *web.UpsertSnapshotRequest) *db.Snapshot {
+	return &db.Snapshot{
+		SnapshotId:       uuid.NewString(),
+		Timestamp:        time.Now(),
+		TranscoderId:     req.TranscoderId,
+		OpenGateEventId:  req.OpenGateEventId,
+		DetectedPeopleId: nil,
+	}
 }
 
 func (s *WebService) addSnapshot(ctx context.Context, snapshot *db.Snapshot) error {
@@ -2255,87 +2332,119 @@ func (s *WebService) addSnapshot(ctx context.Context, snapshot *db.Snapshot) err
 	return nil
 }
 
-func (s *WebService) validateUpdateSnapshotToEventRequest(req *web.UpdateSnapshotToEventRequest) error {
-	if req.SnapshotId == "" {
-		return custerror.FormatInvalidArgument("missing snapshot id")
-	}
-	if req.EventId == "" {
-		return custerror.FormatInvalidArgument("missing event id")
-	}
-	return nil
-}
-
-func (s *WebService) UpdateSnapshotToEvent(ctx context.Context, req *web.UpdateSnapshotToEventRequest) (*web.UpdateSnapshotToEventResponse, error) {
-	logger.SInfo("AddSnapshotToEvent: request",
-		zap.Reflect("request", req))
-
-	if err := s.validateUpdateSnapshotToEventRequest(req); err != nil {
-		logger.SError("AddSnapshotToEvent: validateAddSnapshotToImageRequest",
-			zap.Error(err))
-		return nil, err
-	}
-
-	event, err := s.getObjectTrackingEventById(ctx, []string{req.EventId}, nil)
-	if err != nil {
-		logger.SError("AddSnapshotToEvent: getObjectTrackingEventById",
-			zap.Error(err))
-		return nil, err
-	}
-
-	if len(event) == 0 {
-		logger.SError("AddSnapshotToEvent: event not found")
-		return nil, custerror.FormatNotFound("event not found")
-	}
-
-	if err := s.updateSnapshotToEvent(ctx, req.SnapshotId, &event[0]); err != nil {
-		logger.SError("AddSnapshotToEvent: updateSnapshotToEvent",
-			zap.Error(err))
-		return nil, err
-	}
-
-	return &web.UpdateSnapshotToEventResponse{
-		EventId: req.SnapshotId,
-	}, nil
-}
-
-func (s *WebService) updateSnapshotToEvent(ctx context.Context, snapshotId string, event *db.ObjectTrackingEvent) error {
-	q := s.builder.Update("object_tracking_events").
-		Where("open_gate_event_id = ?", event.OpenGateEventId).
-		Set("snapshot_id", snapshotId)
+func (s *WebService) getCurrentSnapshot(ctx context.Context, openGateEventId string, transcoderId string) (*db.Snapshot, error) {
+	q := s.builder.Select("*").
+		From("snapshots").
+		Where("open_gate_event_id = ?", openGateEventId).
+		Where("transcoder_id = ?", transcoderId).
+		OrderByClause("? DESC", "timestamp").
+		Limit(1)
 
 	sql, args, _ := q.ToSql()
-	logger.SDebug("addSnapshotToEvent: SQL",
+	logger.SDebug("getCurrentSnapshot: SQL",
 		zap.Reflect("q", sql),
 		zap.Reflect("args", args))
 
+	var snapshot db.Snapshot
+	if err := s.db.Get(ctx, q, &snapshot); err != nil {
+		return nil, err
+	}
+
+	return &snapshot, nil
+}
+
+func (s *WebService) updateSnapshot(ctx context.Context, snapshot *db.Snapshot) error {
+	valueMap := map[string]interface{}{}
+	fields := snapshot.Fields()
+	values := snapshot.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("snapshots").
+		Where("open_gate_event_id = ?", snapshot.OpenGateEventId).
+		Where("transcoder_id = ?", snapshot.TranscoderId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateSnapshot: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
 	if err := s.db.Update(ctx, q); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *WebService) updateSnapshotToS3(ctx context.Context, id string, base64Image string) (string, error) {
+type asyncUploadToS3AndDetectPersonResult struct {
+	detectedPerson *db.DetectablePerson
+}
+
+func (s *WebService) asyncUploadToS3AndDetectPerson(
+	ctx context.Context,
+	needDetection bool,
+	snapshotId string,
+	base64Image string) (*asyncUploadToS3AndDetectPersonResult, error) {
 	var wg sync.WaitGroup
-	wg.Add(1)
 	var s3Error error
+	var detectionError error
+	wg.Add(1)
+	if needDetection {
+		wg.Add(1)
+	}
 	go func() {
 		fileDesc := media.UploadImageRequest{
 			Base64Image: base64Image,
-			Path:        id,
+			Path:        snapshotId,
 			Type:        media.AssetsTypeSnapshot,
 		}
 		s3Error = s.MediaHelper.UploadImage(ctx, &fileDesc)
+		if s3Error != nil {
+			logger.SError("asyncUploadToS3AndDetectPerson: upload error",
+				zap.Error(s3Error))
+		}
 		wg.Done()
 	}()
-	wg.Wait()
-	if s3Error != nil {
-		wg.Add(1)
+	var detectedPerson *db.DetectablePerson
+	if needDetection {
 		go func() {
 			defer wg.Done()
-			_ = s.cvs.Remove(context.Background(), id)
+			detectionResp, err := s.cvs.Detect(ctx, &DetectRequest{
+				Base64Image: base64Image,
+			})
+			if err != nil {
+				detectionError = err
+				return
+			}
+			if len(detectionResp) == 0 {
+				logger.SInfo("asyncUploadToS3AndDetectPerson: no face detected",
+					zap.String("snapshotId", snapshotId))
+				return
+			}
+			recognizeResp, err := s.cvs.Search(ctx, &SearchRequest{
+				Vector: detectionResp[0].
+					Descriptor,
+				TopKResult: 1,
+			})
+			if err != nil {
+				detectionError = err
+				return
+			}
+			if len(recognizeResp) == 0 {
+				logger.SInfo("asyncUploadToS3AndDetectPerson: no similar person found",
+					zap.String("snapshotId", snapshotId))
+				return
+			}
+			detectedPerson = &recognizeResp[0]
 		}()
-		return "", s3Error
 	}
-
-	return id, nil
+	wg.Wait()
+	if detectionError != nil {
+		return nil, custerror.FormatInternalError("detection error: %s", detectionError)
+	}
+	if s3Error != nil {
+		return nil, custerror.FormatInternalError("s3 error: %s", s3Error)
+	}
+	return &asyncUploadToS3AndDetectPersonResult{
+		detectedPerson: detectedPerson,
+	}, nil
 }

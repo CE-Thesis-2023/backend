@@ -376,22 +376,10 @@ type GetSnapshotPresignedUrlResponse struct {
 	PresignedUrl string `json:"presignedUrl"`
 }
 
-type AddSnapshotRequest struct {
-	Base64Image string  `json:"base64_image"`
-	Path        *string `json:"path"`
-}
-
-type AddSnapshotResponse struct {
-	SnapshotId string `json:"snapshotId"`
-}
-
-type UpdateSnapshotToEventRequest struct {
-	SnapshotId string `json:"snapshotId"`
-	EventId    string `json:"eventId"`
-}
-
-type UpdateSnapshotToEventResponse struct {
-	EventId string `json:"eventId"`
+type UpsertSnapshotRequest struct {
+	RawImage        string `json:"rawImage"`
+	OpenGateEventId string `json:"openGateEventId"`
+	TranscoderId    string `json:"transcoderId"`
 }
 
 type GetImageBasePathRequest struct {
