@@ -38,5 +38,7 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.GET("/api/people/presigned", GetDetectablePersonPresignedUrl)
 
 		app.GET("/api/stats", GetLatestOpenGateCameraStats)
+
+		app.GET("api/snapshot/:id", GetSnapshotPresignedUrl)
 	}
 }

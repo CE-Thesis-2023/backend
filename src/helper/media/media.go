@@ -112,8 +112,9 @@ func (m *MediaHelper) BuildWebRTCViewStream(streamName string) string {
 type AssetsType string
 
 var (
-	AssetsTypePeople AssetsType = "people"
-	AssetsTypeEvents AssetsType = "events"
+	AssetsTypePeople   AssetsType = "people"
+	AssetsTypeEvents   AssetsType = "events"
+	AssetsTypeSnapshot AssetsType = "snapshot"
 )
 
 type UploadImageRequest struct {
@@ -185,6 +186,10 @@ func (m *MediaHelper) GetPresignedUrl(ctx context.Context, req *GetPresignedUrlR
 	return presignedUrl, nil
 }
 
+func (m *MediaHelper) GetImageBasePath(t AssetsType, id string) string {
+	return *m.getImageBasePath(t, id)
+}
+
 func (m *MediaHelper) getImageBasePath(t AssetsType, id string) *string {
 	cat := "people"
 	switch t {
@@ -192,6 +197,8 @@ func (m *MediaHelper) getImageBasePath(t AssetsType, id string) *string {
 		cat = "events"
 	case AssetsTypePeople:
 		cat = "people"
+	case AssetsTypeSnapshot:
+		cat = "snapshot"
 	}
 	p := filepath.Join(
 		m.s3Configs.PathPrefix,

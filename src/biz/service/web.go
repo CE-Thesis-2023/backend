@@ -32,7 +32,7 @@ type WebService struct {
 	db          *custdb.LayeredDb
 	cache       *ristretto.Cache
 	builder     squirrel.StatementBuilderType
-	mediaHelper *media.MediaHelper
+	MediaHelper *media.MediaHelper
 	reqreply    *custmqtt.MQTTSession
 	cvs         *ComputerVisionService
 }
@@ -43,7 +43,7 @@ func NewWebService(reqreply *custmqtt.MQTTSession, mediaHelper *media.MediaHelpe
 		builder: squirrel.
 			StatementBuilder.
 			PlaceholderFormat(squirrel.Dollar),
-		mediaHelper: mediaHelper,
+		MediaHelper: mediaHelper,
 		reqreply:    reqreply,
 		cvs:         cvs,
 	}
@@ -888,7 +888,7 @@ func (s *WebService) GetStreamInfo(ctx context.Context, req *web.GetStreamInfoRe
 		return nil, custerror.FormatNotFound("camera not found")
 	}
 
-	streamUrl := s.mediaHelper.BuildWebRTCViewStream(camera[0].CameraId)
+	streamUrl := s.MediaHelper.BuildWebRTCViewStream(camera[0].CameraId)
 	logger.SDebug("GetStreamInfo: streamUrl", zap.String("url", streamUrl))
 
 	transcoder, err := s.getDeviceById(ctx, []string{camera[0].TranscoderId})
@@ -1481,6 +1481,13 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 		return nil, err
 	}
 
+	if trackingEvents == nil {
+		logger.SError("GetObjectTrackingEventById: trackingEvents not found")
+		return &web.GetObjectTrackingEventByIdResponse{
+			ObjectTrackingEvents: []db.ObjectTrackingEvent{},
+		}, nil
+	}
+
 	return &web.GetObjectTrackingEventByIdResponse{
 		ObjectTrackingEvents: trackingEvents,
 	}, nil
@@ -1518,7 +1525,6 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []strin
 
 	return trackingEvent, nil
 }
-
 func (s *WebService) addObjectTrackingEvent(ctx context.Context, event *db.ObjectTrackingEvent) error {
 	q := s.builder.Insert("object_tracking_events").
 		Columns(event.Fields()...).
@@ -1947,7 +1953,7 @@ func (s *WebService) GetDetectablePersonImagePresignedUrl(ctx context.Context, r
 		return nil, custerror.FormatNotFound("person not found")
 	}
 
-	url, err := s.mediaHelper.GetPresignedUrl(
+	url, err := s.MediaHelper.GetPresignedUrl(
 		ctx,
 		&media.GetPresignedUrlRequest{
 			Path: person[0].
@@ -2065,7 +2071,7 @@ func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDet
 			Path:        id,
 			Type:        media.AssetsTypePeople,
 		}
-		s3Error = s.mediaHelper.UploadImage(ctx, &fileDesc)
+		s3Error = s.MediaHelper.UploadImage(ctx, &fileDesc)
 		wg.Done()
 	}()
 	wg.Wait()
@@ -2081,7 +2087,7 @@ func (s *WebService) recordDetectablePerson(ctx context.Context, req *web.AddDet
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = s.mediaHelper.DeleteImage(context.Background(), &media.DeleteImageRequest{
+			_ = s.MediaHelper.DeleteImage(context.Background(), &media.DeleteImageRequest{
 				Path: id,
 				Type: media.AssetsTypePeople,
 			})
@@ -2140,7 +2146,7 @@ func (s *WebService) deleteDetectablePerson(ctx context.Context, id string) erro
 		wg.Done()
 	}()
 	go func() {
-		s3Error = s.mediaHelper.DeleteImage(ctx, &media.DeleteImageRequest{
+		s3Error = s.MediaHelper.DeleteImage(ctx, &media.DeleteImageRequest{
 			Path: id,
 			Type: media.AssetsTypePeople,
 		})
@@ -2155,4 +2161,181 @@ func (s *WebService) deleteDetectablePerson(ctx context.Context, id string) erro
 	default:
 		return nil
 	}
+}
+
+func (s *WebService) GetSnapshotPresignedUrl(ctx context.Context, req *web.GetSnapshotPresignedUrlRequest) (*web.GetSnapshotPresignedUrlResponse, error) {
+	logger.SInfo("GetSnapshotPresignedUrl: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateGetSnapshotPresignedUrlRequest(req); err != nil {
+		logger.SError("GetSnapshotPresignedUrl: validateGetSnapshotPresignedUrlRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	url, err := s.MediaHelper.GetPresignedUrl(
+		ctx,
+		&media.GetPresignedUrlRequest{
+			Path: req.SnapshotId,
+			Type: media.AssetsTypeSnapshot,
+		})
+	if err != nil {
+		logger.SError("GetSnapshotPresignedUrl: getPresignedUrl",
+			zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetSnapshotPresignedUrlResponse{
+		SnapshotId:   req.SnapshotId,
+		PresignedUrl: url,
+	}, nil
+}
+
+func (s *WebService) validateGetSnapshotPresignedUrlRequest(req *web.GetSnapshotPresignedUrlRequest) error {
+	if req.SnapshotId == "" {
+		return custerror.FormatInvalidArgument("missing snapshot id")
+	}
+	return nil
+}
+
+func (s *WebService) AddSnapshot(ctx context.Context, req *web.AddSnapshotRequest) (*web.AddSnapshotResponse, error) {
+	logger.SInfo("AddSnapshot: request")
+	//zap.Reflect("request", req))
+
+	if err := s.validateAddSnapShotRequest(req); err != nil {
+		logger.SError("UpdateSnapshot: validateUpdateSnapshotRequest",
+			zap.Error(err))
+		return nil, err
+	}
+	snapshotId := (uuid.New()).String()
+	var snapshotPath string
+
+	if req.Path == nil {
+		snapshotPath = s.MediaHelper.GetImageBasePath(media.AssetsTypeSnapshot, snapshotId)
+	} else {
+		snapshotPath = *req.Path
+	}
+
+	snapshot := &db.Snapshot{
+		SnapshotId: snapshotId,
+		Path:       &snapshotPath,
+		Timestamp:  time.Now(),
+	}
+
+	if err := s.addSnapshot(ctx, snapshot); err != nil {
+		logger.SError("UpdateSnapshot: updateSnapshot",
+			zap.Error(err))
+		return nil, err
+	}
+
+	if _, err := s.updateSnapshotToS3(ctx, snapshotId, req.Base64Image); err != nil {
+		return nil, err
+	}
+
+	return &web.AddSnapshotResponse{
+		SnapshotId: snapshotId,
+	}, nil
+
+}
+
+func (s *WebService) validateAddSnapShotRequest(req *web.AddSnapshotRequest) error {
+	if req.Base64Image == "" {
+		return custerror.FormatInvalidArgument("missing image raw bytes")
+	}
+	return nil
+}
+
+func (s *WebService) addSnapshot(ctx context.Context, snapshot *db.Snapshot) error {
+	q := s.builder.Insert("snapshots").
+		Columns(snapshot.Fields()...).
+		Values(snapshot.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) validateUpdateSnapshotToEventRequest(req *web.UpdateSnapshotToEventRequest) error {
+	if req.SnapshotId == "" {
+		return custerror.FormatInvalidArgument("missing snapshot id")
+	}
+	if req.EventId == "" {
+		return custerror.FormatInvalidArgument("missing event id")
+	}
+	return nil
+}
+
+func (s *WebService) UpdateSnapshotToEvent(ctx context.Context, req *web.UpdateSnapshotToEventRequest) (*web.UpdateSnapshotToEventResponse, error) {
+	logger.SInfo("AddSnapshotToEvent: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateUpdateSnapshotToEventRequest(req); err != nil {
+		logger.SError("AddSnapshotToEvent: validateAddSnapshotToImageRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	event, err := s.getObjectTrackingEventById(ctx, []string{req.EventId}, nil)
+	if err != nil {
+		logger.SError("AddSnapshotToEvent: getObjectTrackingEventById",
+			zap.Error(err))
+		return nil, err
+	}
+
+	if len(event) == 0 {
+		logger.SError("AddSnapshotToEvent: event not found")
+		return nil, custerror.FormatNotFound("event not found")
+	}
+
+	if err := s.updateSnapshotToEvent(ctx, req.SnapshotId, &event[0]); err != nil {
+		logger.SError("AddSnapshotToEvent: updateSnapshotToEvent",
+			zap.Error(err))
+		return nil, err
+	}
+
+	return &web.UpdateSnapshotToEventResponse{
+		EventId: req.SnapshotId,
+	}, nil
+}
+
+func (s *WebService) updateSnapshotToEvent(ctx context.Context, snapshotId string, event *db.ObjectTrackingEvent) error {
+	q := s.builder.Update("object_tracking_events").
+		Where("open_gate_event_id = ?", event.OpenGateEventId).
+		Set("snapshot_id", snapshotId)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("addSnapshotToEvent: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) updateSnapshotToS3(ctx context.Context, id string, base64Image string) (string, error) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	var s3Error error
+	go func() {
+		fileDesc := media.UploadImageRequest{
+			Base64Image: base64Image,
+			Path:        id,
+			Type:        media.AssetsTypeSnapshot,
+		}
+		s3Error = s.MediaHelper.UploadImage(ctx, &fileDesc)
+		wg.Done()
+	}()
+	wg.Wait()
+	if s3Error != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = s.cvs.Remove(context.Background(), id)
+		}()
+		return "", s3Error
+	}
+
+	return id, nil
 }

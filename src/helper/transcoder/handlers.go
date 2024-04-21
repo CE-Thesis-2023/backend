@@ -2,7 +2,6 @@ package transcoder
 
 import (
 	"context"
-
 	"encoding/json"
 
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -71,6 +70,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 		zap.Any("after", detectionEvent.After))
 	return nil
 }
+
 func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, req *events.DetectionEvent) error {
 	logger.SDebug("processor.addObjectTrackingEvent", zap.Reflect("req", req))
 

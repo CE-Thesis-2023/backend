@@ -51,6 +51,7 @@ func main() {
 						&db.OpenGateCameraStats{},
 						&db.OpenGateDetectorStats{},
 						&db.DetectablePerson{},
+						&db.Snapshot{},
 					)
 					if err != nil {
 						return err

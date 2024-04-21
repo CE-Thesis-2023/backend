@@ -3,14 +3,13 @@ package eventsapi
 import (
 	"context"
 	"encoding/json"
-	"github.com/CE-Thesis-2023/backend/src/models/events"
-	"strings"
-
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	"github.com/CE-Thesis-2023/backend/src/models/events"
 	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/eclipse/paho.golang/paho"
+	"strings"
 )
 
 var (
@@ -75,7 +74,17 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	case OPENGATE_STATS:
 		return c.runOpenGateStats(ctx, pub)
 	default:
-		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+		{
+			parts := strings.Split(c.Action, "/")
+			if len(parts) < 3 {
+				// If not, return an error indicating an invalid action format
+				return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+			}
+			if parts[2] == "snapshot" {
+				return c.runOpenGateSnapshot(ctx, pub)
+			}
+			return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+		}
 	}
 }
 
@@ -106,6 +115,30 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 		}
 	}
 
+	return nil
+}
+
+func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) error {
+	eventId := strings.Split(c.Action, "/")[1]
+
+	if eventId == "" {
+		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+	}
+
+	result, err := c.webService.AddSnapshot(
+		ctx,
+		&web.AddSnapshotRequest{
+			Base64Image: string(pub.Payload[:]),
+		})
+
+	if err != nil {
+		return custerror.FormatInvalidArgument("failed to get event by id")
+	}
+
+	_, err = c.webService.UpdateSnapshotToEvent(ctx, &web.UpdateSnapshotToEventRequest{
+		SnapshotId: result.SnapshotId,
+		EventId:    eventId,
+	})
 	return nil
 }
 

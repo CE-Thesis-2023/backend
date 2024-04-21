@@ -588,3 +588,24 @@ func GetLatestOpenGateCameraStats(ctx *gin.Context) {
 	}
 	ctx.JSON(200, resp)
 }
+
+func GetSnapshotPresignedUrl(ctx *gin.Context) {
+	logger.SDebug("GetSnapshotPresignedUrl: request")
+
+	SnapshotId, found := ctx.Params.Get("id")
+	if !found {
+		err := custerror.FormatInvalidArgument("missing SnapshotId as parameter")
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	resp, err := service.GetWebService().GetSnapshotPresignedUrl(ctx, &web.GetSnapshotPresignedUrlRequest{
+		SnapshotId: SnapshotId,
+	})
+	if err != nil {
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	ctx.JSON(200, resp)
+}

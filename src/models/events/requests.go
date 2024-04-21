@@ -52,6 +52,7 @@ type DetectionEventStatus struct {
 	PositionChanges   int64                     `json:"position_changes"`
 	Attributes        ObjectFeatures            `json:"attributes"`
 	CurrentAttributes []ObjectCurrentAttributes `json:"current_attributes"`
+	Base64Image       string                    `json:"base64_image"`
 }
 
 type ObjectFeatures map[string]float64

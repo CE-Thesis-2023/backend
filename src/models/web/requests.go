@@ -366,3 +366,39 @@ type GetLatestOpenGateStatsResponse struct {
 	CameraStats   db.OpenGateCameraStats   `json:"cameraStats"`
 	DetectorStats db.OpenGateDetectorStats `json:"detectorStats"`
 }
+
+type GetSnapshotPresignedUrlRequest struct {
+	SnapshotId string `json:"snapShortId"`
+}
+
+type GetSnapshotPresignedUrlResponse struct {
+	SnapshotId   string `json:"snapshotId"`
+	PresignedUrl string `json:"presignedUrl"`
+}
+
+type AddSnapshotRequest struct {
+	Base64Image string  `json:"base64_image"`
+	Path        *string `json:"path"`
+}
+
+type AddSnapshotResponse struct {
+	SnapshotId string `json:"snapshotId"`
+}
+
+type UpdateSnapshotToEventRequest struct {
+	SnapshotId string `json:"snapshotId"`
+	EventId    string `json:"eventId"`
+}
+
+type UpdateSnapshotToEventResponse struct {
+	EventId string `json:"eventId"`
+}
+
+type GetImageBasePathRequest struct {
+	AssetType string `json:"assetType"`
+	Id        string `json:"id"`
+}
+
+type GetImageBasePathResponse struct {
+	BasePath string `json:"basePath"`
+}

@@ -53,6 +53,7 @@ type ObjectTrackingEvent struct {
 	FalsePositive bool       `json:"falsePositive" db:"false_positive"`
 	StartTime     *time.Time `json:"startTime" db:"start_time"`
 	EndTime       *time.Time `json:"endTime" db:"end_time"`
+	SnapshotId    *string    `json:"snapshotId" db:"snapshot_id"`
 }
 
 func (s *ObjectTrackingEvent) Fields() []string {
@@ -73,6 +74,7 @@ func (s *ObjectTrackingEvent) Fields() []string {
 		"false_positive",
 		"start_time",
 		"end_time",
+		"snapshot_id",
 	)
 	return fs
 }
@@ -95,6 +97,7 @@ func (s *ObjectTrackingEvent) Values() []interface{} {
 		s.FalsePositive,
 		s.StartTime,
 		s.EndTime,
+		s.SnapshotId,
 	)
 	return vs
 }
@@ -407,6 +410,35 @@ func (t *OpenGateDetectorStats) Values() []interface{} {
 		t.InferenceSpeed,
 		t.ProcessID,
 		t.Timestamp,
+	)
+	return vs
+}
+
+type Snapshot struct {
+	SnapshotId       string    `json:"snapshotId" db:"snapshot_id,primary"`
+	Timestamp        time.Time `json:"timestamp" db:"timestamp"`
+	Path             *string   `json:"path,omitempty" db:"path"`
+	DetectedPeopleId *string   `json:"detectedPeopleId,omitempty" db:"detected_people_id"`
+}
+
+func (t *Snapshot) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"snapshot_id",
+		"timestamp",
+		"path",
+		"detected_people_id",
+	)
+	return fs
+}
+
+func (t *Snapshot) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.SnapshotId,
+		t.Timestamp,
+		t.Path,
+		t.DetectedPeopleId,
 	)
 	return vs
 }
