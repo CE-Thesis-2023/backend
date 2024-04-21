@@ -3,9 +3,11 @@ package media
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"time"
@@ -45,6 +47,13 @@ func (m *MediaHelper) initS3Client() error {
 	awsConfigs := aws.NewConfig().
 		WithEndpoint(m.s3Configs.Endpoint).
 		WithRegion(m.s3Configs.Region).
+		WithHTTPClient(&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}).
 		WithCredentials(credentials.NewStaticCredentials(
 			m.s3Configs.AccessKeyID,
 			m.s3Configs.Secret,
