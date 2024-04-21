@@ -17,10 +17,15 @@ var (
 	TYPE_TRANSCODER = "transcoder"
 )
 
+type Topic struct {
+	Type     string   `json:"type"`
+	SenderId string   `json:"senderId"`
+	ExtraIds []string `json:"extraIds"`
+	Action   string   `json:"action"`
+}
+
 type Command struct {
-	Type     string `json:"type"`
-	ClientId string `json:"clientId"`
-	Action   string `json:"action"`
+	topic *Topic
 
 	actorPool  *transcoder.TranscoderActorsPool
 	webService *service.WebService
@@ -33,31 +38,65 @@ type OpenGateStats struct {
 	Service      map[string]interface{}                   `json:"service"`
 }
 
-func CommandFromPath(pub *paho.Publish, pool *transcoder.TranscoderActorsPool, webService *service.WebService) (*Command, error) {
-	parts := strings.Split(pub.Topic, "/")
+func ToTopic(topic string) (*Topic, error) {
+	parts := strings.Split(topic, "/")
 	if len(parts) == 0 {
 		return nil, custerror.FormatInvalidArgument("path is empty")
 	}
 	if len(parts) < 3 {
 		return nil, custerror.FormatInvalidArgument("path is too short")
 	}
+	switch len(parts) {
+	case 3:
+		return &Topic{
+			Type:     parts[0],
+			SenderId: parts[1],
+			Action:   parts[2],
+		}, nil
+	case 5:
+		return &Topic{
+			Type:     parts[0],
+			SenderId: parts[1],
+			ExtraIds: []string{parts[2]},
+			Action:   strings.Join([]string{parts[3], parts[4]}, "/"),
+		}, nil
+	case 4:
+		return &Topic{
+			Type:     parts[0],
+			SenderId: parts[1],
+			ExtraIds: []string{parts[2]},
+			Action:   parts[3],
+		}, nil
+	default:
+		return &Topic{
+			Type:     parts[0],
+			SenderId: parts[1],
+			ExtraIds: []string{parts[2]},
+			Action:   strings.Join(parts[3:], "/"),
+		}, nil
+	}
+}
+
+func CommandFromPath(pub *paho.Publish, pool *transcoder.TranscoderActorsPool, webService *service.WebService) (*Command, error) {
+	topic, err := ToTopic(pub.Topic)
+	if err != nil {
+		return nil, err
+	}
 	return &Command{
-		Type:       parts[0],
-		ClientId:   parts[1],
-		Action:     strings.Join(parts[2:], "/"),
+		topic:      topic,
 		actorPool:  pool,
 		webService: webService,
 	}, nil
 }
 
 func (c *Command) Run(ctx context.Context, pub *paho.Publish) error {
-	switch c.Type {
+	switch c.topic.Type {
 	case TYPE_OPENGATE:
 		return c.runOpenGate(ctx, pub)
 	case TYPE_TRANSCODER:
 		return c.runTranscoder(ctx, pub)
 	default:
-		return custerror.FormatInvalidArgument("unknown type: %s", c.Type)
+		return custerror.FormatInvalidArgument("unknown type: %s", c.topic)
 	}
 }
 
@@ -68,23 +107,21 @@ const (
 
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
-	switch c.Action {
+	switch c.topic.Action {
 	case OPENGATE_EVENTS:
 		return c.runOpenGateEvents(ctx, pub)
 	case OPENGATE_STATS:
 		return c.runOpenGateStats(ctx, pub)
 	default:
-		{
-			parts := strings.Split(c.Action, "/")
-			if len(parts) < 3 {
-				// If not, return an error indicating an invalid action format
-				return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
-			}
-			if parts[2] == "snapshot" {
-				return c.runOpenGateSnapshot(ctx, pub)
-			}
-			return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+		parts := strings.Split(c.topic.Action, "/")
+		if len(parts) < 3 {
+			// If not, return an error indicating an invalid action format
+			return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
 		}
+		if parts[2] == "snapshot" {
+			return c.runOpenGateSnapshot(ctx, pub)
+		}
+		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
 	}
 }
 
@@ -93,7 +130,7 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 	resp, err := c.webService.GetCamerasByTranscoderId(
 		ctx,
 		&web.GetCameraByTranscoderId{
-			TranscoderId:        c.ClientId,
+			TranscoderId:        c.topic.SenderId,
 			OpenGateCameraNames: names,
 		})
 	if err != nil {
@@ -105,9 +142,9 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
 			CameraId:     cam.CameraId,
 			TranscoderId: cam.TranscoderId,
-			OpenGateId:   c.ClientId,
-			Type:         c.Type,
-			Action:       c.Action,
+			OpenGateId:   c.topic.SenderId,
+			Type:         c.topic.Type,
+			Action:       c.topic.Action,
 			Payload:      pub.Payload,
 		})
 		if err != nil {
@@ -119,10 +156,10 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 }
 
 func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) error {
-	eventId := strings.Split(c.Action, "/")[1]
+	eventId := strings.Split(c.topic.Action, "/")[1]
 
 	if eventId == "" {
-		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
 	}
 
 	result, err := c.webService.AddSnapshot(
@@ -209,8 +246,8 @@ func (c *Command) extractCameraNameFromEvent(event []byte) string {
 }
 
 func (c *Command) runTranscoder(_ context.Context, _ *paho.Publish) error {
-	switch c.Action {
+	switch c.topic.Action {
 	default:
-		return custerror.FormatInvalidArgument("unknown action: %s", c.Action)
+		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
 	}
 }
