@@ -86,8 +86,6 @@ func (c *Command) Run(ctx context.Context, pub *paho.Publish) error {
 	switch c.topic.Type {
 	case TYPE_OPENGATE:
 		return c.runOpenGate(ctx, pub)
-	case TYPE_TRANSCODER:
-		return c.runTranscoder(ctx, pub)
 	default:
 		return custerror.FormatInvalidArgument("unknown type: %s", c.topic)
 	}
@@ -109,7 +107,7 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	return nil
 }
 
-func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) error {
+func (c *Command) runOpenGateEvents(_ context.Context, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
 
 	return c.actorPool.Send(transcoder.TranscoderEventMessage{
@@ -119,7 +117,7 @@ func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) erro
 	})
 }
 
-func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) error {
+func (c *Command) runOpenGateSnapshot(_ context.Context, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
 	eventId := c.topic.ExtraIds[0]
 
@@ -136,35 +134,11 @@ func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) er
 	})
 }
 
-func (c *Command) runOpenGateStats(ctx context.Context, pub *paho.Publish) error {
+func (c *Command) runOpenGateStats(_ context.Context, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
 	return c.actorPool.Send(transcoder.TranscoderEventMessage{
 		Type:         transcoder.OPENGATE_STATS,
 		TranscoderId: transcoderId,
 		Payload:      pub.Payload,
 	})
-}
-
-func (c *Command) extractCameraNameFromEvent(event []byte) string {
-	var names []string
-	var eventStruct map[string]interface{}
-	if err := json.Unmarshal(event, &eventStruct); err != nil {
-		return ""
-	}
-	before := eventStruct["before"]
-	if before != nil {
-		beforeStruct := before.(map[string]interface{})
-		if beforeStruct["camera"] != nil {
-			names = append(names,
-				beforeStruct["camera"].(string))
-		}
-	}
-	return names[0]
-}
-
-func (c *Command) runTranscoder(_ context.Context, _ *paho.Publish) error {
-	switch c.topic.Action {
-	default:
-		return custerror.FormatInvalidArgument("unknown action: %s", c.topic.Action)
-	}
 }
