@@ -13,8 +13,10 @@ import (
 )
 
 type TranscoderEventProcessor interface {
-	OpenGateAvailable(ctx context.Context, openGateId string, message []byte) error
-	OpenGateObjectTrackingEvent(ctx context.Context, openGateId string, message []byte) error
+	OpenGateAvailable(ctx context.Context, transcoderId string, message []byte) error
+	OpenGateObjectTrackingEvent(ctx context.Context, transcoderId string, message []byte) error
+	OpenGateSnapshot(ctx context.Context, transcoderId string, message []byte) error
+	OpenGateStats(ctx context.Context, transcoderId string, message []byte) error
 }
 
 type transcoderEventProcessor struct {
@@ -103,6 +105,7 @@ func NewTranscoderActor(privateService *service.PrivateService, webService *serv
 func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	logger.SDebug("TranscoderActor received message",
 		zap.String("pid", ctx.PID().String()))
+
 	message := ctx.Message()
 	var event TranscoderEventMessage
 	if err := copier.Copy(&event, message); err != nil {
@@ -110,20 +113,36 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 			zap.Error(err))
 		return
 	}
+
 	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	payload := event.Payload
+
 	switch event.Type {
-	case "opengate":
+	case OPENGATE_EVENTS:
 		logger.SInfo("TranscoderActor received opengate event",
-			zap.String("openGateId", event.OpenGateId))
-		if err := a.handler.OpenGateObjectTrackingEvent(timeOutCtx, event.OpenGateId, payload); err != nil {
+			zap.String("payload", string(payload)),
+			zap.String("transcoderId", event.TranscoderId))
+		if err := a.handler.OpenGateObjectTrackingEvent(timeOutCtx, event.TranscoderId, payload); err != nil {
 			logger.SError("unable to process opengate event",
 				zap.Error(err))
 		}
-	case "transcoder":
-		logger.SInfo("TranscoderActor received transcoder event",
-			zap.String("transcoderId", event.TranscoderId),
-			zap.Any("payload", payload))
+	case OPENGATE_SNAPSHOT:
+		logger.SInfo("TranscoderActor received opengate snapshot",
+			zap.String("transcoderId", event.TranscoderId))
+		if err := a.handler.OpenGateSnapshot(timeOutCtx, event.TranscoderId, payload); err != nil {
+			logger.SError("unable to process opengate snapshot",
+				zap.Error(err))
+		}
+	case OPENGATE_STATS:
+		logger.SInfo("TranscoderActor received opengate stats",
+			zap.String("transcoderId", event.TranscoderId))
+		if err := a.handler.OpenGateStats(timeOutCtx, event.TranscoderId, payload); err != nil {
+			logger.SError("unable to process opengate stats",
+				zap.Error(err))
+		}
+	default:
+		logger.SError("unknown event type",
+			zap.String("type", event.Type))
 	}
 }

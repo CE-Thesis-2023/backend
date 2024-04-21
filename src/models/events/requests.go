@@ -91,6 +91,13 @@ type OpenGateDetectorsStats struct {
 	PID            int     `json:"pid"`
 }
 
+type OpenGateStats struct {
+	Cameras      map[string]OpenGateCameraStats    `json:"cameras"`
+	DetectionFPS float64                           `json:"detection_fps"`
+	Detectors    map[string]OpenGateDetectorsStats `json:"detectors"`
+	Service      map[string]interface{}            `json:"service"`
+}
+
 type Event struct {
 	Prefix    string
 	ID        string

@@ -1,10 +1,20 @@
 package transcoder
 
+const (
+	OPENGATE_EVENTS    = "events"
+	OPENGATE_STATS     = "stats"
+	OPENGATE_AVAILABLE = "available"
+	OPENGATE_SNAPSHOT  = "snapshot"
+)
+
 type TranscoderEventMessage struct {
 	Type         string `json:"type"`
-	Action       string `json:"action"`
 	TranscoderId string `json:"transcoderId"`
-	OpenGateId   string `json:"openGateId"`
-	CameraId     string `json:"cameraId"`
-	Payload      []byte `json:"payload"`
+
+	Payload []byte `json:"payload"`
+}
+
+type OpenGateSnapshotPayload struct {
+	EventId  string `json:"eventId"`
+	RawImage []byte `json:"rawImage"`
 }

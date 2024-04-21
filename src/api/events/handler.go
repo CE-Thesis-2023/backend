@@ -2,7 +2,6 @@ package eventsapi
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"strings"
 
@@ -10,8 +9,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
-	"github.com/CE-Thesis-2023/backend/src/models/events"
-	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/eclipse/paho.golang/paho"
 )
 
@@ -32,13 +29,6 @@ type Command struct {
 
 	actorPool  *transcoder.TranscoderActorsPool
 	webService *service.WebService
-}
-
-type OpenGateStats struct {
-	Cameras      map[string]events.OpenGateCameraStats    `json:"cameras"`
-	DetectionFPS float64                                  `json:"detection_fps"`
-	Detectors    map[string]events.OpenGateDetectorsStats `json:"detectors"`
-	Service      map[string]interface{}                   `json:"service"`
 }
 
 func ToTopic(topic string) (*Topic, error) {
@@ -103,23 +93,16 @@ func (c *Command) Run(ctx context.Context, pub *paho.Publish) error {
 	}
 }
 
-const (
-	OPENGATE_EVENTS    = "events"
-	OPENGATE_STATS     = "stats"
-	OPENGATE_AVAILABLE = "available"
-	OPENGATE_SNAPSHOT  = "snapshot"
-)
-
 // https://docs.frigate.video/integrations/mqtt
 func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	switch c.topic.Action {
-	case OPENGATE_EVENTS:
+	case transcoder.OPENGATE_EVENTS:
 		return c.runOpenGateEvents(ctx, pub)
-	case OPENGATE_STATS:
+	case transcoder.OPENGATE_STATS:
 		return c.runOpenGateStats(ctx, pub)
-	case OPENGATE_SNAPSHOT:
+	case transcoder.OPENGATE_SNAPSHOT:
 		return c.runOpenGateSnapshot(ctx, pub)
-	case OPENGATE_AVAILABLE:
+	case transcoder.OPENGATE_AVAILABLE:
 		// TODO: Change status of transcoder device
 		logger.SInfo("OpenGate available")
 	}
@@ -127,102 +110,39 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 }
 
 func (c *Command) runOpenGateEvents(ctx context.Context, pub *paho.Publish) error {
-	names := []string{c.extractCameraNameFromEvent(pub.Payload)}
-	resp, err := c.webService.GetCamerasByTranscoderId(
-		ctx,
-		&web.GetCameraByTranscoderId{
-			TranscoderId:        c.topic.SenderId,
-			OpenGateCameraNames: names,
-		})
-	if err != nil {
-		return err
-	}
-	cameras := resp.Cameras
+	transcoderId := c.topic.SenderId
 
-	for _, cam := range cameras {
-		err = c.actorPool.Send(transcoder.TranscoderEventMessage{
-			CameraId:     cam.CameraId,
-			TranscoderId: cam.TranscoderId,
-			OpenGateId:   c.topic.SenderId,
-			Type:         c.topic.Type,
-			Action:       c.topic.Action,
-			Payload:      pub.Payload,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Command) snapshotToBase64(snapshot []byte) string {
-	return base64.
-		StdEncoding.
-		EncodeToString(snapshot)
+	return c.actorPool.Send(transcoder.TranscoderEventMessage{
+		Type:         transcoder.OPENGATE_EVENTS,
+		TranscoderId: transcoderId,
+		Payload:      pub.Payload,
+	})
 }
 
 func (c *Command) runOpenGateSnapshot(ctx context.Context, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
 	eventId := c.topic.ExtraIds[0]
 
-	if err := c.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
-		TranscoderId:    transcoderId,
-		OpenGateEventId: eventId,
-		RawImage:        string(pub.Payload),
-	}); err != nil {
-		return err
+	pl := transcoder.OpenGateSnapshotPayload{
+		EventId:  eventId,
+		RawImage: pub.Payload,
 	}
-	return nil
+	msg, _ := json.Marshal(pl)
+
+	return c.actorPool.Send(transcoder.TranscoderEventMessage{
+		Type:         transcoder.OPENGATE_SNAPSHOT,
+		TranscoderId: transcoderId,
+		Payload:      msg,
+	})
 }
 
 func (c *Command) runOpenGateStats(ctx context.Context, pub *paho.Publish) error {
-	stats := c.extractStatFromStatsResponse(pub.Payload)
-
-	if stats == nil {
-		return custerror.FormatInvalidArgument("failed to extract stats from payload")
-	}
-
-	for cameraName, cameraStats := range stats.Cameras {
-		_, err := c.webService.AddOpenGateCameraStats(ctx, &web.AddOpenGateCameraStatsRequest{
-			CameraName:   cameraName,
-			CameraFPS:    cameraStats.CameraFPS,
-			DetectionFPS: cameraStats.DetectionFPS,
-			CapturePID:   cameraStats.CapturePID,
-			ProcessID:    cameraStats.PID,
-			ProcessFPS:   cameraStats.ProcessFPS,
-			SkippedFPS:   cameraStats.SkippedFPS,
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	for detectorName, detectorStats := range stats.Detectors {
-		_, err := c.webService.AddOpenGateDetectorStats(ctx, &web.AddOpenGateDetectorsStatsRequest{
-			DetectorName:   detectorName,
-			DetectorStart:  detectorStats.DetectionStart,
-			InferenceSpeed: detectorStats.InferenceSpeed,
-			ProcessID:      detectorStats.PID,
-		})
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (c *Command) extractStatFromStatsResponse(stats []byte) *OpenGateStats {
-	var statStruct OpenGateStats
-	// Unmarshal the JSON into a map[string]interface{}
-	if err := json.Unmarshal(stats, &statStruct); err != nil {
-		return nil
-	}
-
-	return &statStruct
+	transcoderId := c.topic.SenderId
+	return c.actorPool.Send(transcoder.TranscoderEventMessage{
+		Type:         transcoder.OPENGATE_STATS,
+		TranscoderId: transcoderId,
+		Payload:      pub.Payload,
+	})
 }
 
 func (c *Command) extractCameraNameFromEvent(event []byte) string {

@@ -3,6 +3,7 @@ package transcoder
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
@@ -27,10 +28,7 @@ func (p *transcoderEventProcessor) OpenGateAvailable(ctx context.Context, openGa
 	return nil
 }
 
-func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Context, openGateId string, message []byte) error {
-	logger.SDebug("processor.OpenGateEvent",
-		zap.String("openGateId", openGateId))
-
+func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Context, transcoderId string, message []byte) error {
 	var detectionEvent events.DetectionEvent
 	if err := json.Unmarshal(message, &detectionEvent); err != nil {
 		logger.SError("failed to unmarshal detection event",
@@ -41,7 +39,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 	switch detectionEvent.Type {
 	case "new":
 		logger.SInfo("new detection",
-			zap.String("openGateId", openGateId))
+			zap.String("transcoderId", transcoderId))
 		if err := p.addObjectTrackingEvent(ctx, &detectionEvent); err != nil {
 			logger.SError("failed to add event to database",
 				zap.Error(err))
@@ -49,7 +47,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 		}
 	case "update":
 		logger.SInfo("detection update",
-			zap.String("openGateId", openGateId))
+			zap.String("transcoderId", transcoderId))
 		if err := p.updateObjectTrackingEventInDatabase(ctx, &detectionEvent); err != nil {
 			logger.SError("failed to update event in database",
 				zap.Error(err))
@@ -57,7 +55,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 		}
 	case "end":
 		logger.SInfo("detection end",
-			zap.String("openGateId", openGateId))
+			zap.String("transcoderId", transcoderId))
 		if err := p.updateObjectTrackingEventInDatabase(ctx, &detectionEvent); err != nil {
 			logger.SError("failed to update event in database",
 				zap.Error(err))
@@ -121,5 +119,91 @@ func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx conte
 
 	logger.SInfo("event updated",
 		zap.String("openGateEventId", req.Before.ID))
+	return nil
+}
+
+func (p *transcoderEventProcessor) OpenGateSnapshot(ctx context.Context, transcoderId string, message []byte) error {
+	var snapshotPayload OpenGateSnapshotPayload
+	if err := json.Unmarshal(message, &snapshotPayload); err != nil {
+		logger.SError("failed to unmarshal snapshot payload",
+			zap.Error(err))
+		return err
+	}
+
+	logger.SDebug("processor.OpenGateSnapshot",
+		zap.String("transcoderId", transcoderId),
+		zap.String("eventId", snapshotPayload.EventId))
+
+	err := p.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
+		OpenGateEventId: snapshotPayload.EventId,
+		RawImage:        string(snapshotPayload.RawImage),
+		TranscoderId:    transcoderId,
+	})
+	if err != nil {
+		return err
+	}
+
+	logger.SInfo("snapshot added",
+		zap.String("eventId", snapshotPayload.EventId))
+	return nil
+}
+
+func (p *transcoderEventProcessor) OpenGateStats(ctx context.Context, transcoderId string, message []byte) error {
+	var statStruct events.OpenGateStats
+	if err := json.Unmarshal(message, &statStruct); err != nil {
+		return nil
+	}
+
+	var cameraStatsError error
+	var detectorStatsError error
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for cameraName, cameraStats := range statStruct.Cameras {
+			_, err := p.webService.AddOpenGateCameraStats(ctx, &web.AddOpenGateCameraStatsRequest{
+				CameraName:   cameraName,
+				CameraFPS:    cameraStats.CameraFPS,
+				DetectionFPS: cameraStats.DetectionFPS,
+				CapturePID:   cameraStats.CapturePID,
+				ProcessID:    cameraStats.PID,
+				ProcessFPS:   cameraStats.ProcessFPS,
+				SkippedFPS:   cameraStats.SkippedFPS,
+			})
+			if err != nil {
+				cameraStatsError = err
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for detectorName, detectorStats := range statStruct.Detectors {
+			_, err := p.webService.AddOpenGateDetectorStats(ctx, &web.AddOpenGateDetectorsStatsRequest{
+				DetectorName:   detectorName,
+				DetectorStart:  detectorStats.DetectionStart,
+				InferenceSpeed: detectorStats.InferenceSpeed,
+				ProcessID:      detectorStats.PID,
+			})
+
+			if err != nil {
+				detectorStatsError = err
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+	if cameraStatsError != nil {
+		return custerror.FormatInternalError("failed to add camera stats: %s", cameraStatsError)
+	}
+	if detectorStatsError != nil {
+		return custerror.FormatInternalError("failed to add detector stats: %s", detectorStatsError)
+	}
+
+	logger.SInfo("OpenGate stats added",
+		zap.String("transcoderId", transcoderId))
 	return nil
 }
