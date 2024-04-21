@@ -25,7 +25,8 @@ COPY models /models
 COPY configs.json /configs/configs.json
 COPY certs certs/
 
-RUN apt update && apt install libdlib-dev \
+RUN apt update && apt install ca-certificates \
+    libdlib-dev \
     libblas-dev \
     libatlas-base-dev \
     liblapack-dev \
