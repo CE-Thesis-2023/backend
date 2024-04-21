@@ -436,10 +436,8 @@ func (t *Snapshot) Fields() []string {
 		"snapshot_id",
 		"timestamp",
 		"detected_people_id",
-		"event_id",
 		"transcoder_id",
 		"open_gate_event_id",
-		"detected_people_id",
 	)
 	return fs
 }
@@ -452,7 +450,6 @@ func (t *Snapshot) Values() []interface{} {
 		t.DetectedPeopleId,
 		t.TranscoderId,
 		t.OpenGateEventId,
-		t.DetectedPeopleId,
 	)
 	return vs
 }
