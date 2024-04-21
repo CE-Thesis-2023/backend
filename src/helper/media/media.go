@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -44,16 +45,29 @@ func NewMediaHelper(configs *configs.MediaMtxConfigs, s3 *configs.S3Storage) *Me
 }
 
 func (m *MediaHelper) initS3Client() error {
+	customHttpClient := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+					for _, rawCert := range rawCerts {
+						cert, err := x509.ParseCertificate(rawCert)
+						if err != nil {
+							return err
+						}
+						logger.SDebug("certificate",
+							zap.String("subject", cert.Subject.String()),
+							zap.String("issuer", cert.Issuer.String()),
+							zap.Reflect("cert", cert))
+					}
+					return nil
+				},
+			},
+		},
+	}
 	awsConfigs := aws.NewConfig().
 		WithEndpoint(m.s3Configs.Endpoint).
 		WithRegion(m.s3Configs.Region).
-		WithHTTPClient(&http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}).
+		WithHTTPClient(&customHttpClient).
 		WithCredentials(credentials.NewStaticCredentials(
 			m.s3Configs.AccessKeyID,
 			m.s3Configs.Secret,
