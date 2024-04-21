@@ -162,7 +162,8 @@ func (p *transcoderEventProcessor) OpenGateStats(ctx context.Context, transcoder
 	go func() {
 		defer wg.Done()
 		for cameraName, cameraStats := range statStruct.Cameras {
-			_, err := p.webService.AddOpenGateCameraStats(ctx, &web.AddOpenGateCameraStatsRequest{
+			_, err := p.webService.UpsertOpenGateCameraStats(ctx, &web.UpsertOpenGateCameraStatsRequest{
+				TranscoderId: transcoderId,
 				CameraName:   cameraName,
 				CameraFPS:    cameraStats.CameraFPS,
 				DetectionFPS: cameraStats.DetectionFPS,

@@ -298,29 +298,30 @@ type DeviceHealthcheckResponse struct {
 	Status string `json:"status"`
 }
 
-type AddOpenGateCameraStatsRequest struct {
-	CameraName   string  `json:"camera_name"`
-	CameraFPS    float64 `json:"camera_fps"`
-	DetectionFPS float64 `json:"detection_fps"`
-	CapturePID   int     `json:"capture_pid"`
-	ProcessID    int     `json:"process_id"`
-	ProcessFPS   float64 `json:"process_fps"`
-	SkippedFPS   float64 `json:"skipped_fps"`
+type UpsertOpenGateCameraStatsRequest struct {
+	TranscoderId string  `json:"transcoderId"`
+	CameraName   string  `json:"cameraName"`
+	CameraFPS    float64 `json:"cameraFps"`
+	DetectionFPS float64 `json:"detectionFps"`
+	CapturePID   int     `json:"capturePid"`
+	ProcessID    int     `json:"processId"`
+	ProcessFPS   float64 `json:"processFps"`
+	SkippedFPS   float64 `json:"skippedFps"`
 }
 
-type AddOpenGateCameraStatsResponse struct {
+type UpsertOpenGateCameraStatsResponse struct {
 	CameraStatId uuid.UUID `json:"cameraStatId"`
 }
 
-type AddOpenGateDetectorsStatsResponse struct {
+type UpsertOpenGateDetectorsStatsResponse struct {
 	DetectorStatId uuid.UUID `json:"detectorStatId"`
 }
 
-type AddOpenGateDetectorsStatsRequest struct {
-	DetectorName   string  `json:"detect_name"`
-	DetectorStart  float64 `json:"detector_start"`
-	InferenceSpeed float64 `json:"inference_speed"`
-	ProcessID      int     `json:"process_id"`
+type UpsertOpenGateDetectorsStatsRequest struct {
+	DetectorName   string  `json:"detectName"`
+	DetectorStart  float64 `json:"detectorStart"`
+	InferenceSpeed float64 `json:"inferenceSpeed"`
+	ProcessID      int     `json:"processId"`
 }
 
 type GetDetectablePeopleRequest struct {

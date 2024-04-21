@@ -1672,7 +1672,7 @@ func (s *WebService) validateDeviceHealthcheckRequest(req *web.DeviceHealthcheck
 	return nil
 }
 
-func (s *WebService) validateOpenGateStatsRequest(req *web.AddOpenGateCameraStatsRequest) error {
+func (s *WebService) validateOpenGateStatsRequest(req *web.UpsertOpenGateCameraStatsRequest) error {
 	if req.CameraName == "" {
 		return custerror.FormatInvalidArgument("missing camera name")
 	}
@@ -1703,31 +1703,123 @@ func (s *WebService) validateOpenGateStatsRequest(req *web.AddOpenGateCameraStat
 	return nil
 }
 
-func (s *WebService) AddOpenGateCameraStats(ctx context.Context, req *web.AddOpenGateCameraStatsRequest) (*web.AddOpenGateCameraStatsResponse, error) {
-	logger.SDebug("OpenGateCameraStats: add stats", zap.Reflect("request", req))
+func (s *WebService) UpsertOpenGateCameraStats(ctx context.Context, req *web.UpsertOpenGateCameraStatsRequest) (*web.UpsertOpenGateCameraStatsResponse, error) {
+	logger.SDebug("OpenGateCameraStats: upsert stats",
+		zap.Reflect("request", req))
+	if err := s.validateOpenGateStatsRequest(req); err != nil {
+		logger.SError("OpenGateCameraStats: validateOpenGateStatsRequest error",
+			zap.Error(err))
+		return nil, err
+	}
+	currentStats, err := s.getOpenGateCameraStats(ctx, req.TranscoderId, req.CameraName)
+	switch {
+	case err == nil:
+		patched := s.patchOpenGateCameraStats(currentStats, req)
+		if err := s.updateOpenGateCameraStats(ctx, patched); err != nil {
+			logger.SError("OpenGateCameraStats: updateOpenGateCameraStats error",
+				zap.Error(err))
+			return nil, err
+		}
+		return &web.UpsertOpenGateCameraStatsResponse{
+			CameraStatId: currentStats.CameraStatId,
+		}, nil
+	case errors.Is(err, custerror.ErrorNotFound):
+		stats := db.OpenGateCameraStats{
+			CameraStatId: uuid.New(),
+			CameraName:   req.CameraName,
+			TranscoderId: req.TranscoderId,
+			Timestamp:    time.Now(),
+			CameraFPS:    req.CameraFPS,
+			DetectionFPS: req.DetectionFPS,
+			CapturePID:   req.CapturePID,
+			ProcessID:    req.ProcessID,
+			ProcessFPS:   req.ProcessFPS,
+			SkippedFPS:   req.SkippedFPS,
+		}
+		if err := s.addOpenGateCameraStats(ctx, &stats); err != nil {
+			logger.SError("OpenGateCameraStats: AddOpenGateCameraStats error",
+				zap.Error(err))
+			return nil, err
+		}
+		return &web.UpsertOpenGateCameraStatsResponse{
+			CameraStatId: stats.CameraStatId,
+		}, nil
+	default:
+		logger.SError("OpenGateCameraStats: getOpenGateCameraStats error",
+			zap.Error(err))
+		return nil, err
+	}
+}
 
-	err := s.validateOpenGateStatsRequest(req)
-	if err != nil {
+func (s *WebService) patchOpenGateCameraStats(old *db.OpenGateCameraStats, req *web.UpsertOpenGateCameraStatsRequest) *db.OpenGateCameraStats {
+	new := old
+	if req.CameraName != "" {
+		new.CameraName = req.CameraName
+	}
+	if req.TranscoderId != "" {
+		new.TranscoderId = req.TranscoderId
+	}
+	if req.CameraFPS > 0 {
+		new.CameraFPS = req.CameraFPS
+	}
+	if req.DetectionFPS > 0 {
+		new.DetectionFPS = req.DetectionFPS
+	}
+	if req.CapturePID > 0 {
+		new.CapturePID = req.CapturePID
+	}
+	if req.ProcessID > 0 {
+		new.ProcessID = req.ProcessID
+	}
+	if req.ProcessFPS > 0 {
+		new.ProcessFPS = req.ProcessFPS
+	}
+	if req.SkippedFPS > 0 {
+		new.SkippedFPS = req.SkippedFPS
+	}
+	return new
+}
+
+func (s *WebService) updateOpenGateCameraStats(ctx context.Context, m *db.OpenGateCameraStats) error {
+	valueMap := map[string]interface{}{}
+	fields := m.Fields()
+	values := m.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("open_gate_camera_stats").
+		Where("camera_stat_id = ?", m.CameraStatId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateOpenGateCameraStats: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) getOpenGateCameraStats(ctx context.Context, transcoderId string, cameraName string) (*db.OpenGateCameraStats, error) {
+	q := s.builder.Select("*").
+		From("open_gate_camera_stats").
+		Where("transcoder_id = ?", transcoderId).
+		Where("camera_name = ?", cameraName).
+		OrderByClause("? DESC", "timestamp").
+		Limit(1)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateCameraStats: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var stats []db.OpenGateCameraStats
+	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}
 
-	var entry db.OpenGateCameraStats
-
-	entry.CameraStatId = uuid.New()
-	entry.Timestamp = time.Now()
-
-	if err = copier.Copy(&entry, req); err != nil {
-		logger.SError("AddOpenGateCameraStats: copier.Copy error", zap.Error(err))
-		return nil, err
-	}
-
-	if err = s.addOpenGateCameraStats(ctx, &entry); err != nil {
-		return nil, err
-	}
-
-	return &web.AddOpenGateCameraStatsResponse{
-		CameraStatId: entry.CameraStatId,
-	}, nil
+	return &stats[0], nil
 }
 
 func (s *WebService) addOpenGateCameraStats(ctx context.Context, stats *db.OpenGateCameraStats) error {

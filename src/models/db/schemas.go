@@ -337,6 +337,7 @@ func (t *DetectablePerson) Values() []interface{} {
 
 type OpenGateCameraStats struct {
 	CameraStatId uuid.UUID `json:"camera_stat_id" db:"camera_stat_id,primary"`
+	TranscoderId string    `json:"transcoder_id" db:"transcoder_id"`
 	CameraName   string    `json:"camera_name" db:"camera_name"`
 	CameraFPS    float64   `json:"camera_fps" db:"camera_fps"`
 	DetectionFPS float64   `json:"detection_fps" db:"detection_fps"`
