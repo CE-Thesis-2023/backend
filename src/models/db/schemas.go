@@ -383,6 +383,7 @@ func (t *OpenGateCameraStats) Values() []interface{} {
 type OpenGateDetectorStats struct {
 	DetectorStatId uuid.UUID `json:"detector_stat_id" db:"detector_stat_id,primary"`
 	DetectorName   string    `json:"detector_name" db:"detector_name"`
+	TranscoderId   string    `json:"transcoder_id" db:"transcoder_id"`
 	DetectorStart  float64   `json:"detector_start" db:"detector_start"`
 	InferenceSpeed float64   `json:"inference_speed" db:"inference_speed"`
 	ProcessID      int       `json:"process_id" db:"process_id"`

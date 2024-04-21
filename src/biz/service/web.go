@@ -1704,10 +1704,10 @@ func (s *WebService) validateOpenGateStatsRequest(req *web.UpsertOpenGateCameraS
 }
 
 func (s *WebService) UpsertOpenGateCameraStats(ctx context.Context, req *web.UpsertOpenGateCameraStatsRequest) (*web.UpsertOpenGateCameraStatsResponse, error) {
-	logger.SDebug("OpenGateCameraStats: upsert stats",
+	logger.SDebug("UpsertOpenGateCameraStats: upsert stats",
 		zap.Reflect("request", req))
 	if err := s.validateOpenGateStatsRequest(req); err != nil {
-		logger.SError("OpenGateCameraStats: validateOpenGateStatsRequest error",
+		logger.SError("UpsertOpenGateCameraStats: validateOpenGateStatsRequest error",
 			zap.Error(err))
 		return nil, err
 	}
@@ -1716,7 +1716,7 @@ func (s *WebService) UpsertOpenGateCameraStats(ctx context.Context, req *web.Ups
 	case err == nil:
 		patched := s.patchOpenGateCameraStats(currentStats, req)
 		if err := s.updateOpenGateCameraStats(ctx, patched); err != nil {
-			logger.SError("OpenGateCameraStats: updateOpenGateCameraStats error",
+			logger.SError("UpsertOpenGateCameraStats: updateOpenGateCameraStats error",
 				zap.Error(err))
 			return nil, err
 		}
@@ -1737,7 +1737,7 @@ func (s *WebService) UpsertOpenGateCameraStats(ctx context.Context, req *web.Ups
 			SkippedFPS:   req.SkippedFPS,
 		}
 		if err := s.addOpenGateCameraStats(ctx, &stats); err != nil {
-			logger.SError("OpenGateCameraStats: AddOpenGateCameraStats error",
+			logger.SError("UpsertOpenGateCameraStats: AddOpenGateCameraStats error",
 				zap.Error(err))
 			return nil, err
 		}
@@ -1745,7 +1745,7 @@ func (s *WebService) UpsertOpenGateCameraStats(ctx context.Context, req *web.Ups
 			CameraStatId: stats.CameraStatId,
 		}, nil
 	default:
-		logger.SError("OpenGateCameraStats: getOpenGateCameraStats error",
+		logger.SError("UpsertOpenGateCameraStats: getOpenGateCameraStats error",
 			zap.Error(err))
 		return nil, err
 	}
@@ -1832,51 +1832,123 @@ func (s *WebService) addOpenGateCameraStats(ctx context.Context, stats *db.OpenG
 	return nil
 }
 
-func (s *WebService) AddOpenGateDetectorStats(ctx context.Context, req *web.AddOpenGateDetectorsStatsRequest) (*web.AddOpenGateDetectorsStatsResponse, error) {
-	logger.SDebug("OpenGateDetectorStats: add stats", zap.Reflect("request", req))
+func (s *WebService) UpsertOpenGateDetectorStats(ctx context.Context, req *web.UpsertOpenGateDetectorsStatsRequest) (*web.UpsertOpenGateDetectorsStatsResponse, error) {
+	logger.SDebug("UpsertOpenGateDetectorStats: add stats", zap.Reflect("request", req))
 
 	err := s.validateAddOpenGateDetectorStatsRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
-	var entry db.OpenGateDetectorStats
-
-	entry.DetectorStatId = uuid.New()
-	entry.Timestamp = time.Now()
-
-	if err = copier.Copy(&entry, req); err != nil {
-		logger.SError("AddOpenGateDetectorStats: copier.Copy error", zap.Error(err))
+	currentStats, err := s.getOpenGateDetectorStats(ctx, req.TranscoderId, req.DetectorName)
+	switch {
+	case err == nil:
+		patched := s.patchOpenGateDetectorStats(currentStats, req)
+		if err := s.updateOpenGateDetectorStats(ctx, patched); err != nil {
+			logger.SError("UpsertOpenGateDetectorStats: updateOpenGateDetectorStats error", zap.Error(err))
+			return nil, err
+		}
+		return &web.UpsertOpenGateDetectorsStatsResponse{
+			DetectorStatId: currentStats.DetectorStatId,
+		}, nil
+	case errors.Is(err, custerror.ErrorNotFound):
+		stats := db.OpenGateDetectorStats{
+			DetectorStatId: uuid.New(),
+			DetectorName:   req.DetectorName,
+			TranscoderId:   req.TranscoderId,
+			Timestamp:      time.Now(),
+			DetectorStart:  req.DetectorStart,
+			InferenceSpeed: req.InferenceSpeed,
+			ProcessID:      req.ProcessID,
+		}
+		if err := s.addOpenGateDetectorStats(ctx, &stats); err != nil {
+			logger.SError("UpsertOpenGateDetectorStats: addOpenGateDetectorStats error", zap.Error(err))
+			return nil, err
+		}
+		return &web.UpsertOpenGateDetectorsStatsResponse{
+			DetectorStatId: stats.DetectorStatId,
+		}, nil
+	default:
+		logger.SError("UpsertOpenGateDetectorStats: getOpenGateDetectorStats error", zap.Error(err))
 		return nil, err
 	}
-
-	if err = s.addOpenGateDetectorStats(ctx, &entry); err != nil {
-		return nil, err
-	}
-
-	return &web.AddOpenGateDetectorsStatsResponse{
-		DetectorStatId: entry.DetectorStatId,
-	}, nil
 }
 
-func (s *WebService) validateAddOpenGateDetectorStatsRequest(req *web.AddOpenGateDetectorsStatsRequest) error {
+func (s *WebService) patchOpenGateDetectorStats(old *db.OpenGateDetectorStats, req *web.UpsertOpenGateDetectorsStatsRequest) *db.OpenGateDetectorStats {
+	new := old
+	if req.DetectorName != "" {
+		new.DetectorName = req.DetectorName
+	}
+	if req.TranscoderId != "" {
+		new.TranscoderId = req.TranscoderId
+	}
+	if req.DetectorStart > 0 {
+		new.DetectorStart = req.DetectorStart
+	}
+	if req.InferenceSpeed > 0 {
+		new.InferenceSpeed = req.InferenceSpeed
+	}
+	if req.ProcessID > 0 {
+		new.ProcessID = req.ProcessID
+	}
+	return new
+}
 
+func (s *WebService) validateAddOpenGateDetectorStatsRequest(req *web.UpsertOpenGateDetectorsStatsRequest) error {
 	if req.DetectorName == "" {
 		return custerror.FormatInvalidArgument("missing camera name")
 	}
-
 	if req.DetectorStart < 0 {
 		return custerror.FormatInvalidArgument("invalid detection start time")
 	}
-
 	if req.InferenceSpeed < 0 {
 		return custerror.FormatInvalidArgument("invalid inference speed")
 	}
-
 	if req.ProcessID <= 0 {
 		return custerror.FormatInvalidArgument("invalid PID")
 	}
+	return nil
+}
 
+func (s *WebService) getOpenGateDetectorStats(ctx context.Context, transcoderId string, detectorName string) (*db.OpenGateDetectorStats, error) {
+	q := s.builder.Select("*").
+		From("open_gate_detector_stats").
+		Where("transcoder_id = ?", transcoderId).
+		Where("detector_name = ?", detectorName).
+		OrderByClause("? DESC", "timestamp").
+		Limit(1)
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getOpenGateDetectorStats: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var stats []db.OpenGateDetectorStats
+	if err := s.db.Select(ctx, q, &stats); err != nil {
+		return nil, err
+	}
+
+	return &stats[0], nil
+}
+
+func (s *WebService) updateOpenGateDetectorStats(ctx context.Context, m *db.OpenGateDetectorStats) error {
+	valueMap := map[string]interface{}{}
+	fields := m.Fields()
+	values := m.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("open_gate_detector_stats").
+		Where("detector_stat_id = ?", m.DetectorStatId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateOpenGateDetectorStats: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
 	return nil
 }
 

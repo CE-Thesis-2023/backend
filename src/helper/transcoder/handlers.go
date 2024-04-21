@@ -182,7 +182,8 @@ func (p *transcoderEventProcessor) OpenGateStats(ctx context.Context, transcoder
 	go func() {
 		defer wg.Done()
 		for detectorName, detectorStats := range statStruct.Detectors {
-			_, err := p.webService.AddOpenGateDetectorStats(ctx, &web.AddOpenGateDetectorsStatsRequest{
+			_, err := p.webService.UpsertOpenGateDetectorStats(ctx, &web.UpsertOpenGateDetectorsStatsRequest{
+				TranscoderId:   transcoderId,
 				DetectorName:   detectorName,
 				DetectorStart:  detectorStats.DetectionStart,
 				InferenceSpeed: detectorStats.InferenceSpeed,

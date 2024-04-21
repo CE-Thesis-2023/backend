@@ -318,6 +318,7 @@ type UpsertOpenGateDetectorsStatsResponse struct {
 }
 
 type UpsertOpenGateDetectorsStatsRequest struct {
+	TranscoderId   string  `json:"transcoderId"`
 	DetectorName   string  `json:"detectName"`
 	DetectorStart  float64 `json:"detectorStart"`
 	InferenceSpeed float64 `json:"inferenceSpeed"`
