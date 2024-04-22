@@ -44,13 +44,22 @@ func (c *Configuration) build() error {
 	if err := c.buildAudio(); err != nil {
 		return err
 	}
+	if err := c.buildBirdseye(); err != nil {
+		return err
+	}
 	if err := c.buildLogger(); err != nil {
 		return err
 	}
 	if err := c.buildSnapshots(); err != nil {
 		return err
 	}
+	if err := c.buildFFmpeg(); err != nil {
+		return err
+	}
 	if err := c.buildCameras(); err != nil {
+		return err
+	}
+	if err := c.buildDetectors(); err != nil {
 		return err
 	}
 	return nil
@@ -74,10 +83,12 @@ func (c *Configuration) buildMQTTConfiguration() error {
 	mqtt := make(map[string]interface{})
 	mqtt["enabled"] = true
 	mqtt["host"] = c.mqtt.Host
-	mqtt["port"] = c.mqtt.Port
+	mqtt["port"] = 1883
 	mqtt["user"] = c.mqtt.Username
 	mqtt["password"] = c.mqtt.Password
-	mqtt["topic_prefix"] = fmt.Sprintf("opengate/%s", c.integration.OpenGateId)
+	mqtt["topic_prefix"] = fmt.Sprintf("opengate/%s", c.
+		integration.
+		TranscoderId)
 
 	c.c["mqtt"] = mqtt
 	return nil
@@ -102,10 +113,24 @@ func (c *Configuration) buildAudio() error {
 	return nil
 }
 
+func (c *Configuration) buildBirdseye() error {
+	birdseye := make(map[string]interface{})
+	birdseye["enabled"] = false
+	c.c["birdseye"] = birdseye
+	return nil
+}
+
 func (c *Configuration) buildLogger() error {
 	logger := make(map[string]interface{})
 	logger["default"] = c.integration.LogLevel
 	c.c["logger"] = logger
+	return nil
+}
+
+func (c *Configuration) buildFFmpeg() error {
+	ffmpeg := make(map[string]interface{})
+	ffmpeg["retry_interval"] = 10
+	c.c["ffmpeg"] = ffmpeg
 	return nil
 }
 
@@ -128,26 +153,51 @@ func (c *Configuration) buildCameras() error {
 		m := make(map[string]interface{})
 
 		ffmpeg := make(map[string]interface{})
+
 		inputs := make([]map[string]interface{}, 0, 1)
 		input := make(map[string]interface{})
 		input["path"] = c.mediaHelper.BuildRTSPSourceUrl(camera)
-		input["input_args"] = "preset-rtsp-generic"
-		input["output_args"] = "preset-rtsp-generic"
 		input["hwaccel_args"] = []string{"preset-vaapi"}
-		input["retry_interval"] = 10
 		input["roles"] = []string{"detect"}
 		inputs = append(inputs, input)
 		ffmpeg["inputs"] = inputs
+
+		ffmpeg["input_args"] = "preset-rtsp-generic"
 		m["ffmpeg"] = ffmpeg
+
+		zones := make(map[string]interface{})
+		defaultZone := make(map[string]interface{})
+		defaultZone["coordinates"] = fmt.Sprintf("%d,%d,%d,0,0,0,0,%d",
+			configs.Width,
+			configs.Height,
+			configs.Width,
+			configs.Height)
+		defaultZone["objects"] = []string{
+			"person",
+		}
+		zones["all"] = defaultZone
 
 		onvif := make(map[string]interface{})
 		onvif["host"] = camera.Ip
 		onvif["port"] = camera.Port
-		onvif["username"] = camera.Username
+		onvif["user"] = camera.Username
 		onvif["password"] = camera.Password
+		onvif["isapi_fallback"] = true
+
+		isapiSidecar := make(map[string]interface{})
+		isapiSidecar["host"] = "localhost"
+		isapiSidecar["port"] = 5600
+		onvif["isapi_sidecar"] = isapiSidecar
+
 		autotracking := make(map[string]interface{})
 		autotracking["enabled"] = true
 		autotracking["zooming"] = "disabled"
+		autotracking["track"] = []string{
+			"person",
+		}
+		autotracking["required_zones"] = []string{
+			"all",
+		}
 		onvif["autotracking"] = autotracking
 		m["onvif"] = onvif
 
@@ -162,11 +212,21 @@ func (c *Configuration) buildCameras() error {
 		mqtt["timestamp"] = configs.Timestamp
 		mqtt["bounding_box"] = configs.BoundingBox
 		mqtt["crop"] = configs.Crop
+		mqtt["required_zones"] = []string{"all"}
 		m["mqtt"] = mqtt
 
 		cameras[camera.OpenGateCameraName] = m
 	}
 
 	c.c["cameras"] = cameras
+	return nil
+}
+
+func (c *Configuration) buildDetectors() error {
+	detectors := make(map[string]interface{})
+	defaultDetector := make(map[string]interface{})
+	defaultDetector["type"] = "cpu"
+	detectors["default"] = defaultDetector
+	c.c["detectors"] = detectors
 	return nil
 }
