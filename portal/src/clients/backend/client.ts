@@ -245,6 +245,7 @@ export interface Snapshot {
     timestamp: string;
     transcoderId: string;
     openGateEventId: string;
+    detectedPersonId: string;
 }
 
 /**
@@ -257,6 +258,22 @@ export async function getSnapshots(snapshotIds: string[]): Promise<EventSnapshot
     if (snapshotIds.length > 0) {
         uri += '?snapshot_id=' + snapshotIds.join(',');
     }
+    const resp = await axiosClient.get(uri);
+    return resp.data;
+}
+
+interface PeopleImage {
+    presignedUrl: string;
+    expires: string;
+}
+
+/**
+ * Get people image
+ * @param imagePath Image path
+ * @returns People image
+ */
+export async function getPeopleImage(personId: string): Promise<PeopleImage> {
+    const uri = `/api/people/presigned?id=${personId}`;
     const resp = await axiosClient.get(uri);
     return resp.data;
 }

@@ -1,11 +1,10 @@
-// @ts-nocheck
 
 import { useParams } from "@solidjs/router";
 import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
-import { Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemButton, ListItemText, Paper, Switch as SWButton, Typography } from "@suid/material";
+import { Box, Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
 import dayjs from "dayjs";
-import { Component, For, Match, Switch, createResource } from "solid-js";
-import { ObjectTrackingEvent, Snapshot, getCameraStreamInfo, getCameras, getObjectTrackingEvents, getSnapshots } from "../../clients/backend/client";
+import { Component, For, Match, Switch, createResource, createSignal } from "solid-js";
+import { ObjectTrackingEvent, Snapshot, getCameraStreamInfo, getCameras, getObjectTrackingEvents, getPeople, getPeopleImage, getSnapshots } from "../../clients/backend/client";
 
 async function fetchCameraData(cameraId: string) {
     const response = await getCameras([cameraId]);
@@ -40,7 +39,6 @@ async function fetchCameraEvents(cameraId: string) {
     for (let i = 0; i < events.length; i++) {
         const snapshot = snapshotMap.get(events[i].snapshotId);
         if (snapshot) {
-            console.log(snapshots.presignedUrl)
             eventsWithSnapshots.push({
                 event: events[i],
                 snapshot: snapshot,
@@ -56,6 +54,11 @@ export const CameraViewerPage: Component = () => {
     const routeParams = useParams();
     const [data, { refetch }] = createResource(routeParams.cameraId, fetchCameraData);
     const [events, { refetch: eventRefetch }] = createResource(routeParams.cameraId, fetchCameraEvents);
+
+    const [modalOpen, setModalOpen] = createSignal(false);
+    const handleOpen = () => setModalOpen(true);
+    const handleClose = () => setModalOpen(false);
+    const [currentItem, setCurrentItem] = createSignal<CameraEvent | null>(null);
 
     return <Switch>
         <Match when={data.loading}>
@@ -93,7 +96,10 @@ export const CameraViewerPage: Component = () => {
                         <List>
                             <For each={events()}>
                                 {event => <>
-                                    <EventItem event={event} />
+                                    <EventItem event={event} onClick={(item: CameraEvent) => {
+                                        setCurrentItem(item);
+                                        handleOpen();
+                                    }} />
                                     <Divider />
                                 </>}
                             </For>
@@ -119,20 +125,33 @@ export const CameraViewerPage: Component = () => {
                         </div>
                     </Paper>
                 </div>
+                {currentItem() ?
+                    <EventInfoModal isOpen={modalOpen()} onClose={handleClose} data={currentItem()!} />
+                    : null}
             </div>
         </Match>
     </Switch>
 }
 
-const EventItem: Component<{ event: CameraEvent }> = (props) => {
-    console.log(props.event);
+const EventItem: Component<{ event: CameraEvent, onClick: (item: CameraEvent) => void }> = (props) => {
+    const currentTime = props.event.event.endTime ?
+        dayjs(props.event.event.endTime).second() :
+        dayjs(Date.now()).second();
+    const duration = currentTime - dayjs(props.event.event.startTime).second();
     return <>
-        <ListItemButton>
+        <ListItemButton onClick={() => {
+            props.onClick(props.event);
+        }}>
+            <ListItemAvatar class="mr-2">
+                <img src={props.event.presignedUrl} alt="Snapshot" class="w-16 h-16" />
+            </ListItemAvatar>
             <ListItemText primary={
-                <div class="flex flex-row justify-between items-center">
+                <div class="flex flex-row justify-between items-center mb-2">
                     {"Person detected"}
-                    <div class="flex flex-row justify-start items-center">
+                    <div class="flex flex-row justify-start items-center gap-2">
                         {props.event.event.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
+                        {props.event.snapshot.detectedPersonId ? <Chip label="Face" color="primary" /> : null}
+                        <Typography variant="body2">{`Duration: ${currentTime - duration}s`}</Typography>
                     </div>
                 </div>
             } secondary={
@@ -145,4 +164,85 @@ const EventItem: Component<{ event: CameraEvent }> = (props) => {
             } />
         </ListItemButton>
     </>
+}
+
+interface EventInfoModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    data: CameraEvent;
+}
+
+interface DetectablePerson {
+    personId: string;
+    name: string;
+    age: string;
+    presignedUrl: string;
+}
+
+async function fetchDetectablePerson(personId: string) {
+    if (personId.length > 0) {
+        const person = await getPeople([personId]);
+        let p: DetectablePerson = {
+            personId: person[0].personId,
+            name: person[0].name,
+            age: person[0].age,
+            presignedUrl: ""
+        };
+        if (person.length > 0) {
+            const presignedUrl = await getPeopleImage(personId);
+            p.presignedUrl = presignedUrl.presignedUrl;
+        }
+        return p;
+    }
+    return null;
+}
+
+const EventInfoModal = (props: EventInfoModalProps) => {
+    const [detectablePerson] = createResource(props.data.snapshot.detectedPersonId, fetchDetectablePerson);
+    return <Modal sx={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+    }} open={props.isOpen} onClose={props.onClose}>
+        <Paper class="p-8">
+            <Box>
+                <img src={props.data.presignedUrl} alt="Snapshot" class="block h-96 w-auto" />
+            </Box>
+            <Box class="mt-4">
+                <div class="flex flex-row justify-between items-center">
+                    <Typography variant="h6">Event Information</Typography>
+                    <div class="flex flex-row gap-2">
+                        {props.data.snapshot.detectedPersonId ? <Chip label="Face" color="primary" /> : <Chip label="No face" />}
+                    </div>
+                </div>
+                <Typography variant="body2">{dayjs(props.data.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}</Typography>
+                <div class="flex flex-row gap-4 justify-between items-center mt-4">
+                    <div>
+                        <Typography variant="body1">Score: {props.data.event.score}</Typography>
+                    </div>
+                    <div>
+                        {(props.data.event.endTime == null || props.data.event.endTime == "") ?
+                            <Chip label="Ongoing" color="success" /> :
+                            <Chip label="Ended" color="secondary" />}
+                    </div>
+                </div>
+                <Typography variant="body2" class="mt-4">Snapshot ID: {props.data.snapshot.snapshotId}</Typography>
+                <Typography variant="body2">Event ID: {props.data.event.eventId}</Typography>
+                {detectablePerson() ?
+                    <div class="flex flex-row gap-4 justify-between items-center mt-4">
+                        <div>
+                            <img src={detectablePerson()!.presignedUrl} alt="Person" class="block h-32 w-auto" />
+                        </div>
+                        <div>
+                            <Typography variant="body1">Person Information</Typography>
+                            <Typography variant="body2">Name: {detectablePerson()!.name}</Typography>
+                            <Typography variant="body2">Age: {detectablePerson()!.age}</Typography>
+                            <Typography variant="body2">Person ID: {detectablePerson()!.personId}</Typography>
+                        </div>
+                    </div> : null}
+            </Box>
+        </Paper>
+    </Modal>
 }
