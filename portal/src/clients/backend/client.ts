@@ -189,7 +189,7 @@ export interface ObjectTrackingEvent {
     openGateEventId: string;
     eventType: string;
     cameraId: string;
-    cameraName: string;
+    CameraName: string;
     frameTime: string;
     label: string;
     topScore: number;
@@ -232,4 +232,8 @@ export interface AddCameraParams {
  */
 export async function addCamera(camera: AddCameraParams): Promise<void> {
     await axiosClient.post('/api/cameras', camera);
+}
+
+export interface EventSnapshot {
+    
 }

@@ -2371,26 +2371,62 @@ func (s *WebService) GetSnapshotPresignedUrl(ctx context.Context, req *web.GetSn
 		return nil, err
 	}
 
-	url, err := s.MediaHelper.GetPresignedUrl(
-		ctx,
-		&media.GetPresignedUrlRequest{
-			Path: req.SnapshotId,
-			Type: media.AssetsTypeSnapshot,
-		})
+	snapshots, err := s.getSnapshotById(ctx, req.SnapshotId)
 	if err != nil {
-		logger.SError("GetSnapshotPresignedUrl: getPresignedUrl",
-			zap.Error(err))
+		logger.SError("GetSnapshotPresignedUrl: getSnapshotById", zap.Error(err))
 		return nil, err
 	}
 
+	presignedUrl := make(map[string]string)
+	for _, snap := range snapshots {
+		url, err := s.MediaHelper.GetPresignedUrl(
+			ctx,
+			&media.GetPresignedUrlRequest{
+				Path: snap.SnapshotId,
+				Type: media.AssetsTypeSnapshot,
+			})
+		if err != nil {
+			logger.SError("GetSnapshotPresignedUrl: getPresignedUrl",
+				zap.Error(err))
+			return nil, err
+		}
+		presignedUrl[snap.SnapshotId] = url
+	}
+
 	return &web.GetSnapshotPresignedUrlResponse{
-		SnapshotId:   req.SnapshotId,
-		PresignedUrl: url,
+		PresignedUrl: presignedUrl,
+		Snapshots:    snapshots,
 	}, nil
 }
 
+func (s *WebService) getSnapshotById(ctx context.Context, ids []string) ([]db.Snapshot, error) {
+	q := s.builder.Select("*").
+		From("snapshots")
+
+	if len(ids) > 0 {
+		or := squirrel.Or{}
+		for _, i := range ids {
+			or = append(or, squirrel.Eq{"snapshot_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getSnapshotById: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var snapshots []db.Snapshot
+	if err := s.db.Select(ctx, q, &snapshots); err != nil {
+		return nil, err
+	}
+
+	return snapshots, nil
+
+}
+
 func (s *WebService) validateGetSnapshotPresignedUrlRequest(req *web.GetSnapshotPresignedUrlRequest) error {
-	if req.SnapshotId == "" {
+	if len(req.SnapshotId) == 0 {
 		return custerror.FormatInvalidArgument("missing snapshot id")
 	}
 	return nil

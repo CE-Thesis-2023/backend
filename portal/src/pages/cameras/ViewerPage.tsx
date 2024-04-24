@@ -1,8 +1,9 @@
 import { useParams } from "@solidjs/router";
 import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
-import { Button, CircularProgress, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, Paper, Switch as SWButton, Typography } from "@suid/material";
+import { Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemButton, ListItemText, Paper, Switch as SWButton, Typography } from "@suid/material";
+import dayjs from "dayjs";
 import { Component, For, Match, Switch, createResource } from "solid-js";
-import { getCameraStreamInfo, getCameras } from "../../clients/backend/client";
+import { ObjectTrackingEvent, getCameraStreamInfo, getCameras, getObjectTrackingEvents } from "../../clients/backend/client";
 
 async function fetchCameraData(cameraId: string) {
     const response = await getCameras([cameraId]);
@@ -14,8 +15,13 @@ async function fetchCameraData(cameraId: string) {
     };
 }
 
+interface CameraEvent {
+    event: ObjectTrackingEvent;
+}
+
 async function fetchCameraEvents(cameraId: string) {
-    return [];
+    const events = await getObjectTrackingEvents([]);
+    return events;
 }
 
 export const CameraViewerPage: Component = () => {
@@ -56,9 +62,14 @@ export const CameraViewerPage: Component = () => {
                         </div>
                     </Paper>
                     <Paper sx={{ width: '100%', height: "100%" }}>
-                        <For each={events()}>
-                            {event => <div>{event}</div>}
-                        </For>
+                        <List>
+                            <For each={events()}>
+                                {event => <>
+                                    <EventItem event={event} />
+                                    <Divider />
+                                </>}
+                            </For>
+                        </List>
                     </Paper>
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }} class="flex flex-row gap-4">
                         <div class="flex flex-row gap-4 flex-1">
@@ -83,4 +94,27 @@ export const CameraViewerPage: Component = () => {
             </div>
         </Match>
     </Switch>
+}
+
+const EventItem: Component<{ event: ObjectTrackingEvent }> = (props) => {
+    console.log(props.event);
+    return <>
+        <ListItemButton>
+            <ListItemText primary={
+                <div class="flex flex-row justify-between items-center">
+                    {"Person detected"}
+                    <div class="flex flex-row justify-start items-center">
+                        {props.event.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
+                    </div>
+                </div>
+            } secondary={
+                <div class="flex flex-row justify-between items-center">
+                    <Typography variant="body2">
+                        {`Score: ${Math.round(props.event.score * 100) / 100}`}
+                    </Typography>
+                    {`${dayjs(props.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}`}
+                </div>
+            } />
+        </ListItemButton>
+    </>
 }

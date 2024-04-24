@@ -372,12 +372,12 @@ type GetLatestOpenGateStatsResponse struct {
 }
 
 type GetSnapshotPresignedUrlRequest struct {
-	SnapshotId string `json:"snapShortId"`
+	SnapshotId []string `json:"snapshotId"`
 }
 
 type GetSnapshotPresignedUrlResponse struct {
-	SnapshotId   string `json:"snapshotId"`
-	PresignedUrl string `json:"presignedUrl"`
+	Snapshots    []db.Snapshot     `json:"snapshot"`
+	PresignedUrl map[string]string `json:"presignedUrl"`
 }
 
 type UpsertSnapshotRequest struct {
