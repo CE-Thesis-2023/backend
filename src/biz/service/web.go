@@ -1818,6 +1818,9 @@ func (s *WebService) getOpenGateCameraStats(ctx context.Context, transcoderId st
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}
+	if len(stats) == 0 {
+		return nil, custerror.FormatNotFound("camera stats not found")
+	}
 
 	return &stats[0], nil
 }
@@ -1926,6 +1929,9 @@ func (s *WebService) getOpenGateDetectorStats(ctx context.Context, transcoderId 
 	var stats []db.OpenGateDetectorStats
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
+	}
+	if len(stats) == 0 {
+		return nil, custerror.FormatNotFound("detector stats not found")
 	}
 
 	return &stats[0], nil
