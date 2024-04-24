@@ -1495,7 +1495,8 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 
 func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []string, openGateIds []string) ([]db.ObjectTrackingEvent, error) {
 	q := s.builder.Select("*").
-		From("object_tracking_events")
+		From("object_tracking_events").
+		OrderBy("frame_time DESC")
 
 	if len(ids) > 0 {
 		or := squirrel.Or{}

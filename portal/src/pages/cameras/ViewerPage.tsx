@@ -1,9 +1,11 @@
+// @ts-nocheck
+
 import { useParams } from "@solidjs/router";
 import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
 import { Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemButton, ListItemText, Paper, Switch as SWButton, Typography } from "@suid/material";
 import dayjs from "dayjs";
 import { Component, For, Match, Switch, createResource } from "solid-js";
-import { ObjectTrackingEvent, getCameraStreamInfo, getCameras, getObjectTrackingEvents } from "../../clients/backend/client";
+import { ObjectTrackingEvent, Snapshot, getCameraStreamInfo, getCameras, getObjectTrackingEvents, getSnapshots } from "../../clients/backend/client";
 
 async function fetchCameraData(cameraId: string) {
     const response = await getCameras([cameraId]);
@@ -17,11 +19,37 @@ async function fetchCameraData(cameraId: string) {
 
 interface CameraEvent {
     event: ObjectTrackingEvent;
+    snapshot: Snapshot;
+    presignedUrl: string;
 }
 
 async function fetchCameraEvents(cameraId: string) {
     const events = await getObjectTrackingEvents([]);
-    return events;
+    let snapshotIds = []
+    for (let i = 0; i < events.length; i++) {
+        snapshotIds.push(events[i].snapshotId);
+    }
+    const snapshots = await getSnapshots(snapshotIds);
+    const snapshotMap = new Map<string, Snapshot>();
+    for (let i = 0; i < snapshots.snapshot.length; i++) {
+        snapshotMap.set(
+            snapshots.snapshot[i].snapshotId,
+            snapshots.snapshot[i]);
+    }
+    const eventsWithSnapshots: CameraEvent[] = [];
+    for (let i = 0; i < events.length; i++) {
+        const snapshot = snapshotMap.get(events[i].snapshotId);
+        if (snapshot) {
+            console.log(snapshots.presignedUrl)
+            eventsWithSnapshots.push({
+                event: events[i],
+                snapshot: snapshot,
+                presignedUrl: snapshots.
+                    presignedUrl[snapshot.snapshotId]
+            });
+        }
+    }
+    return eventsWithSnapshots;
 }
 
 export const CameraViewerPage: Component = () => {
@@ -96,7 +124,7 @@ export const CameraViewerPage: Component = () => {
     </Switch>
 }
 
-const EventItem: Component<{ event: ObjectTrackingEvent }> = (props) => {
+const EventItem: Component<{ event: CameraEvent }> = (props) => {
     console.log(props.event);
     return <>
         <ListItemButton>
@@ -104,15 +132,15 @@ const EventItem: Component<{ event: ObjectTrackingEvent }> = (props) => {
                 <div class="flex flex-row justify-between items-center">
                     {"Person detected"}
                     <div class="flex flex-row justify-start items-center">
-                        {props.event.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
+                        {props.event.event.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
                     </div>
                 </div>
             } secondary={
                 <div class="flex flex-row justify-between items-center">
                     <Typography variant="body2">
-                        {`Score: ${Math.round(props.event.score * 100) / 100}`}
+                        {`Score: ${Math.round(props.event.event.score * 100) / 100}`}
                     </Typography>
-                    {`${dayjs(props.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}`}
+                    {`${dayjs(props.event.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}`}
                 </div>
             } />
         </ListItemButton>

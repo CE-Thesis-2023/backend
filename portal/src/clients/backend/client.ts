@@ -200,6 +200,7 @@ export interface ObjectTrackingEvent {
     falsePositive: boolean;
     startTime: string;
     endTime: string;
+    snapshotId: string;
 }
 
 /**
@@ -235,5 +236,27 @@ export async function addCamera(camera: AddCameraParams): Promise<void> {
 }
 
 export interface EventSnapshot {
-    
+    snapshot: Snapshot[];
+    presignedUrl: Object;
+}
+
+export interface Snapshot {
+    snapshotId: string;
+    timestamp: string;
+    transcoderId: string;
+    openGateEventId: string;
+}
+
+/**
+ * Get snapshots
+ * @param snapshotIds Snapshot IDs
+ * @returns Snapshots
+ */
+export async function getSnapshots(snapshotIds: string[]): Promise<EventSnapshot> {
+    let uri = "/api/snapshots";
+    if (snapshotIds.length > 0) {
+        uri += '?snapshot_id=' + snapshotIds.join(',');
+    }
+    const resp = await axiosClient.get(uri);
+    return resp.data;
 }

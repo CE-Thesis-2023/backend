@@ -430,7 +430,7 @@ type Snapshot struct {
 	Timestamp        time.Time `json:"timestamp" db:"timestamp"`
 	TranscoderId     string    `json:"transcoderId" db:"transcoder_id"`
 	OpenGateEventId  string    `json:"openGateEventId" db:"open_gate_event_id" gorm:"index"`
-	DetectedPeopleId *string   `json:"detectedPeopleId,omitempty" db:"detected_people_id"`
+	DetectedPeopleId *string   `json:"detectedPeopleId" db:"detected_people_id"`
 }
 
 func (t *Snapshot) Fields() []string {
