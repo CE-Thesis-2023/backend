@@ -2029,7 +2029,9 @@ func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context) (*db.Op
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}
-
+	if len(stats) == 0 {
+		return nil, custerror.FormatNotFound("detector stats not found")
+	}
 	return &stats[0], nil
 }
 

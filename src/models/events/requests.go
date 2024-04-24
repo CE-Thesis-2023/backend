@@ -21,9 +21,10 @@ type UpdateCameraListResponse struct {
 }
 
 type DetectionEvent struct {
-	Type   string               `json:"type"`
-	Before DetectionEventStatus `json:"before"`
-	After  DetectionEventStatus `json:"after"`
+	Type     string               `json:"type"`
+	Before   DetectionEventStatus `json:"before"`
+	After    DetectionEventStatus `json:"after"`
+	Snapshot string               `json:"snapshot,omitempty"`
 }
 
 type DetectionEventStatus struct {
@@ -52,7 +53,6 @@ type DetectionEventStatus struct {
 	PositionChanges   int64                     `json:"position_changes"`
 	Attributes        ObjectFeatures            `json:"attributes"`
 	CurrentAttributes []ObjectCurrentAttributes `json:"current_attributes"`
-	Base64Image       string                    `json:"base64_image"`
 }
 
 type ObjectFeatures map[string]float64

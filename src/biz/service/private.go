@@ -234,15 +234,13 @@ func (s *PrivateService) validateAddObjectTrackingEventRequest(req *web.AddObjec
 }
 
 func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.AddObjectTrackingEventRequest) (*web.AddObjectTrackingEventResponse, error) {
-	logger.SInfo("commandService.AddEvent: request", zap.Any("request", req))
-
 	if err := s.validateAddObjectTrackingEventRequest(req); err != nil {
 		logger.SDebug("AddEvent: validateAddObjectTrackingEventRequest", zap.Error(err))
 		return nil, err
 	}
 
 	before := req.Event.Before
-	cameras, err := s.webService.getCamerasByTranscoderId(ctx, "", []string{before.Camera})
+	cameras, err := s.webService.getCamerasByTranscoderId(ctx, req.TranscoderId, []string{before.Camera})
 	if err != nil {
 		logger.SDebug("AddEvent: getCamerasByTranscoderId", zap.Error(err))
 		return nil, err
@@ -262,14 +260,23 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 		return nil, err
 	}
 
+	if req.Event.Snapshot != "" {
+		if err := s.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
+			RawImage:        "data:image/jpeg;base64," + req.Event.Snapshot,
+			TranscoderId:    req.TranscoderId,
+			OpenGateEventId: dbEvent.EventId,
+		}); err != nil {
+			logger.SDebug("AddEvent: upsertSnapshot", zap.Error(err))
+			return nil, err
+		}
+	}
+
 	return &web.AddObjectTrackingEventResponse{
 		EventId: dbEvent.EventId,
 	}, nil
 }
 
 func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
-	logger.SInfo("commandService.UpdateEvent: request", zap.Any("request", req))
-
 	objectTrackingEvent, err := s.webService.getObjectTrackingEventById(
 		ctx, []string{req.EventId}, nil)
 	if err != nil {
@@ -295,6 +302,17 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 	if err := s.webService.updateObjectTrackingEvent(ctx, event); err != nil {
 		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
 		return err
+	}
+
+	if req.Event.Snapshot != "" {
+		if err := s.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
+			RawImage:        "data:image/jpeg;base64," + req.Event.Snapshot,
+			OpenGateEventId: event.EventId,
+			TranscoderId:    req.TranscoderId,
+		}); err != nil {
+			logger.SDebug("UpdateEvent: upsertSnapshot", zap.Error(err))
+			return err
+		}
 	}
 
 	return nil

@@ -40,7 +40,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 	case "new":
 		logger.SInfo("new detection",
 			zap.String("transcoderId", transcoderId))
-		if err := p.addObjectTrackingEvent(ctx, &detectionEvent); err != nil {
+		if err := p.addObjectTrackingEvent(ctx, transcoderId, &detectionEvent); err != nil {
 			logger.SError("failed to add event to database",
 				zap.Error(err))
 			return err
@@ -48,7 +48,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 	case "update":
 		logger.SInfo("detection update",
 			zap.String("transcoderId", transcoderId))
-		if err := p.updateObjectTrackingEventInDatabase(ctx, &detectionEvent); err != nil {
+		if err := p.updateObjectTrackingEventInDatabase(ctx, transcoderId, &detectionEvent); err != nil {
 			logger.SError("failed to update event in database",
 				zap.Error(err))
 			return err
@@ -56,7 +56,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 	case "end":
 		logger.SInfo("detection end",
 			zap.String("transcoderId", transcoderId))
-		if err := p.updateObjectTrackingEventInDatabase(ctx, &detectionEvent); err != nil {
+		if err := p.updateObjectTrackingEventInDatabase(ctx, transcoderId, &detectionEvent); err != nil {
 			logger.SError("failed to update event in database",
 				zap.Error(err))
 			return err
@@ -69,9 +69,7 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 	return nil
 }
 
-func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, req *events.DetectionEvent) error {
-	logger.SDebug("processor.addObjectTrackingEvent", zap.Reflect("req", req))
-
+func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, transcoderId string, req *events.DetectionEvent) error {
 	resp, err := p.webService.GetObjectTrackingEventById(ctx, &web.GetObjectTrackingEventByIdRequest{
 		OpenGateEventId: []string{req.Before.ID},
 	})
@@ -84,7 +82,8 @@ func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, r
 	}
 
 	addResp, err := p.privateService.AddObjectTrackingEvent(ctx, &web.AddObjectTrackingEventRequest{
-		Event: req,
+		TranscoderId: transcoderId,
+		Event:        req,
 	})
 	if err != nil {
 		return err
@@ -95,7 +94,7 @@ func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, r
 	return nil
 }
 
-func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx context.Context, req *events.DetectionEvent) error {
+func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx context.Context, transcoderId string, req *events.DetectionEvent) error {
 	logger.SDebug("processor.updateEventInDatabase", zap.Reflect("req", req))
 
 	resp, err := p.webService.GetObjectTrackingEventById(ctx, &web.GetObjectTrackingEventByIdRequest{
@@ -110,8 +109,9 @@ func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx conte
 	}
 
 	err = p.privateService.UpdateObjectTrackingEvent(ctx, &web.UpdateObjectTrackingEventRequest{
-		EventId: resp.ObjectTrackingEvents[0].EventId,
-		Event:   req,
+		EventId:      resp.ObjectTrackingEvents[0].EventId,
+		TranscoderId: transcoderId,
+		Event:        req,
 	})
 	if err != nil {
 		return err

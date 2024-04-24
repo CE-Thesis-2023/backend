@@ -6,5 +6,13 @@
     "terminal.integrated.env.linux": {
         "GRAALVM_HOME": "/home/ntran/.sdkman/candidates/java/21.0.2-graal"
     },
-    "java.home": "/home/ntran/.sdkman/candidates/java/21.0.2-graal"
+    "java.home": "/home/ntran/.sdkman/candidates/java/21.0.2-graal",
+    "vsmqtt.brokerProfiles": [
+        {
+            "name": "ntranlab",
+            "host": "mosquitto.mqtt.ntranlab.com",
+            "port": 1883,
+            "clientId": "vsmqtt_client_5cc1"
+        }
+    ]
 }

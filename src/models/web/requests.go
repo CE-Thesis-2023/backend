@@ -240,7 +240,8 @@ type GetObjectTrackingEventByIdResponse struct {
 }
 
 type AddObjectTrackingEventRequest struct {
-	Event *events.DetectionEvent `json:"event"`
+	TranscoderId string                 `json:"transcoderId"`
+	Event        *events.DetectionEvent `json:"event"`
 }
 
 type AddObjectTrackingEventResponse struct {
@@ -248,8 +249,9 @@ type AddObjectTrackingEventResponse struct {
 }
 
 type UpdateObjectTrackingEventRequest struct {
-	EventId string                 `json:"eventId"`
-	Event   *events.DetectionEvent `json:"event"`
+	TranscoderId string                 `json:"transcoderId"`
+	EventId      string                 `json:"eventId"`
+	Event        *events.DetectionEvent `json:"event"`
 }
 
 type UpdateObjectTrackingEventResponse struct {

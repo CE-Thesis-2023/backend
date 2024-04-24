@@ -357,6 +357,7 @@ func (t *OpenGateCameraStats) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
 		"camera_stat_id",
+		"transcoder_id",
 		"camera_name",
 		"camera_fps",
 		"detection_fps",
@@ -373,6 +374,7 @@ func (t *OpenGateCameraStats) Values() []interface{} {
 	vs := []interface{}{}
 	vs = append(vs,
 		t.CameraStatId,
+		t.TranscoderId,
 		t.CameraName,
 		t.CameraFPS,
 		t.DetectionFPS,
@@ -400,6 +402,7 @@ func (t *OpenGateDetectorStats) Fields() []string {
 	fs = append(fs,
 		"detector_stat_id",
 		"detector_name",
+		"transcoder_id",
 		"detector_start",
 		"inference_speed",
 		"process_id",
@@ -413,6 +416,7 @@ func (t *OpenGateDetectorStats) Values() []interface{} {
 	vs = append(vs,
 		t.DetectorStatId,
 		t.DetectorName,
+		t.TranscoderId,
 		t.DetectorStart,
 		t.InferenceSpeed,
 		t.ProcessID,
