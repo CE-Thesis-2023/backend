@@ -121,7 +121,6 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	switch event.Type {
 	case OPENGATE_EVENTS:
 		logger.SInfo("TranscoderActor received opengate event",
-			zap.String("payload", string(payload)),
 			zap.String("transcoderId", event.TranscoderId))
 		if err := a.handler.OpenGateObjectTrackingEvent(timeOutCtx, event.TranscoderId, payload); err != nil {
 			logger.SError("unable to process opengate event",

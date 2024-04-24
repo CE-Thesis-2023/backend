@@ -581,7 +581,35 @@ func GetDetectablePersonPresignedUrl(ctx *gin.Context) {
 func GetLatestOpenGateCameraStats(ctx *gin.Context) {
 	logger.SDebug("GetStats: request")
 
-	resp, err := service.GetWebService().GetLatestOpenGateCameraStats(ctx)
+	transcoderId := ctx.Query("transcoder_id")
+	if len(transcoderId) == 0 {
+		custhttp.ToHTTPErr(
+			custerror.FormatInvalidArgument("missing transcoder_id"),
+			ctx)
+		return
+	}
+
+	cameraName := ctx.Query("camera_name")
+	if len(cameraName) == 0 {
+		custhttp.ToHTTPErr(
+			custerror.FormatInvalidArgument("missing camera_name"),
+			ctx)
+		return
+	}
+	names := strings.Split(cameraName, ",")
+	if len(names) == 0 {
+		custhttp.ToHTTPErr(
+			custerror.FormatInvalidArgument("missing camera_name"),
+			ctx)
+		return
+	}
+
+	resp, err := service.
+		GetWebService().
+		GetLatestOpenGateCameraStats(ctx, &web.GetLatestOpenGateCameraStatsRequest{
+			TranscoderId: transcoderId,
+			CameraNames:  names,
+		})
 	if err != nil {
 		custhttp.ToHTTPErr(err, ctx)
 		return

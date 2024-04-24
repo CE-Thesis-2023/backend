@@ -1974,32 +1974,60 @@ func (s *WebService) addOpenGateDetectorStats(ctx context.Context, stats *db.Ope
 	return nil
 }
 
-func (s *WebService) GetLatestOpenGateCameraStats(ctx context.Context) (*web.GetLatestOpenGateStatsResponse, error) {
+func (s *WebService) GetLatestOpenGateCameraStats(ctx context.Context, req *web.GetLatestOpenGateCameraStatsRequest) (*web.GetLatestOpenGateStatsResponse, error) {
 	logger.SDebug("GetLatestOpenGateCameraStats: request")
 
-	cameraStats, err := s.getLatestOpenGateCameraStats(ctx)
+	if err := s.validateGetLatestOpenGateCameraStats(req); err != nil {
+		logger.SError("GetLatestOpenGateCameraStats: validateGetLatestOpenGateCameraStats error", zap.Error(err))
+		return nil, err
+	}
+
+	cameraStats, err := s.getLatestOpenGateCameraStats(ctx, req.TranscoderId, req.CameraNames)
 	if err != nil {
 		logger.SError("GetLatestOpenGateCameraStats: getLatestOpenGateCameraStats error", zap.Error(err))
 		return nil, err
 	}
 
-	detectorStats, err := s.getLatestOpenGateDetectorStats(ctx)
+	detectorStats, err := s.getLatestOpenGateDetectorStats(ctx, req.TranscoderId)
 	if err != nil {
 		logger.SError("GetLatestOpenGateCameraStats: getLatestOpenGateDetectorStats error", zap.Error(err))
 		return nil, err
 	}
 
 	return &web.GetLatestOpenGateStatsResponse{
-		CameraStats:   *cameraStats,
-		DetectorStats: *detectorStats,
+		CameraStats:   cameraStats,
+		DetectorStats: detectorStats,
 	}, nil
 }
 
-func (s *WebService) getLatestOpenGateCameraStats(ctx context.Context) (*db.OpenGateCameraStats, error) {
+func (s *WebService) validateGetLatestOpenGateCameraStats(req *web.GetLatestOpenGateCameraStatsRequest) error {
+	if req.TranscoderId == "" {
+		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	if req.CameraNames == nil {
+		return custerror.FormatInvalidArgument("missing camera names")
+	}
+	if len(req.CameraNames) == 0 {
+		return custerror.FormatInvalidArgument("missing camera names")
+	}
+	return nil
+}
+
+func (s *WebService) getLatestOpenGateCameraStats(ctx context.Context, transcoderId string, names []string) ([]db.OpenGateCameraStats, error) {
 	q := s.builder.Select("*").
 		From("open_gate_camera_stats").
 		OrderByClause("? DESC", "timestamp").
 		Limit(1)
+	if transcoderId != "" {
+		q = q.Where("transcoder_id = ?", transcoderId)
+	}
+	if len(names) > 0 {
+		or := squirrel.Or{}
+		for _, n := range names {
+			or = append(or, squirrel.Eq{"camera_name": n})
+		}
+		q = q.Where(or)
+	}
 
 	sql, args, _ := q.ToSql()
 	logger.SDebug("getOpenGateCameraStats: SQL",
@@ -2011,12 +2039,13 @@ func (s *WebService) getLatestOpenGateCameraStats(ctx context.Context) (*db.Open
 		return nil, err
 	}
 
-	return &stats[0], nil
+	return stats, nil
 }
 
-func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context) (*db.OpenGateDetectorStats, error) {
+func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context, transcoderId string) ([]db.OpenGateDetectorStats, error) {
 	q := s.builder.Select("*").
 		From("open_gate_detector_stats").
+		Where("transcoder_id = ?", transcoderId).
 		OrderByClause("? DESC", "timestamp").
 		Limit(1)
 
@@ -2029,10 +2058,7 @@ func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context) (*db.Op
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}
-	if len(stats) == 0 {
-		return nil, custerror.FormatNotFound("detector stats not found")
-	}
-	return &stats[0], nil
+	return stats, nil
 }
 
 func (s *WebService) DeleteOpengateCameraStats(ctx context.Context) error {
@@ -2464,17 +2490,28 @@ func (s *WebService) updateEventSnapshotReference(ctx context.Context, openGateE
 		return nil
 	}
 	event := events[0]
-	if event.SnapshotId != nil {
-		if *event.SnapshotId != snapshotId {
-			event.SnapshotId = &snapshotId
-			if err := s.updateObjectTrackingEvent(ctx, &event); err != nil {
-				logger.SError("updateEventSnapshotReference: updateEvent",
-					zap.Error(err))
-				return err
-			}
+	if event.SnapshotId == nil {
+		event.SnapshotId = &snapshotId
+		if err := s.updateObjectTrackingEvent(ctx, &event); err != nil {
+			logger.SError("updateEventSnapshotReference: updateEvent", zap.Error(err))
+			return err
 		}
+		logger.SInfo("updateEventSnapshotReference: event updated",
+			zap.String("openGateEventId", openGateEventId))
+		return nil
 	}
-	return err
+	if *event.SnapshotId != snapshotId {
+		event.SnapshotId = &snapshotId
+		if err := s.updateObjectTrackingEvent(ctx, &event); err != nil {
+			logger.SError("updateEventSnapshotReference: updateEvent",
+				zap.Error(err))
+			return err
+		}
+		logger.SInfo("updateEventSnapshotReference: event updated",
+			zap.String("openGateEventId", openGateEventId))
+		return nil
+	}
+	return nil
 }
 
 func (s *WebService) validateUpsertSnapshot(req *web.UpsertSnapshotRequest) error {

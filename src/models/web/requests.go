@@ -367,8 +367,8 @@ type DeleteDetectablePersonRequest struct {
 }
 
 type GetLatestOpenGateStatsResponse struct {
-	CameraStats   db.OpenGateCameraStats   `json:"cameraStats"`
-	DetectorStats db.OpenGateDetectorStats `json:"detectorStats"`
+	CameraStats   []db.OpenGateCameraStats   `json:"cameraStats"`
+	DetectorStats []db.OpenGateDetectorStats `json:"detectorStats"`
 }
 
 type GetSnapshotPresignedUrlRequest struct {
@@ -393,4 +393,9 @@ type GetImageBasePathRequest struct {
 
 type GetImageBasePathResponse struct {
 	BasePath string `json:"basePath"`
+}
+
+type GetLatestOpenGateCameraStatsRequest struct {
+	TranscoderId string   `json:"trancoderId"`
+	CameraNames  []string `json:"cameraNames"`
 }
