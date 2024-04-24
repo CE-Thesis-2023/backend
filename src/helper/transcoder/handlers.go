@@ -95,8 +95,6 @@ func (p *transcoderEventProcessor) addObjectTrackingEvent(ctx context.Context, t
 }
 
 func (p *transcoderEventProcessor) updateObjectTrackingEventInDatabase(ctx context.Context, transcoderId string, req *events.DetectionEvent) error {
-	logger.SDebug("processor.updateEventInDatabase", zap.Reflect("req", req))
-
 	resp, err := p.webService.GetObjectTrackingEventById(ctx, &web.GetObjectTrackingEventByIdRequest{
 		OpenGateEventId: []string{req.Before.ID},
 	})

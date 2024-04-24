@@ -262,7 +262,7 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 
 	if req.Event.Snapshot != "" {
 		if err := s.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
-			RawImage:        "data:image/jpeg;base64," + req.Event.Snapshot,
+			RawImage:        req.Event.Snapshot,
 			TranscoderId:    req.TranscoderId,
 			OpenGateEventId: dbEvent.EventId,
 		}); err != nil {
@@ -306,7 +306,7 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 
 	if req.Event.Snapshot != "" {
 		if err := s.webService.UpsertSnapshot(ctx, &web.UpsertSnapshotRequest{
-			RawImage:        "data:image/jpeg;base64," + req.Event.Snapshot,
+			RawImage:        req.Event.Snapshot,
 			OpenGateEventId: event.EventId,
 			TranscoderId:    req.TranscoderId,
 		}); err != nil {
