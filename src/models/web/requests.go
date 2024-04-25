@@ -399,3 +399,12 @@ type GetLatestOpenGateCameraStatsRequest struct {
 	TranscoderId string   `json:"trancoderId"`
 	CameraNames  []string `json:"cameraNames"`
 }
+
+type GetPersonHistoryRequest struct {
+	PersonId  []string `json:"personId"`
+	HistoryId []string `json:"historyId"`
+}
+
+type GetPersonHistoryResponse struct {
+	Histories []db.PersonHistory `json:"histories"`
+}

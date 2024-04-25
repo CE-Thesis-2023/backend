@@ -2680,6 +2680,16 @@ func (s *WebService) asyncUploadToS3AndDetectPerson(
 					zap.String("snapshotId", snapshotId))
 				return
 			}
+			h := db.PersonHistory{
+				HistoryId: uuid.NewString(),
+				PersonId:  recognizeResp[0].PersonId,
+				Timestamp: time.Now(),
+				EventId:   snapshotId,
+			}
+			if err := s.recordPersonHistory(ctx, &h); err != nil {
+				detectionError = err
+				return
+			}
 			detectedPerson = &recognizeResp[0]
 		}()
 	}
@@ -2693,4 +2703,76 @@ func (s *WebService) asyncUploadToS3AndDetectPerson(
 	return &asyncUploadToS3AndDetectPersonResult{
 		detectedPerson: detectedPerson,
 	}, nil
+}
+
+func (s *WebService) recordPersonHistory(ctx context.Context, history *db.PersonHistory) error {
+	q := s.builder.Insert("person_history").
+		Columns(history.Fields()...).
+		Values(history.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) getPersonHistory(ctx context.Context, personId []string, historyId []string) ([]db.PersonHistory, error) {
+	q := s.builder.Select("*").
+		From("person_history").
+		OrderBy("timestamp DESC")
+
+	if len(personId) > 0 {
+		or := squirrel.Or{}
+		for _, i := range personId {
+			or = append(or, squirrel.Eq{"person_id": i})
+		}
+		q = q.Where(or)
+	}
+	if len(historyId) > 0 {
+		or := squirrel.Or{}
+		for _, i := range historyId {
+			or = append(or, squirrel.Eq{"history_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	sql, args, _ := q.ToSql()
+	logger.SDebug("getPersonHistory: SQL",
+		zap.Reflect("q", sql),
+		zap.Reflect("args", args))
+
+	var history []db.PersonHistory
+	if err := s.db.Select(ctx, q, &history); err != nil {
+		return nil, err
+	}
+
+	return history, nil
+}
+
+func (s *WebService) GetPersonHistory(ctx context.Context, req *web.GetPersonHistoryRequest) (*web.GetPersonHistoryResponse, error) {
+	logger.SInfo("GetPersonHistory: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateGetPersonHistoryRequest(req); err != nil {
+		logger.SError("GetPersonHistory: validateGetPersonHistoryRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	history, err := s.getPersonHistory(ctx, req.PersonId, req.HistoryId)
+	if err != nil {
+		logger.SError("GetPersonHistory: getPersonHistory",
+			zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetPersonHistoryResponse{
+		Histories: history,
+	}, nil
+}
+
+func (s *WebService) validateGetPersonHistoryRequest(req *web.GetPersonHistoryRequest) error {
+	if len(req.PersonId) == 0 && len(req.HistoryId) == 0 {
+		return custerror.FormatInvalidArgument("missing person id or history id")
+	}
+	return nil
 }

@@ -36,6 +36,7 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.POST("/api/people", AddDetectablePerson)
 		app.DELETE("/api/people", DeleteDetectablePerson)
 		app.GET("/api/people/presigned", GetDetectablePersonPresignedUrl)
+		app.GET("/api/people/history", GetPersonHistory)
 
 		app.GET("/api/stats", GetLatestOpenGateCameraStats)
 

@@ -645,3 +645,29 @@ func GetSnapshotPresignedUrl(ctx *gin.Context) {
 
 	ctx.JSON(200, resp)
 }
+
+func GetPersonHistory(ctx *gin.Context) {
+	logger.SDebug("GetPersonHistory: request")
+
+	personId := ctx.Query("person_id")
+	var personIds []string
+	if len(personId) != 0 {
+		personIds = strings.Split(personId, ",")
+	}
+	historyId := ctx.Query("history_id")
+	var historyIds []string
+	if len(historyId) != 0 {
+		historyIds = strings.Split(historyId, ",")
+	}
+
+	resp, err := service.GetWebService().GetPersonHistory(ctx, &web.GetPersonHistoryRequest{
+		PersonId:  personIds,
+		HistoryId: historyIds,
+	})
+	if err != nil {
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	ctx.JSON(200, resp)
+}

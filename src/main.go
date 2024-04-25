@@ -52,6 +52,7 @@ func main() {
 						&db.OpenGateDetectorStats{},
 						&db.DetectablePerson{},
 						&db.Snapshot{},
+						&db.PersonHistory{},
 					)
 					if err != nil {
 						return err

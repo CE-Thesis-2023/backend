@@ -456,3 +456,32 @@ func (t *Snapshot) Values() []interface{} {
 	)
 	return vs
 }
+
+type PersonHistory struct {
+	HistoryId string    `json:"historyId" db:"history_id,primary" gorm:"index"`
+	Timestamp time.Time `json:"timestamp" db:"timestamp"`
+	EventId   string    `json:"eventId" db:"event_id"`
+	PersonId  string    `json:"personId" db:"person_id"`
+}
+
+func (t *PersonHistory) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"history_id",
+		"timestamp",
+		"event_id",
+		"person_id",
+	)
+	return fs
+}
+
+func (t *PersonHistory) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.HistoryId,
+		t.Timestamp,
+		t.EventId,
+		t.PersonId,
+	)
+	return vs
+}
