@@ -122,7 +122,7 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 		return
 	}
 
-	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	timeOutCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	payload := event.Payload
 
