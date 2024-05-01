@@ -207,3 +207,10 @@ func (p *transcoderEventProcessor) OpenGateStats(ctx context.Context, transcoder
 		zap.String("transcoderId", transcoderId))
 	return nil
 }
+
+func (p *transcoderEventProcessor) TranscoderStatus(ctx context.Context, transcoderId string, status *web.UpdateTranscoderStatusRequest) error {
+	logger.SInfo("transcoder status changed",
+		zap.String("transcoderId", transcoderId),
+		zap.Any("status", status))
+	return p.webService.UpdateTranscoderStatus(ctx, status)
+}

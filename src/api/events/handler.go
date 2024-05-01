@@ -8,7 +8,6 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	"github.com/CE-Thesis-2023/backend/src/helper/transcoder"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
-	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/eclipse/paho.golang/paho"
 )
 
@@ -101,8 +100,23 @@ func (c *Command) runOpenGate(ctx context.Context, pub *paho.Publish) error {
 	case transcoder.OPENGATE_SNAPSHOT:
 		return c.runOpenGateSnapshot(ctx, pub)
 	case transcoder.OPENGATE_AVAILABLE:
-		// TODO: Change status of transcoder device
-		logger.SInfo("OpenGate available")
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_AVAILABLE, pub)
+	case transcoder.OPENGATE_STATE_AUDIO:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_AUDIO, pub)
+	case transcoder.OPENGATE_STATE_SNAPSHOTS:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_SNAPSHOTS, pub)
+	case transcoder.OPENGATE_STATE_MOTION:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_MOTION, pub)
+	case transcoder.OPENGATE_STATE_DETECT:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_DETECT, pub)
+	case transcoder.OPENGATE_STATE_RECORDINGS:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_RECORDINGS, pub)
+	case transcoder.OPENGATE_STATE_PTZ_AUTOTRACKER:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_PTZ_AUTOTRACKER, pub)
+	case transcoder.OPENGATE_STATE_IMPROVE_CONTRAST:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_IMPROVE_CONTRAST, pub)
+	case transcoder.OPENGATE_STATE_BIRDSEYE:
+		return c.runOpenGateUpdateStatus(ctx, transcoder.OPENGATE_STATE_BIRDSEYE, pub)
 	}
 	return nil
 }
@@ -138,6 +152,15 @@ func (c *Command) runOpenGateStats(_ context.Context, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
 	return c.actorPool.Send(transcoder.TranscoderEventMessage{
 		Type:         transcoder.OPENGATE_STATS,
+		TranscoderId: transcoderId,
+		Payload:      pub.Payload,
+	})
+}
+
+func (c *Command) runOpenGateUpdateStatus(_ context.Context, t string, pub *paho.Publish) error {
+	transcoderId := c.topic.SenderId
+	return c.actorPool.Send(transcoder.TranscoderEventMessage{
+		Type:         t,
 		TranscoderId: transcoderId,
 		Payload:      pub.Payload,
 	})

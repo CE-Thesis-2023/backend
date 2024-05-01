@@ -2,11 +2,14 @@ package transcoder
 
 import (
 	"context"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
 	"github.com/CE-Thesis-2023/backend/src/internal/logger"
+	"github.com/CE-Thesis-2023/backend/src/models/web"
 	"github.com/anthdm/hollywood/actor"
 	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
@@ -17,11 +20,13 @@ type TranscoderEventProcessor interface {
 	OpenGateObjectTrackingEvent(ctx context.Context, transcoderId string, message []byte) error
 	OpenGateSnapshot(ctx context.Context, transcoderId string, message []byte) error
 	OpenGateStats(ctx context.Context, transcoderId string, message []byte) error
+	TranscoderStatus(ctx context.Context, transcoderId string, status *web.UpdateTranscoderStatusRequest) error
 }
 
 type transcoderEventProcessor struct {
 	privateService *service.PrivateService
 	webService     *service.WebService
+	mu             sync.RWMutex
 }
 
 func NewTranscoderEventProcessor(privateService *service.PrivateService, webService *service.WebService) TranscoderEventProcessor {
@@ -91,7 +96,10 @@ func (p *TranscoderActorsPool) Deallocate(cameraGroupId string, transcoderId str
 }
 
 type TranscoderActor struct {
-	handler TranscoderEventProcessor
+	handler     TranscoderEventProcessor
+	mu          sync.RWMutex
+	backoff     *time.Timer
+	statusModel *web.UpdateTranscoderStatusRequest
 }
 
 func NewTranscoderActor(privateService *service.PrivateService, webService *service.WebService) actor.Receiver {
@@ -99,6 +107,7 @@ func NewTranscoderActor(privateService *service.PrivateService, webService *serv
 		handler: NewTranscoderEventProcessor(
 			privateService,
 			webService),
+		statusModel: nil,
 	}
 }
 
@@ -140,8 +149,88 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 			logger.SError("unable to process opengate stats",
 				zap.Error(err))
 		}
+	case OPENGATE_AVAILABLE:
+		logger.SInfo("TranscoderActor received opengate available",
+			zap.String("transcoderId", event.TranscoderId))
+		a.updateTranscoderStatusModel(OPENGATE_AVAILABLE, event.TranscoderId, payload)
 	default:
+		if strings.HasSuffix(event.Type, "/state") {
+			logger.SInfo("TranscoderActor received opengate state",
+				zap.String("transcoderId", event.TranscoderId),
+				zap.String("type", event.Type))
+			a.updateTranscoderStatusModel(event.Type, event.TranscoderId, payload)
+			return
+		}
 		logger.SError("unknown event type",
 			zap.String("type", event.Type))
+	}
+}
+
+func (a *TranscoderActor) waitForStatusUpdate() {
+	defer func() {
+		a.mu.Lock()
+		defer a.mu.Unlock()
+		a.statusModel = nil
+		a.backoff.Stop()
+		a.backoff = nil
+	}()
+	<-a.backoff.C
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.statusModel != nil {
+		if err := a.handler.TranscoderStatus(context.Background(), a.statusModel.TranscoderId, a.statusModel); err != nil {
+			logger.SError("flush transcoder status failed",
+				zap.Error(err))
+		}
+	}
+}
+
+func (a *TranscoderActor) updateTranscoderStatusModel(kind string, transcoderId string, msg []byte) {
+	e := msgToEnabled(msg)
+	a.mu.Lock()
+	if a.statusModel == nil {
+		a.statusModel = &web.UpdateTranscoderStatusRequest{
+			TranscoderId: transcoderId,
+		}
+		// flush the statusModel to the database
+		// after 10 seconds, if no new status update
+		// on status update, reset this timer
+		a.backoff = time.NewTimer(10 * time.Second)
+		go a.waitForStatusUpdate()
+	} else {
+		a.backoff.Reset(10 * time.Second)
+	}
+	switch kind {
+	case OPENGATE_STATE_DETECT:
+		a.statusModel.ObjectDetection = &e
+	case OPENGATE_STATE_AUDIO:
+		a.statusModel.AudioDetection = &e
+	case OPENGATE_STATE_RECORDINGS:
+		a.statusModel.OpenGateRecordings = &e
+	case OPENGATE_STATE_SNAPSHOTS:
+		a.statusModel.Snapshots = &e
+	case OPENGATE_STATE_MOTION:
+		a.statusModel.MotionDetection = &e
+	case OPENGATE_STATE_IMPROVE_CONTRAST:
+		a.statusModel.ImproveContrast = &e
+	case OPENGATE_STATE_PTZ_AUTOTRACKER:
+		a.statusModel.Autotracker = &e
+	case OPENGATE_STATE_BIRDSEYE:
+		a.statusModel.BirdseyeView = &e
+	case OPENGATE_AVAILABLE:
+		a.statusModel.OpenGateStatus = &e
+	}
+	a.mu.Unlock()
+}
+
+func msgToEnabled(msg []byte) bool {
+	str := string(msg)
+	switch str {
+	case "ON":
+		return true
+	case "OFF":
+		return false
+	default:
+		return false
 	}
 }
