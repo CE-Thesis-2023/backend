@@ -690,8 +690,15 @@ func GetTranscoderStatus(ctx *gin.Context) {
 		return
 	}
 
+	var cameraIds []string
+	cameraId := ctx.Query("camera_id")
+	if len(cameraId) != 0 {
+		cameraIds = strings.Split(cameraId, ",")
+	}
+
 	resp, err := service.GetWebService().GetTranscoderStatus(ctx, &web.GetTranscoderStatusRequest{
 		TranscoderId: splitted,
+		CameraId:     cameraIds,
 	})
 	if err != nil {
 		custhttp.ToHTTPErr(err, ctx)

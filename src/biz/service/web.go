@@ -2980,7 +2980,7 @@ func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []str
 		q = q.Where(or)
 	}
 
-	var transcoderStatus []db.TranscoderStatus
+	transcoderStatus := []db.TranscoderStatus{}
 	if err := s.db.Select(ctx, q, &transcoderStatus); err != nil {
 		return nil, err
 	}
@@ -2990,9 +2990,6 @@ func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []str
 func (s *WebService) validateGetTranscoderStatusRequest(req *web.GetTranscoderStatusRequest) error {
 	if len(req.TranscoderId) == 0 {
 		return custerror.FormatInvalidArgument("missing transcoder id")
-	}
-	if len(req.CameraId) == 0 {
-		return custerror.FormatInvalidArgument("missing camera id")
 	}
 	return nil
 }
