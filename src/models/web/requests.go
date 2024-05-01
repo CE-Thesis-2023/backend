@@ -411,6 +411,7 @@ type GetPersonHistoryResponse struct {
 
 type GetTranscoderStatusRequest struct {
 	TranscoderId []string `json:"transcoderId"`
+	CameraId     []string `json:"cameraId"`
 }
 
 type GetTranscoderStatusResponse struct {
@@ -418,17 +419,19 @@ type GetTranscoderStatusResponse struct {
 }
 
 type UpdateTranscoderStatusRequest struct {
-	TranscoderId       string `json:"transcoderId" form:"transcoder_id"`
-	ObjectDetection    *bool  `json:"objectDetection,omitempty" form:"object_detection"`
-	AudioDetection     *bool  `json:"audioDetection,omitempty" form:"audio_detection"`
-	OpenGateRecordings *bool  `json:"openGateRecordings,omitempty" form:"open_gate_recordings"`
-	Snapshots          *bool  `json:"snapshots,omitempty" form:"snapshots"`
-	MotionDetection    *bool  `json:"motionDetection,omitempty" form:"motion_detection"`
-	ImproveContrast    *bool  `json:"improveContrast,omitempty" form:"improve_contrast"`
-	Autotracker        *bool  `json:"autotracker,omitempty" form:"autotracker"`
-	BirdseyeView       *bool  `json:"birdseyeView,omitempty" form:"birdseye_view"`
-	OpenGateStatus     *bool  `json:"openGateStatus,omitempty" form:"open_gate_status"`
-	TranscoderStatus   *bool  `json:"transcoderStatus,omitempty" form:"transcoder_status"`
+	TranscoderId       string  `json:"transcoderId" form:"transcoder_id"`
+	CameraName         *string `json:"cameraName" form:"camera_name"`
+	CameraId           *string `json:"cameraId" form:"camera_id"`
+	ObjectDetection    *bool   `json:"objectDetection,omitempty" form:"object_detection"`
+	AudioDetection     *bool   `json:"audioDetection,omitempty" form:"audio_detection"`
+	OpenGateRecordings *bool   `json:"openGateRecordings,omitempty" form:"open_gate_recordings"`
+	Snapshots          *bool   `json:"snapshots,omitempty" form:"snapshots"`
+	MotionDetection    *bool   `json:"motionDetection,omitempty" form:"motion_detection"`
+	ImproveContrast    *bool   `json:"improveContrast,omitempty" form:"improve_contrast"`
+	Autotracker        *bool   `json:"autotracker,omitempty" form:"autotracker"`
+	BirdseyeView       *bool   `json:"birdseyeView,omitempty" form:"birdseye_view"`
+	OpenGateStatus     *bool   `json:"openGateStatus,omitempty" form:"open_gate_status"`
+	TranscoderStatus   *bool   `json:"transcoderStatus,omitempty" form:"transcoder_status"`
 }
 
 type UpdateTranscoderStatusResponse struct {

@@ -16,8 +16,9 @@ const (
 )
 
 type TranscoderEventMessage struct {
-	Type         string `json:"type"`
-	TranscoderId string `json:"transcoderId"`
+	Type         string  `json:"type"`
+	TranscoderId string  `json:"transcoderId"`
+	CameraName   *string `json:"cameraName,omitempty"`
 
 	Payload []byte `json:"payload"`
 }

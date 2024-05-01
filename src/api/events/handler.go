@@ -159,9 +159,14 @@ func (c *Command) runOpenGateStats(_ context.Context, pub *paho.Publish) error {
 
 func (c *Command) runOpenGateUpdateStatus(_ context.Context, t string, pub *paho.Publish) error {
 	transcoderId := c.topic.SenderId
+	cameraName := ""
+	if len(c.topic.ExtraIds) > 0 {
+		cameraName = c.topic.ExtraIds[0]
+	}
 	return c.actorPool.Send(transcoder.TranscoderEventMessage{
 		Type:         t,
 		TranscoderId: transcoderId,
+		CameraName:   &cameraName,
 		Payload:      pub.Payload,
 	})
 }

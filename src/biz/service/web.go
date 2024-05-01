@@ -2787,7 +2787,7 @@ func (s *WebService) GetTranscoderStatus(ctx context.Context, req *web.GetTransc
 		return nil, err
 	}
 
-	status, err := s.getTranscoderStatus(ctx, req.TranscoderId)
+	status, err := s.getTranscoderStatus(ctx, req.TranscoderId, req.CameraId)
 	if err != nil {
 		logger.SError("GetTranscoderStatus: getTranscoderStatus",
 			zap.Error(err))
@@ -2808,8 +2808,28 @@ func (s *WebService) UpdateTranscoderStatus(ctx context.Context, req *web.Update
 			zap.Error(err))
 		return err
 	}
+	cameraId := ""
+	if req.CameraId != nil {
+		cameraId = *req.CameraId
+	} else {
+		cameraResp, err := s.getCameraByName(ctx, []string{*req.CameraName})
+		if err != nil {
+			logger.SError("UpdateTranscoderStatus: getCameraByName",
+				zap.Error(err))
+			return err
+		}
+		if len(cameraResp) == 0 {
+			logger.SError("UpdateTranscoderStatus: camera not found",
+				zap.String("cameraName", *req.CameraName))
+			return custerror.FormatNotFound("camera not found")
+		}
+		cameraId = cameraResp[0].CameraId
+		req.CameraId = &cameraId
+	}
 
-	status, err := s.getTranscoderStatus(ctx, []string{req.TranscoderId})
+	status, err := s.getTranscoderStatus(ctx,
+		[]string{req.TranscoderId},
+		[]string{cameraId})
 	switch {
 	case errors.Is(err, custerror.ErrorNotFound):
 		if err := s.addTranscoderStatus(ctx, req); err != nil {
@@ -2844,6 +2864,19 @@ func (s *WebService) validateUpdateTranscoderStatusRequest(req *web.UpdateTransc
 	if req.TranscoderId == "" {
 		return custerror.FormatInvalidArgument("missing transcoder id")
 	}
+	if req.CameraName == nil {
+		if req.CameraId == nil {
+			return custerror.FormatInvalidArgument("missing camera name or camera id")
+		} else {
+			if *req.CameraId == "" {
+				return custerror.FormatInvalidArgument("missing camera id")
+			}
+		}
+	} else {
+		if *req.CameraName == "" {
+			return custerror.FormatInvalidArgument("missing camera name")
+		}
+	}
 	return nil
 }
 
@@ -2875,6 +2908,7 @@ func (s *WebService) updateTranscoderStatus(ctx context.Context, status *db.Tran
 
 	q := s.builder.Update("transcoder_statuses").
 		Where("transcoder_id = ?", newStatus.TranscoderId).
+		Where("camera_id = ?", newStatus.CameraId).
 		SetMap(valueMap)
 	sql, args, _ := q.ToSql()
 	logger.SDebug("updateTranscoderStatus: SQL query",
@@ -2893,6 +2927,9 @@ func (s *WebService) patchTranscoderStatus(old *db.TranscoderStatus, req *web.Up
 	}
 	if req.AudioDetection != nil {
 		new.AudioDetection = *req.AudioDetection
+	}
+	if req.CameraId != nil {
+		new.CameraId = *req.CameraId
 	}
 	if req.Autotracker != nil {
 		new.Autotracker = *req.Autotracker
@@ -2924,7 +2961,7 @@ func (s *WebService) patchTranscoderStatus(old *db.TranscoderStatus, req *web.Up
 	return new
 }
 
-func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []string) ([]db.TranscoderStatus, error) {
+func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []string, cameraId []string) ([]db.TranscoderStatus, error) {
 	q := s.builder.Select("*").
 		From("transcoder_statuses")
 
@@ -2932,6 +2969,13 @@ func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []str
 		or := squirrel.Or{}
 		for _, i := range transcoderId {
 			or = append(or, squirrel.Eq{"transcoder_id": i})
+		}
+		q = q.Where(or)
+	}
+	if cameraId != nil {
+		or := squirrel.Or{}
+		for _, i := range cameraId {
+			or = append(or, squirrel.Eq{"camera_id": i})
 		}
 		q = q.Where(or)
 	}
@@ -2946,6 +2990,9 @@ func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []str
 func (s *WebService) validateGetTranscoderStatusRequest(req *web.GetTranscoderStatusRequest) error {
 	if len(req.TranscoderId) == 0 {
 		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	if len(req.CameraId) == 0 {
+		return custerror.FormatInvalidArgument("missing camera id")
 	}
 	return nil
 }

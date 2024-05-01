@@ -26,7 +26,6 @@ type TranscoderEventProcessor interface {
 type transcoderEventProcessor struct {
 	privateService *service.PrivateService
 	webService     *service.WebService
-	mu             sync.RWMutex
 }
 
 func NewTranscoderEventProcessor(privateService *service.PrivateService, webService *service.WebService) TranscoderEventProcessor {
@@ -152,13 +151,21 @@ func (a *TranscoderActor) Receive(ctx *actor.Context) {
 	case OPENGATE_AVAILABLE:
 		logger.SInfo("TranscoderActor received opengate available",
 			zap.String("transcoderId", event.TranscoderId))
-		a.updateTranscoderStatusModel(OPENGATE_AVAILABLE, event.TranscoderId, payload)
+		cn := ""
+		if event.CameraName != nil {
+			cn = *event.CameraName
+		}
+		a.updateTranscoderStatusModel(OPENGATE_AVAILABLE, event.TranscoderId, cn, payload)
 	default:
 		if strings.HasSuffix(event.Type, "/state") {
 			logger.SInfo("TranscoderActor received opengate state",
 				zap.String("transcoderId", event.TranscoderId),
 				zap.String("type", event.Type))
-			a.updateTranscoderStatusModel(event.Type, event.TranscoderId, payload)
+			cn := ""
+			if event.CameraName != nil {
+				cn = *event.CameraName
+			}
+			a.updateTranscoderStatusModel(event.Type, event.TranscoderId, cn, payload)
 			return
 		}
 		logger.SError("unknown event type",
@@ -185,12 +192,13 @@ func (a *TranscoderActor) waitForStatusUpdate() {
 	}
 }
 
-func (a *TranscoderActor) updateTranscoderStatusModel(kind string, transcoderId string, msg []byte) {
+func (a *TranscoderActor) updateTranscoderStatusModel(kind string, transcoderId string, cameraName string, msg []byte) {
 	e := msgToEnabled(msg)
 	a.mu.Lock()
 	if a.statusModel == nil {
 		a.statusModel = &web.UpdateTranscoderStatusRequest{
 			TranscoderId: transcoderId,
+			CameraName:   &cameraName,
 		}
 		// flush the statusModel to the database
 		// after 10 seconds, if no new status update

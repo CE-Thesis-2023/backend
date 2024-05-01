@@ -488,7 +488,8 @@ func (t *PersonHistory) Values() []interface{} {
 
 type TranscoderStatus struct {
 	StatusId           string `json:"statusId" db:"status_id,primary" gorm:"index"`
-	TranscoderId       string `json:"transcoderId" db:"transcoder_id,primary" gorm:"index"`
+	TranscoderId       string `json:"transcoderId" db:"transcoder_id" gorm:"index"`
+	CameraId           string `json:"cameraId" db:"camera_id" gorm:"index"`
 	ObjectDetection    bool   `json:"objectDetection" db:"object_detection"`
 	AudioDetection     bool   `json:"audioDetection" db:"audio_detection"`
 	OpenGateRecordings bool   `json:"openGateRecordings" db:"open_gate_recordings"`
@@ -505,6 +506,7 @@ func (t *TranscoderStatus) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
 		"transcoder_id",
+		"camera_id",
 		"status_id",
 		"object_detection",
 		"audio_detection",
@@ -524,6 +526,7 @@ func (t *TranscoderStatus) Values() []interface{} {
 	vs := []interface{}{}
 	vs = append(vs,
 		t.TranscoderId,
+		t.CameraId,
 		t.StatusId,
 		t.ObjectDetection,
 		t.AudioDetection,
