@@ -485,3 +485,52 @@ func (t *PersonHistory) Values() []interface{} {
 	)
 	return vs
 }
+
+type TranscoderStatus struct {
+	StatusId           string `json:"statusId" db:"status_id,primary" gorm:"index"`
+	TranscoderId       string `json:"transcoderId" db:"transcoder_id,primary" gorm:"index"`
+	ObjectDetection    bool   `json:"objectDetection" db:"object_detection"`
+	AudioDetection     bool   `json:"audioDetection" db:"audio_detection"`
+	OpenGateRecordings bool   `json:"openGateRecordings" db:"open_gate_recordings"`
+	Snapshots          bool   `json:"snapshots" db:"snapshots"`
+	MotionDetection    bool   `json:"motionDetection" db:"motion_detection"`
+	ImproveContrast    bool   `json:"improveContrast" db:"improve_contrast"`
+	Autotracker        bool   `json:"autotracker" db:"autotracker"`
+	BirdseyeView       bool   `json:"birdseyeView" db:"birdseye_view"`
+	OpenGateStatus     bool   `json:"openGateStatus" db:"open_gate_status"`
+	TranscoderStatus   bool   `json:"transcoderStatus" db:"transcoder_status"`
+}
+
+func (t *TranscoderStatus) Fields() []string {
+	fs := []string{}
+	fs = append(fs,
+		"object_detection",
+		"audio_detection",
+		"open_gate_recordings",
+		"snapshots",
+		"motion_detection",
+		"improve_contrast",
+		"autotracker",
+		"birdseye_view",
+		"open_gate_status",
+		"transcoder_status",
+	)
+	return fs
+}
+
+func (t *TranscoderStatus) Values() []interface{} {
+	vs := []interface{}{}
+	vs = append(vs,
+		t.ObjectDetection,
+		t.AudioDetection,
+		t.OpenGateRecordings,
+		t.Snapshots,
+		t.MotionDetection,
+		t.ImproveContrast,
+		t.Autotracker,
+		t.BirdseyeView,
+		t.OpenGateStatus,
+		t.TranscoderStatus,
+	)
+	return vs
+}

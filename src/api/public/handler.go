@@ -671,3 +671,25 @@ func GetPersonHistory(ctx *gin.Context) {
 
 	ctx.JSON(200, resp)
 }
+
+func GetTranscoderStatus(ctx *gin.Context) {
+	logger.SDebug("GetTranscoderStatus: request")
+
+	transcoderId := ctx.Query("transcoder_id")
+	if len(transcoderId) == 0 {
+		custhttp.ToHTTPErr(
+			custerror.FormatInvalidArgument("missing transcoder_id"),
+			ctx)
+		return
+	}
+
+	resp, err := service.GetWebService().GetTranscoderStatus(ctx, &web.GetTranscoderStatusRequest{
+		TranscoderId: transcoderId,
+	})
+	if err != nil {
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	ctx.JSON(200, resp)
+}

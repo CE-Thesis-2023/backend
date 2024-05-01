@@ -408,3 +408,29 @@ type GetPersonHistoryRequest struct {
 type GetPersonHistoryResponse struct {
 	Histories []db.PersonHistory `json:"histories"`
 }
+
+type GetTranscoderStatusRequest struct {
+	TranscoderId string `json:"transcoderId"`
+}
+
+type GetTranscoderStatusResponse struct {
+	Status *db.TranscoderStatus `json:"status"`
+}
+
+type UpdateTranscoderStatusRequest struct {
+	TranscoderId       string `json:"transcoderId"`
+	ObjectDetection    *bool  `json:"objectDetection,omitempty"`
+	AudioDetection     *bool  `json:"audioDetection,omitempty"`
+	OpenGateRecordings *bool  `json:"openGateRecordings,omitempty"`
+	Snapshots          *bool  `json:"snapshots,omitempty"`
+	MotionDetection    *bool  `json:"motionDetection,omitempty"`
+	ImproveContrast    *bool  `json:"improveContrast,omitempty"`
+	Autotracker        *bool  `json:"autotracker,omitempty"`
+	BirdseyeView       *bool  `json:"birdseyeView,omitempty"`
+	OpenGateStatus     *bool  `json:"openGateStatus,omitempty"`
+	TranscoderStatus   *bool  `json:"transcoderStatus,omitempty"`
+}
+
+type UpdateTranscoderStatusResponse struct {
+	TranscoderId string `json:"transcoderId"`
+}

@@ -2776,3 +2776,159 @@ func (s *WebService) validateGetPersonHistoryRequest(req *web.GetPersonHistoryRe
 	}
 	return nil
 }
+
+func (s *WebService) GetTranscoderStatus(ctx context.Context, req *web.GetTranscoderStatusRequest) (*web.GetTranscoderStatusResponse, error) {
+	logger.SInfo("GetTranscoderStatus: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateGetTranscoderStatusRequest(req); err != nil {
+		logger.SError("GetTranscoderStatus: validateGetTranscoderStatusRequest",
+			zap.Error(err))
+		return nil, err
+	}
+
+	status, err := s.getTranscoderStatus(ctx, req.TranscoderId)
+	if err != nil {
+		logger.SError("GetTranscoderStatus: getTranscoderStatus",
+			zap.Error(err))
+		return nil, err
+	}
+
+	return &web.GetTranscoderStatusResponse{
+		Status: status,
+	}, nil
+}
+
+func (s *WebService) UpdateTranscoderStatus(ctx context.Context, req *web.UpdateTranscoderStatusRequest) error {
+	logger.SInfo("UpdateTranscoderStatus: request",
+		zap.Reflect("request", req))
+
+	if err := s.validateUpdateTranscoderStatusRequest(req); err != nil {
+		logger.SError("UpdateTranscoderStatus: validateUpdateTranscoderStatusRequest",
+			zap.Error(err))
+		return err
+	}
+
+	status, err := s.getTranscoderStatus(ctx, req.TranscoderId)
+	switch {
+	case errors.Is(err, custerror.ErrorNotFound):
+		if err := s.addTranscoderStatus(ctx, req); err != nil {
+			logger.SError("UpdateTranscoderStatus: addTranscoderStatus",
+				zap.Error(err))
+			return err
+		}
+	case err == nil:
+		if err := s.updateTranscoderStatus(ctx, status, req); err != nil {
+			logger.SError("UpdateTranscoderStatus: updateTranscoderStatus",
+				zap.Error(err))
+			return err
+		}
+	default:
+		logger.SError("UpdateTranscoderStatus: getTranscoderStatus",
+			zap.Error(err))
+		return err
+	}
+
+	return nil
+}
+
+func (s *WebService) validateUpdateTranscoderStatusRequest(req *web.UpdateTranscoderStatusRequest) error {
+	if req.TranscoderId == "" {
+		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	return nil
+}
+
+func (s *WebService) addTranscoderStatus(ctx context.Context, req *web.UpdateTranscoderStatusRequest) error {
+	status := &db.TranscoderStatus{}
+	if err := copier.Copy(status, req); err != nil {
+		return err
+	}
+	status.StatusId = uuid.NewString()
+	q := s.builder.Insert("transcoder_status").
+		Columns(status.Fields()...).
+		Values(status.Values()...)
+	if err := s.db.Insert(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) updateTranscoderStatus(ctx context.Context, status *db.TranscoderStatus, req *web.UpdateTranscoderStatusRequest) error {
+	newStatus := s.patchTranscoderStatus(status, req)
+	valueMap := map[string]interface{}{}
+	fields := newStatus.Fields()
+	values := newStatus.Values()
+	for i := 0; i < len(fields); i += 1 {
+		valueMap[fields[i]] = values[i]
+	}
+
+	q := s.builder.Update("transcoder_status").
+		Where("transcoder_id = ?", newStatus.TranscoderId).
+		SetMap(valueMap)
+	sql, args, _ := q.ToSql()
+	logger.SDebug("updateTranscoderStatus: SQL query",
+		zap.String("query", sql),
+		zap.Reflect("args", args))
+	if err := s.db.Update(ctx, q); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *WebService) patchTranscoderStatus(old *db.TranscoderStatus, req *web.UpdateTranscoderStatusRequest) *db.TranscoderStatus {
+	new := old
+	if req.TranscoderId != "" {
+		new.TranscoderId = req.TranscoderId
+	}
+	if req.AudioDetection != nil {
+		new.AudioDetection = *req.AudioDetection
+	}
+	if req.Autotracker != nil {
+		new.Autotracker = *req.Autotracker
+	}
+	if req.ObjectDetection != nil {
+		new.ObjectDetection = *req.ObjectDetection
+	}
+	if req.OpenGateRecordings != nil {
+		new.OpenGateRecordings = *req.OpenGateRecordings
+	}
+	if req.Snapshots != nil {
+		new.Snapshots = *req.Snapshots
+	}
+	if req.MotionDetection != nil {
+		new.MotionDetection = *req.MotionDetection
+	}
+	if req.ImproveContrast != nil {
+		new.ImproveContrast = *req.ImproveContrast
+	}
+	if req.BirdseyeView != nil {
+		new.BirdseyeView = *req.BirdseyeView
+	}
+	if req.OpenGateStatus != nil {
+		new.OpenGateStatus = *req.OpenGateStatus
+	}
+	if req.TranscoderStatus != nil {
+		new.TranscoderStatus = *req.TranscoderStatus
+	}
+	return new
+}
+
+func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId string) (*db.TranscoderStatus, error) {
+	q := s.builder.Select("*").
+		From("transcoder_status").
+		Where("transcoder_id = ?", transcoderId)
+
+	var transcoderStatus db.TranscoderStatus
+	if err := s.db.Get(ctx, q, &transcoderStatus); err != nil {
+		return nil, err
+	}
+	return &transcoderStatus, nil
+}
+
+func (s *WebService) validateGetTranscoderStatusRequest(req *web.GetTranscoderStatusRequest) error {
+	if req.TranscoderId == "" {
+		return custerror.FormatInvalidArgument("missing transcoder id")
+	}
+	return nil
+}

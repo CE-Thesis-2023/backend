@@ -15,5 +15,6 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.GET("/private/transcoders/streams", GetTranscoderStreamConfigurations)
 		app.GET("/private/opengate/configurations/:id", GetTranscoderOpenGateConfiguration)
 		app.GET("/private/transcoders/mqtt", GetTranscoderMQTTConfigurations)
+		app.PUT("/private/transcoders/status", UpdateTranscoderStatus)
 	}
 }

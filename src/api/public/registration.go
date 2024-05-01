@@ -8,6 +8,7 @@ func ServiceRegistration() func(app *gin.Engine) {
 	return func(app *gin.Engine) {
 		app.GET("/api/devices", GetTranscoderDevices)
 		app.PUT("/api/devices", UpdateTranscoder)
+		app.GET("/api/devices/status", GetTranscoderStatus)
 		app.GET("/api/devices/healthcheck", DoDeviceHealthcheck)
 
 		app.GET("/api/cameras", GetCameras)

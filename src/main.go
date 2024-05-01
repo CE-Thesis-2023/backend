@@ -53,6 +53,7 @@ func main() {
 						&db.DetectablePerson{},
 						&db.Snapshot{},
 						&db.PersonHistory{},
+						&db.TranscoderStatus{},
 					)
 					if err != nil {
 						return err

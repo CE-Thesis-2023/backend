@@ -241,3 +241,24 @@ func GetTranscoderMQTTConfigurations(ctx *gin.Context) {
 
 	ctx.JSON(200, resp)
 }
+
+func UpdateTranscoderStatus(ctx *gin.Context) {
+	logger.SInfo("UpdateTranscoderStatus: request")
+
+	var req web.UpdateTranscoderStatusRequest
+	if err := ctx.BindQuery(&req); err != nil {
+		logger.SError("UpdateTranscoderStatus: request body marshal error", zap.Error(err))
+		err := custerror.FormatInvalidArgument(err.Error())
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	err := service.GetWebService().UpdateTranscoderStatus(ctx, &req)
+	if err != nil {
+		logger.SError("UpdateTranscoderStatus: service.UpdateTranscoderStatus error", zap.Error(err))
+		custhttp.ToHTTPErr(err, ctx)
+		return
+	}
+
+	ctx.Status(200)
+}
