@@ -111,7 +111,7 @@ type Camera struct {
 	Port     int    `json:"port" db:"port"`
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
-	Enabled  bool   `json:"enabled omitempty" db:"enabled"`
+	Enabled  bool   `json:"enabled,omitempty" db:"enabled"`
 
 	OpenGateCameraName string `json:"openGateCameraName" db:"open_gate_camera_name"`
 	GroupId            string `json:"groupId" db:"group_id,omitempty"`
