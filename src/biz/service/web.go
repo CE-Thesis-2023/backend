@@ -2809,7 +2809,7 @@ func (s *WebService) UpdateTranscoderStatus(ctx context.Context, req *web.Update
 		return err
 	}
 
-	status, err := s.getTranscoderStatus(ctx, req.TranscoderId)
+	status, err := s.getTranscoderStatus(ctx, []string{req.TranscoderId})
 	switch {
 	case errors.Is(err, custerror.ErrorNotFound):
 		if err := s.addTranscoderStatus(ctx, req); err != nil {
@@ -2818,7 +2818,15 @@ func (s *WebService) UpdateTranscoderStatus(ctx context.Context, req *web.Update
 			return err
 		}
 	case err == nil:
-		if err := s.updateTranscoderStatus(ctx, status, req); err != nil {
+		if len(status) == 0 {
+			if err := s.addTranscoderStatus(ctx, req); err != nil {
+				logger.SError("UpdateTranscoderStatus: addTranscoderStatus",
+					zap.Error(err))
+				return err
+			}
+			return nil
+		}
+		if err := s.updateTranscoderStatus(ctx, &status[0], req); err != nil {
 			logger.SError("UpdateTranscoderStatus: updateTranscoderStatus",
 				zap.Error(err))
 			return err
@@ -2844,8 +2852,10 @@ func (s *WebService) addTranscoderStatus(ctx context.Context, req *web.UpdateTra
 	if err := copier.Copy(status, req); err != nil {
 		return err
 	}
+	status.TranscoderId = req.TranscoderId
 	status.StatusId = uuid.NewString()
-	q := s.builder.Insert("transcoder_status").
+
+	q := s.builder.Insert("transcoder_statuses").
 		Columns(status.Fields()...).
 		Values(status.Values()...)
 	if err := s.db.Insert(ctx, q); err != nil {
@@ -2863,7 +2873,7 @@ func (s *WebService) updateTranscoderStatus(ctx context.Context, status *db.Tran
 		valueMap[fields[i]] = values[i]
 	}
 
-	q := s.builder.Update("transcoder_status").
+	q := s.builder.Update("transcoder_statuses").
 		Where("transcoder_id = ?", newStatus.TranscoderId).
 		SetMap(valueMap)
 	sql, args, _ := q.ToSql()
@@ -2914,20 +2924,27 @@ func (s *WebService) patchTranscoderStatus(old *db.TranscoderStatus, req *web.Up
 	return new
 }
 
-func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId string) (*db.TranscoderStatus, error) {
+func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []string) ([]db.TranscoderStatus, error) {
 	q := s.builder.Select("*").
-		From("transcoder_status").
-		Where("transcoder_id = ?", transcoderId)
+		From("transcoder_statuses")
 
-	var transcoderStatus db.TranscoderStatus
-	if err := s.db.Get(ctx, q, &transcoderStatus); err != nil {
+	if transcoderId != nil {
+		or := squirrel.Or{}
+		for _, i := range transcoderId {
+			or = append(or, squirrel.Eq{"transcoder_id": i})
+		}
+		q = q.Where(or)
+	}
+
+	var transcoderStatus []db.TranscoderStatus
+	if err := s.db.Select(ctx, q, &transcoderStatus); err != nil {
 		return nil, err
 	}
-	return &transcoderStatus, nil
+	return transcoderStatus, nil
 }
 
 func (s *WebService) validateGetTranscoderStatusRequest(req *web.GetTranscoderStatusRequest) error {
-	if req.TranscoderId == "" {
+	if len(req.TranscoderId) == 0 {
 		return custerror.FormatInvalidArgument("missing transcoder id")
 	}
 	return nil

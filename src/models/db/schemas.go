@@ -504,6 +504,8 @@ type TranscoderStatus struct {
 func (t *TranscoderStatus) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
+		"transcoder_id",
+		"status_id",
 		"object_detection",
 		"audio_detection",
 		"open_gate_recordings",
@@ -521,6 +523,8 @@ func (t *TranscoderStatus) Fields() []string {
 func (t *TranscoderStatus) Values() []interface{} {
 	vs := []interface{}{}
 	vs = append(vs,
+		t.TranscoderId,
+		t.StatusId,
 		t.ObjectDetection,
 		t.AudioDetection,
 		t.OpenGateRecordings,

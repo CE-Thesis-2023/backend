@@ -682,9 +682,16 @@ func GetTranscoderStatus(ctx *gin.Context) {
 			ctx)
 		return
 	}
+	splitted := strings.Split(transcoderId, ",")
+	if len(splitted) == 0 {
+		custhttp.ToHTTPErr(
+			custerror.FormatInvalidArgument("missing transcoder_id"),
+			ctx)
+		return
+	}
 
 	resp, err := service.GetWebService().GetTranscoderStatus(ctx, &web.GetTranscoderStatusRequest{
-		TranscoderId: transcoderId,
+		TranscoderId: splitted,
 	})
 	if err != nil {
 		custhttp.ToHTTPErr(err, ctx)
