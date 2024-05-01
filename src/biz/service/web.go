@@ -2812,9 +2812,12 @@ func (s *WebService) UpdateTranscoderStatus(ctx context.Context, req *web.Update
 	if req.CameraId != nil {
 		cameraId = *req.CameraId
 	} else {
-		cameraResp, err := s.getCameraByName(ctx, []string{*req.CameraName})
+		cameraResp, err := s.getCamerasByTranscoderId(
+			ctx,
+			req.TranscoderId,
+			[]string{*req.CameraName})
 		if err != nil {
-			logger.SError("UpdateTranscoderStatus: getCameraByName",
+			logger.SError("UpdateTranscoderStatus: getCamerasByTranscoderId",
 				zap.Error(err))
 			return err
 		}
@@ -2965,14 +2968,14 @@ func (s *WebService) getTranscoderStatus(ctx context.Context, transcoderId []str
 	q := s.builder.Select("*").
 		From("transcoder_statuses")
 
-	if transcoderId != nil {
+	if len(transcoderId) > 0 {
 		or := squirrel.Or{}
 		for _, i := range transcoderId {
 			or = append(or, squirrel.Eq{"transcoder_id": i})
 		}
 		q = q.Where(or)
 	}
-	if cameraId != nil {
+	if len(cameraId) > 0 {
 		or := squirrel.Or{}
 		for _, i := range cameraId {
 			or = append(or, squirrel.Eq{"camera_id": i})
