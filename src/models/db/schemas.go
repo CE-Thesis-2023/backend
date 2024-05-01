@@ -111,12 +111,12 @@ type Camera struct {
 	Port     int    `json:"port" db:"port"`
 	Username string `json:"username" db:"username"`
 	Password string `json:"password" db:"password"`
-	Enabled  bool   `json:"enabled,omitempty" db:"enabled"`
+	Enabled  bool   `json:"enabled" db:"enabled"`
 
 	OpenGateCameraName string `json:"openGateCameraName" db:"open_gate_camera_name"`
 	GroupId            string `json:"groupId" db:"group_id,omitempty"`
 	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty" gorm:"index"`
-	SettingsId         string `json:"settingsId omitempty" db:"settings_id,omitempty"`
+	SettingsId         string `json:"settingsId" db:"settings_id,omitempty"`
 }
 
 type OpenGateCameraSettings struct {
