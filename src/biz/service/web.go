@@ -1485,7 +1485,7 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 		return nil, err
 	}
 
-	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.EventId, req.OpenGateEventId)
+	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.CameraId, req.EventId, req.OpenGateEventId)
 	if err != nil {
 		logger.SError("GetObjectTrackingEventById: getObjectTrackingEventById error", zap.Error(err))
 		return nil, err
@@ -1503,7 +1503,7 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 	}, nil
 }
 
-func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []string, openGateIds []string) ([]db.ObjectTrackingEvent, error) {
+func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId string, ids []string, openGateIds []string) ([]db.ObjectTrackingEvent, error) {
 	q := s.builder.Select("*").
 		From("object_tracking_events").
 		OrderBy("frame_time DESC")
@@ -1522,6 +1522,10 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, ids []strin
 			or = append(or, squirrel.Eq{"open_gate_event_id": i})
 		}
 		q = q.Where(or)
+	}
+
+	if len(cameraId) > 0 {
+		q = q.Where("camera_id = ?", cameraId)
 	}
 
 	sql, args, _ := q.ToSql()
@@ -1583,7 +1587,7 @@ func (s *WebService) DeleteObjectTrackingEvent(ctx context.Context, req *web.Del
 		return err
 	}
 
-	_, err := s.getObjectTrackingEventById(ctx, []string{req.EventId}, nil)
+	_, err := s.getObjectTrackingEventById(ctx, "", []string{req.EventId}, nil)
 	if err != nil {
 		logger.SError("commandService.DeleteObjectTrackingEvent: getObjectTrackingEventById error",
 			zap.Error(err))
@@ -2522,7 +2526,7 @@ func (s *WebService) UpsertSnapshot(ctx context.Context, req *web.UpsertSnapshot
 }
 
 func (s *WebService) updateEventSnapshotReference(ctx context.Context, openGateEventId string, snapshotId string) error {
-	events, err := s.getObjectTrackingEventById(ctx, nil, []string{openGateEventId})
+	events, err := s.getObjectTrackingEventById(ctx, "", nil, []string{openGateEventId})
 	if err != nil {
 		logger.SError("updateEventSnapshotReference: getEventByOpenGateEventId",
 			zap.Error(err))

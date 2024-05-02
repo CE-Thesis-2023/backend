@@ -63,10 +63,10 @@ export interface TranscoderStatus {
  * @param ids Transcoder IDs
  * @returns Transcoder status
  */
-export async function getTranscoderStatus(transcoderIds: string[], cameraIds: string[]): Promise<TranscoderStatus> {
+export async function getTranscoderStatus(transcoderIds: string[], cameraIds: string[]): Promise<TranscoderStatus[]> {
     const uri = `/api/devices/status?transcoder_id=${transcoderIds.join(',')}&camera_id=${cameraIds.join(',')}`;
     const resp = await axiosClient.get(uri);
-    return resp.data;
+    return resp.data["status"];
 }
 
 /**

@@ -421,7 +421,8 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	logger.SDebug("GetObjectTrackingEvent: request")
 
 	eventId := ctx.Query("event_id")
-	openGateEventId := ctx.Query("openGateEventId")
+	openGateEventId := ctx.Query("open_gate_event_id")
+	cameraId := ctx.Query("camera_id")
 
 	req := &web.GetObjectTrackingEventByIdRequest{}
 	if eventId != "" {
@@ -429,6 +430,9 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	}
 	if openGateEventId != "" {
 		req.OpenGateEventId = []string{openGateEventId}
+	}
+	if cameraId != "" {
+		req.CameraId = cameraId
 	}
 
 	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx, req)

@@ -251,6 +251,7 @@ type DeleteTranscoderRequest struct {
 type GetObjectTrackingEventByIdRequest struct {
 	EventId         []string `json:"eventId"`
 	OpenGateEventId []string `json:"openGateEventId"`
+	CameraId        string   `json:"cameraId"`
 }
 
 type GetObjectTrackingEventByIdResponse struct {

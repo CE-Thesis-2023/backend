@@ -278,7 +278,7 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 
 func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
 	objectTrackingEvent, err := s.webService.getObjectTrackingEventById(
-		ctx, []string{req.EventId}, nil)
+		ctx, "", []string{req.EventId}, nil)
 	if err != nil {
 		return err
 	}
