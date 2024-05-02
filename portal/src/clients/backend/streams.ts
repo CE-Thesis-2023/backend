@@ -7,7 +7,7 @@ import { axiosClient } from './client';
  * @param enabled Whether to enable/disable stream
  */
 export async function toggleStream(cameraId: string, enabled: boolean): Promise<void> {
-    const uri = `/api/cameras/${cameraId}/streams?enabled=${enabled}`;
+    const uri = `/api/cameras/${cameraId}/streams?enable=${enabled}`;
     await axiosClient.put(uri, { enabled });
 }
 

@@ -1,10 +1,11 @@
 
 import { useParams } from "@solidjs/router";
 import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
-import { Box, Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
+import { Alert, Box, Button, Chip, CircularProgress, Divider, FormControlLabel, IconButton, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
 import dayjs from "dayjs";
 import { Component, For, Match, Switch, createResource, createSignal } from "solid-js";
-import { CameraAggregatedInfo, Event, getCameraViewInfo, getPersonInfo, getUpdatedInfo } from "../../helper/helper";
+import { toggleStream } from "../../clients/backend/streams";
+import { CameraAggregatedInfo, Event, PTZDirection, doPtzCtrl, getCameraViewInfo, getPersonInfo, getUpdatedInfo } from "../../helper/helper";
 
 export const CameraViewerPage: Component = () => {
     const routeParams = useParams();
@@ -16,11 +17,29 @@ export const CameraViewerPage: Component = () => {
             transcoderId: data.camera.transcoderId,
         });
     });
+    const [isPtzCtrlInProcess, setIsPtzCtrlInProcess] = createSignal(false);
 
     const [modalOpen, setModalOpen] = createSignal(false);
     const handleOpen = () => setModalOpen(true);
     const handleClose = () => setModalOpen(false);
     const [currentItem, setCurrentItem] = createSignal<Event | null>(null);
+    const [ptzError, setPtzError] = createSignal<any | null>(null);
+
+    const handlePtzCtrl = (direction: PTZDirection) => {
+        return async () => {
+            setIsPtzCtrlInProcess(true);
+            try {
+                await doPtzCtrl(
+                    direction,
+                    data()!.
+                        camera.
+                        cameraId);
+            } catch (e: any) {
+                setPtzError(e);
+            }
+            setIsPtzCtrlInProcess(false);
+        }
+    }
 
     return <Switch>
         <Match when={data.loading}>
@@ -30,9 +49,23 @@ export const CameraViewerPage: Component = () => {
         </Match>
         <Match when={data.error}>Error: {data.error.message}</Match>
         <Match when={data()}>
+            {ptzError() != null && <div class="absolute top-8 right-8 z-50 w-80">
+                <Alert severity="error" onClose={() => { setPtzError(null) }}>
+                    Unable to complete the request. Please try again later.
+                </Alert>
+            </div>}
             <div class="flex flex-row h-full w-full">
                 <div class="w-full h-full" style="flex: 7">
-                    <iframe src={data()!.streamInfo.streamUrl} width={"100%"} height={"100%"} allowfullscreen />
+                    <Switch>
+                        <Match when={data()!.camera.enabled}>
+                            <iframe src={data()!.streamInfo.streamUrl} width={"100%"} height={"100%"} allowfullscreen />
+                        </Match>
+                        <Match when={!data()?.camera.enabled}>
+                            <div class="flex flex-row justify-center items-center h-full w-full bg-gray-900">
+                                <Typography variant="h6" color="white">Camera is disabled</Typography>
+                            </div>
+                        </Match>
+                    </Switch>
                 </div>
                 <div class="w-full h-full p-4 flex flex-col gap-4" style="flex: 3">
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }}>
@@ -41,6 +74,18 @@ export const CameraViewerPage: Component = () => {
                                 <Typography variant="body1">{data()!.camera.name}</Typography>
                                 <FormControlLabel
                                     label="Enabled"
+                                    checked={data()!.camera.enabled}
+                                    onChange={async () => {
+                                        await toggleStream(
+                                            data()!.
+                                                camera.
+                                                cameraId,
+                                            !data()!.
+                                                camera.
+                                                enabled);
+                                        refetch();
+                                        eventRefetch();
+                                    }}
                                     control={<SWButton size="small" inputProps={{ "aria-label": "controlled" }} defaultChecked />}
                                 />
                             </div>
@@ -56,34 +101,35 @@ export const CameraViewerPage: Component = () => {
                     </Paper>
                     <Paper sx={{ width: '100%', height: "100%" }}>
                         <List>
-                            <For each={events()?.events}>
-                                {event => <>
-                                    <EventItem event={event} onClick={(item: Event) => {
-                                        setCurrentItem(item);
-                                        handleOpen();
-                                    }} />
-                                    <Divider />
-                                </>}
-                            </For>
+                            <Switch>
+                                <Match when={events.loading}>
+                                    <div class="flex flex-row justify-center mt-8">
+                                        <CircularProgress />
+                                    </div>
+                                </Match>
+                                <Match when={events.error}>Error: {events.error.message}</Match>
+                                <Match when={events()}>
+                                    <For each={events()!.events}>
+                                        {event => <div>
+                                            <EventItem event={event} onClick={(item: Event) => {
+                                                setCurrentItem(item);
+                                                handleOpen();
+                                            }} />
+                                            <Divider />
+                                        </div>}
+                                    </For>
+                                </Match>
+                            </Switch>
                         </List>
                     </Paper>
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }} class="flex flex-row gap-4">
                         <div class="flex flex-row gap-4 flex-1">
-                            <Button variant="contained" sx={{ width: '1rem' }} color="primary"><ArrowLeft /></Button>
+                            <Button variant="contained" sx={{ width: '1rem' }} color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Left)}><ArrowLeft /></Button>
                             <div class="flex flex-col gap-4 justify-between items-center">
-                                <Button variant="contained" fullWidth color="primary"><ArrowUpward /></Button>
-                                <Button variant="contained" fullWidth color="primary"><ArrowDownward /></Button>
+                                <Button variant="contained" fullWidth color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Up)}><ArrowUpward /></Button>
+                                <Button variant="contained" fullWidth color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Down)}><ArrowDownward /></Button>
                             </div>
-                            <Button variant="contained" color="primary"><ArrowRight /></Button>
-                        </div>
-                        <div class="flex-1">
-                            <FormControl fullWidth variant="standard" size="small" margin="dense">
-                                <InputLabel for="standard-adornment-duration">Reset after</InputLabel>
-                                <Input
-                                    id="standard-adornment-duration"
-                                    endAdornment={<InputAdornment position="end">seconds</InputAdornment>}
-                                />
-                            </FormControl>
+                            <Button variant="contained" color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Right)}><ArrowRight /></Button>
                         </div>
                     </Paper>
                 </div>
