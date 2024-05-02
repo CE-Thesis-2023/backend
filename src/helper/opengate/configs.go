@@ -137,6 +137,16 @@ func (c *Configuration) buildLogger() error {
 
 func (c *Configuration) buildFFmpeg() error {
 	ffmpeg := make(map[string]interface{})
+	t := ""
+	switch c.integration.HardwareAccelerationType {
+	case "vaapi":
+		t = "preset-vaapi"
+	case "quicksync":
+		t = "preset-intel-qsv-h264"
+	}
+	if len(t) > 0 {
+		ffmpeg["hwaccel_args"] = t
+	}
 	ffmpeg["retry_interval"] = 10
 	c.c["ffmpeg"] = ffmpeg
 	return nil
@@ -166,7 +176,7 @@ func (c *Configuration) buildCameras() error {
 		inputs := make([]map[string]interface{}, 0, 1)
 		input := make(map[string]interface{})
 		input["path"] = c.mediaHelper.BuildRTSPSourceUrl(camera)
-		input["hwaccel_args"] = []string{"preset-vaapi"}
+
 		input["roles"] = []string{"detect"}
 		inputs = append(inputs, input)
 		ffmpeg["inputs"] = inputs
@@ -234,7 +244,20 @@ func (c *Configuration) buildCameras() error {
 func (c *Configuration) buildDetectors() error {
 	detectors := make(map[string]interface{})
 	defaultDetector := make(map[string]interface{})
-	defaultDetector["type"] = "cpu"
+	det := "cpu"
+	deviceType := ""
+	switch c.integration.WithEdgeTpu {
+	case true:
+		det = "edgetpu"
+		deviceType = "usb"
+	case false:
+	}
+	if len(det) > 0 {
+		defaultDetector["type"] = det
+	}
+	if len(deviceType) > 0 {
+		defaultDetector["device"] = "usb"
+	}
 	detectors["default"] = defaultDetector
 	c.c["detectors"] = detectors
 	return nil

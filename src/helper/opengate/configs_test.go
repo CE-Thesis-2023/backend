@@ -27,11 +27,13 @@ func TestOpenGateConfiguration(t *testing.T) {
 	prepareTestBiz()
 	t.Run("Test NewConfiguration", func(t *testing.T) {
 		integration := &db.OpenGateIntegration{
-			OpenGateId:            "1",
-			LogLevel:              "info",
-			SnapshotRetentionDays: 30,
-			MqttId:                "1",
-			TranscoderId:          "test-device-01",
+			OpenGateId:               "1",
+			LogLevel:                 "info",
+			SnapshotRetentionDays:    30,
+			MqttId:                   "1",
+			HardwareAccelerationType: "quicksync",
+			WithEdgeTpu:              true,
+			TranscoderId:             "test-device-01",
 		}
 		mqtt := &db.OpenGateMqttConfiguration{
 			ConfigurationId: "1",
