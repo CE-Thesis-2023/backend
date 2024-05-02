@@ -61,14 +61,20 @@ export async function getCameraViewInfo(cameraId: string): Promise<CameraAggrega
 
 export interface UpdatedInfo {
     events: Event[];
-    stats: CameraStats;
-    detectorStats: DetectorStats;
+    stats: CameraStats | undefined;
+    detectorStats: DetectorStats | undefined;
 }
 
 export interface Event {
     tracking: ObjectTrackingEvent;
     snapshot: Snapshot;
     presignedUrl: string;
+}
+
+export interface UpdatedInfoParams {
+    cameraId: string,
+    cameraName: string,
+    transcoderId: string
 }
 
 /**
@@ -78,29 +84,35 @@ export interface Event {
  * @param transcoderId Transcoder ID
  * @returns 
  */
-export async function getUpdatedInfo(cameraId: string, cameraName: string, transcoderId: string): Promise<UpdatedInfo> {
-    const events = await getObjectTrackingEvents([], cameraId);
-    let snapshotIds = events.map(e => e.snapshotId);
-    const snapshots = await getSnapshots(snapshotIds);
-
-    let snapshotMap: Map<string, Snapshot> = new Map<string, Snapshot>();
-    snapshots.snapshot.forEach(s => snapshotMap.set(s.snapshotId, s))
-    const presignedUrls = new Map<string, string>(Object.entries(snapshots.presignedUrl));
-
+export async function getUpdatedInfo(params: UpdatedInfoParams): Promise<UpdatedInfo> {
+    const events = await getObjectTrackingEvents([], params.cameraId);
     const aggregatedEvent: Event[] = [];
-    for (let i = 0; i < events.length; i += 1) {
-        const e = events[i];
-        aggregatedEvent[i] = {
-            tracking: e,
-            snapshot: snapshotMap.get(e.snapshotId)!,
-            presignedUrl: presignedUrls.get(e.snapshotId)!,
-        };
+    if (events.length > 0) {
+        let snapshotIds = events.map(e => e.snapshotId);
+        const snapshots = await getSnapshots(snapshotIds);
+
+        let snapshotMap: Map<string, Snapshot> = new Map<string, Snapshot>();
+        snapshots.snapshot.forEach(s => snapshotMap.set(s.snapshotId, s))
+        const presignedUrls = new Map<string, string>(Object.entries(snapshots.presignedUrl));
+
+        for (let i = 0; i < events.length; i += 1) {
+            const e = events[i];
+            aggregatedEvent[i] = {
+                tracking: e,
+                snapshot: snapshotMap.get(e.snapshotId)!,
+                presignedUrl: presignedUrls.get(e.snapshotId)!,
+            };
+        }
     }
 
-    const stats = await getCameraStats(transcoderId, [cameraName]);
-    const detectorStats = stats.detectorStats[0];
-    const cameraStats = stats.cameraStats[0];
 
+    const stats = await getCameraStats(params.transcoderId, [params.cameraName]);
+    const detectorStats = stats.detectorStats.length > 0 ?
+        stats.detectorStats[0] :
+        undefined;
+    const cameraStats = stats.cameraStats.length > 0 ?
+        stats.cameraStats[0] :
+        undefined;
     return {
         events: aggregatedEvent,
         stats: cameraStats,

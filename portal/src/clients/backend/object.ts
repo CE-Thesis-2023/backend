@@ -47,7 +47,7 @@ export interface Snapshot {
     timestamp: string;
     transcoderId: string;
     openGateEventId: string;
-    detectedPersonId: string;
+    detectedPeopleId: string | undefined;
 }
 
 /**

@@ -4,61 +4,23 @@ import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility 
 import { Box, Button, Chip, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, Input, InputAdornment, InputLabel, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
 import dayjs from "dayjs";
 import { Component, For, Match, Switch, createResource, createSignal } from "solid-js";
-import { ObjectTrackingEvent, Snapshot, getCameraStreamInfo, getCameras, getObjectTrackingEvents, getPeople, getPeopleImage, getSnapshots } from "../../clients/backend/client";
-
-async function fetchCameraData(cameraId: string) {
-    const response = await getCameras([cameraId]);
-    const camera = response[0];
-    const streamInfo = await getCameraStreamInfo(cameraId);
-    return {
-        camera: camera,
-        streamInfo: streamInfo
-    };
-}
-
-interface CameraEvent {
-    event: ObjectTrackingEvent;
-    snapshot: Snapshot;
-    presignedUrl: string;
-}
-
-async function fetchCameraEvents(cameraId: string) {
-    const events = await getObjectTrackingEvents([]);
-    let snapshotIds = []
-    for (let i = 0; i < events.length; i++) {
-        snapshotIds.push(events[i].snapshotId);
-    }
-    const snapshots = await getSnapshots(snapshotIds);
-    const snapshotMap = new Map<string, Snapshot>();
-    for (let i = 0; i < snapshots.snapshot.length; i++) {
-        snapshotMap.set(
-            snapshots.snapshot[i].snapshotId,
-            snapshots.snapshot[i]);
-    }
-    const eventsWithSnapshots: CameraEvent[] = [];
-    for (let i = 0; i < events.length; i++) {
-        const snapshot = snapshotMap.get(events[i].snapshotId);
-        if (snapshot) {
-            eventsWithSnapshots.push({
-                event: events[i],
-                snapshot: snapshot,
-                presignedUrl: snapshots.
-                    presignedUrl[snapshot.snapshotId]
-            });
-        }
-    }
-    return eventsWithSnapshots;
-}
+import { CameraAggregatedInfo, Event, getCameraViewInfo, getPersonInfo, getUpdatedInfo } from "../../helper/helper";
 
 export const CameraViewerPage: Component = () => {
     const routeParams = useParams();
-    const [data, { refetch }] = createResource(routeParams.cameraId, fetchCameraData);
-    const [events, { refetch: eventRefetch }] = createResource(routeParams.cameraId, fetchCameraEvents);
+    const [data, { refetch }] = createResource(routeParams.cameraId, getCameraViewInfo);
+    const [events, { refetch: eventRefetch }] = createResource(data, async (data: CameraAggregatedInfo) => {
+        return await getUpdatedInfo({
+            cameraId: data.camera.cameraId,
+            cameraName: data.camera.openGateCameraName,
+            transcoderId: data.camera.transcoderId,
+        });
+    });
 
     const [modalOpen, setModalOpen] = createSignal(false);
     const handleOpen = () => setModalOpen(true);
     const handleClose = () => setModalOpen(false);
-    const [currentItem, setCurrentItem] = createSignal<CameraEvent | null>(null);
+    const [currentItem, setCurrentItem] = createSignal<Event | null>(null);
 
     return <Switch>
         <Match when={data.loading}>
@@ -94,9 +56,9 @@ export const CameraViewerPage: Component = () => {
                     </Paper>
                     <Paper sx={{ width: '100%', height: "100%" }}>
                         <List>
-                            <For each={events()}>
+                            <For each={events()?.events}>
                                 {event => <>
-                                    <EventItem event={event} onClick={(item: CameraEvent) => {
+                                    <EventItem event={event} onClick={(item: Event) => {
                                         setCurrentItem(item);
                                         handleOpen();
                                     }} />
@@ -133,11 +95,27 @@ export const CameraViewerPage: Component = () => {
     </Switch>
 }
 
-const EventItem: Component<{ event: CameraEvent, onClick: (item: CameraEvent) => void }> = (props) => {
-    const currentTime = props.event.event.endTime ?
-        dayjs(props.event.event.endTime).second() :
+interface EventItemProps {
+    event: Event;
+    onClick: (item: Event) => void;
+}
+
+function getEndTime(endTime: string): number {
+    return endTime ?
+        dayjs(endTime).second() :
         dayjs(Date.now()).second();
-    const duration = currentTime - dayjs(props.event.event.startTime).second();
+}
+
+function getElapsed(startTime: string, endTime: string): number {
+    const currentTime = getEndTime(endTime);
+    return currentTime -
+        dayjs(startTime).second();
+}
+
+const EventItem: Component<EventItemProps> = (props: EventItemProps) => {
+    const { tracking, snapshot } = props.event;
+    const elasped = getElapsed(tracking.startTime, tracking.endTime);
+
     return <>
         <ListItemButton onClick={() => {
             props.onClick(props.event);
@@ -149,17 +127,17 @@ const EventItem: Component<{ event: CameraEvent, onClick: (item: CameraEvent) =>
                 <div class="flex flex-row justify-between items-center mb-2">
                     {"Person detected"}
                     <div class="flex flex-row justify-start items-center gap-2">
-                        {props.event.event.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
-                        {props.event.snapshot.detectedPersonId ? <Chip label="Face" color="primary" /> : null}
-                        <Typography variant="body2">{`Duration: ${currentTime - duration}s`}</Typography>
+                        {tracking.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
+                        {snapshot.detectedPeopleId ? <Chip label="Face" color="primary" /> : null}
+                        <Typography variant="body2">{`Duration: ${elasped}s`}</Typography>
                     </div>
                 </div>
             } secondary={
                 <div class="flex flex-row justify-between items-center">
                     <Typography variant="body2">
-                        {`Score: ${Math.round(props.event.event.score * 100) / 100}`}
+                        {`Score: ${Math.round(tracking.score * 100) / 100}`}
                     </Typography>
-                    {`${dayjs(props.event.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}`}
+                    {`${dayjs(tracking.frameTime).format("H:mm:ss A on MMM DD, YYYY")}`}
                 </div>
             } />
         </ListItemButton>
@@ -169,36 +147,14 @@ const EventItem: Component<{ event: CameraEvent, onClick: (item: CameraEvent) =>
 interface EventInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    data: CameraEvent;
-}
-
-interface DetectablePerson {
-    personId: string;
-    name: string;
-    age: string;
-    presignedUrl: string;
-}
-
-async function fetchDetectablePerson(personId: string) {
-    if (personId.length > 0) {
-        const person = await getPeople([personId]);
-        let p: DetectablePerson = {
-            personId: person[0].personId,
-            name: person[0].name,
-            age: person[0].age,
-            presignedUrl: ""
-        };
-        if (person.length > 0) {
-            const presignedUrl = await getPeopleImage(personId);
-            p.presignedUrl = presignedUrl.presignedUrl;
-        }
-        return p;
-    }
-    return null;
+    data: Event;
 }
 
 const EventInfoModal = (props: EventInfoModalProps) => {
-    const [detectablePerson] = createResource(props.data.snapshot.detectedPersonId, fetchDetectablePerson);
+    const { tracking, snapshot, presignedUrl } = props.data;
+    const [personInfo, setPersonInfo] = createResource(
+        snapshot.detectedPeopleId,
+        getPersonInfo);
     return <Modal sx={{
         height: '100vh',
         display: 'flex',
@@ -208,38 +164,38 @@ const EventInfoModal = (props: EventInfoModalProps) => {
     }} open={props.isOpen} onClose={props.onClose}>
         <Paper class="p-8">
             <Box>
-                <img src={props.data.presignedUrl} alt="Snapshot" class="block h-96 w-auto" />
+                <img src={presignedUrl} alt="Snapshot" class="block h-96 w-auto" />
             </Box>
             <Box class="mt-4">
                 <div class="flex flex-row justify-between items-center">
                     <Typography variant="h6">Event Information</Typography>
                     <div class="flex flex-row gap-2">
-                        {props.data.snapshot.detectedPersonId ? <Chip label="Face" color="primary" /> : <Chip label="No face" />}
+                        {snapshot.detectedPeopleId ? <Chip label="Face" color="primary" /> : <Chip label="No face" />}
                     </div>
                 </div>
-                <Typography variant="body2">{dayjs(props.data.event.frameTime).format("H:mm:ss A on MMM DD, YYYY")}</Typography>
+                <Typography variant="body2">{dayjs(tracking.frameTime).format("H:mm:ss A on MMM DD, YYYY")}</Typography>
                 <div class="flex flex-row gap-4 justify-between items-center mt-4">
                     <div>
-                        <Typography variant="body1">Score: {props.data.event.score}</Typography>
+                        <Typography variant="body1">Score: {tracking.score}</Typography>
                     </div>
                     <div>
-                        {(props.data.event.endTime == null || props.data.event.endTime == "") ?
+                        {(tracking.endTime == null || tracking.endTime == "") ?
                             <Chip label="Ongoing" color="success" /> :
                             <Chip label="Ended" color="secondary" />}
                     </div>
                 </div>
-                <Typography variant="body2" class="mt-4">Snapshot ID: {props.data.snapshot.snapshotId}</Typography>
-                <Typography variant="body2">Event ID: {props.data.event.eventId}</Typography>
-                {detectablePerson() ?
+                <Typography variant="body2" class="mt-4">Snapshot ID: {snapshot.snapshotId}</Typography>
+                <Typography variant="body2">Event ID: {tracking.eventId}</Typography>
+                {personInfo() ?
                     <div class="flex flex-row gap-4 justify-between items-center mt-4">
                         <div>
-                            <img src={detectablePerson()!.presignedUrl} alt="Person" class="block h-32 w-auto" />
+                            <img src={personInfo()!.image.presignedUrl} alt="Person" class="block h-32 w-auto" />
                         </div>
                         <div>
                             <Typography variant="body1">Person Information</Typography>
-                            <Typography variant="body2">Name: {detectablePerson()!.name}</Typography>
-                            <Typography variant="body2">Age: {detectablePerson()!.age}</Typography>
-                            <Typography variant="body2">Person ID: {detectablePerson()!.personId}</Typography>
+                            <Typography variant="body2">Name: {personInfo()!.person.name}</Typography>
+                            <Typography variant="body2">Age: {personInfo()!.person.age}</Typography>
+                            <Typography variant="body2">Person ID: {personInfo()!.person.personId}</Typography>
                         </div>
                     </div> : null}
             </Box>
