@@ -170,3 +170,60 @@ export async function doPtzCtrl(dir: PTZDirection, cameraId: string): Promise<vo
     await remoteControl(rc);
     return;
 }
+
+export interface AggregatedListCamera {
+    items: CameraItem[];
+}
+
+export interface CameraItem {
+    camera: Camera;
+    transcoder: Transcoder | undefined;
+    settings: OpenGateCameraSettings;
+    configs: OpenGateIntegration;
+}
+
+/**
+ * Get camera information for list camera page
+ * @param cameraIds Camera IDs
+ * @returns 
+ */
+export async function getListCameras(cameraIds: string[]): Promise<AggregatedListCamera> {
+    const cameras = await getCameras(cameraIds);
+    const transcoderIds = cameras.map(camera => camera.transcoderId);
+
+    const transcoders = await getTranscoders(transcoderIds);
+    const transcoderMap = new Map<string, Transcoder>();
+    for (let i = 0; i < transcoders.length; i++) {
+        transcoderMap.set(transcoders[i].deviceId, transcoders[i]);
+    }
+
+    const foundCameraIds = cameras.map(c => c.cameraId);
+    const openGateSettings = await getOpenGateCameraSettings(foundCameraIds);
+
+    const settingsMap = new Map<string, OpenGateCameraSettings>();
+    for (let i = 0; i < openGateSettings.length; i += 1) {
+        settingsMap.set(cameras[i].cameraId, openGateSettings[i]);
+    }
+
+    const openGateConfigsMap = new Map<string, OpenGateIntegration>();
+    for (let i = 0; i < transcoders.length; i += 1) {
+        const configs = await getOpenGateConfigurations(transcoders[i].openGateIntegrationId);
+        openGateConfigsMap.set(transcoders[i].deviceId, configs);
+    }
+
+    const aggregated: CameraItem[] = cameras.map(camera => {
+        const ltd = transcoderMap.get(camera.transcoderId);
+        const settings = settingsMap.get(camera.cameraId);
+        const configs = openGateConfigsMap.get(camera.transcoderId);
+        return {
+            camera: camera,
+            transcoder: ltd,
+            settings: settings!,
+            configs: configs!,
+        };
+    });
+
+    return {
+        items: aggregated,
+    };
+}

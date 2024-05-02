@@ -8,22 +8,7 @@ import { AddCameraParams, Transcoder, addCamera, deleteCamera, getCameras, getOp
 import Codeblock from "../../components/Codeblock";
 
 async function fetchData(cameraIds: string[]) {
-    const cameras = await getCameras(cameraIds);
-    const transcoderIds = cameras.map(camera => camera.transcoderId);
-    const transcoders = await getTranscoders(transcoderIds);
-    const transcoderMap = new Map<string, Transcoder>();
-    for (let i = 0; i < transcoders.length; i++) {
-        transcoderMap.set(transcoders[i].deviceId, transcoders[i]);
-    }
-    const aggregated = cameras.map(camera => {
-        const ltd = transcoderMap.get(camera.transcoderId);
-        return {
-            camera: camera,
-            transcoder: ltd,
-        };
-    });
-
-    return aggregated;
+    
 }
 
 export const CamerasPage: Component = () => {
@@ -236,12 +221,7 @@ interface CameraSettingsDialogProps {
 }
 
 async function fetchCameraSettings(ids: { cameraId: string, openGateConfigurationsId: string }) {
-    const openGateConfigs = await getOpenGateConfigurations(ids.openGateConfigurationsId);
-    const openGateSettings = await getOpenGateCameraSettings([ids.cameraId]);
-    return {
-        openGateConfigs: openGateConfigs,
-        openGateSettings: openGateSettings
-    };
+    
 }
 
 const CameraSettingsDialog = (props: CameraSettingsDialogProps) => {
