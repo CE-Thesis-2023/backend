@@ -1,4 +1,5 @@
 import { Camera, getCameras } from "../clients/backend/cameras";
+import { RemoteControl, remoteControl } from "../clients/backend/commands";
 import { ObjectTrackingEvent, Snapshot, getObjectTrackingEvents, getSnapshots } from "../clients/backend/object";
 import { OpenGateCameraSettings, OpenGateIntegration, getOpenGateCameraSettings, getOpenGateConfigurations } from "../clients/backend/opengate";
 import { Person, PersonHistory, PersonImage, getPeople, getPeopleImage, getPersonHistory } from "../clients/backend/people";
@@ -130,4 +131,42 @@ export async function getPersonInfo(personId: string): Promise<PersonInfo> {
         image: image,
         history: history,
     }
+}
+
+
+export enum PTZDirection {
+    Up = 1,
+    Down,
+    Left,
+    Right,
+}
+
+/**
+ * Perform remote control of camera
+ * @param dir Direction to do PTZ Control
+ * @param cameraId Camera ID
+ * @returns 
+ */
+export async function doPtzCtrl(dir: PTZDirection, cameraId: string): Promise<void> {
+    let rc: RemoteControl = {
+        cameraId: cameraId,
+        pan: 0,
+        tilt: 0,
+    };
+    switch (dir) {
+        case PTZDirection.Up:
+            rc.pan = 0
+            rc.tilt = 30
+        case PTZDirection.Down:
+            rc.pan = 0
+            rc.tilt = -30
+        case PTZDirection.Left:
+            rc.pan = -30
+            rc.tilt = 0
+        case PTZDirection.Right:
+            rc.pan = 30
+            rc.tilt = 0
+    }
+    await remoteControl(rc);
+    return;
 }
