@@ -1,11 +1,27 @@
 
 import { useParams } from "@solidjs/router";
-import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, Refresh, Visibility } from "@suid/icons-material";
-import { Alert, Box, Button, Chip, CircularProgress, Divider, FormControlLabel, IconButton, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
+import { ArrowDownward, ArrowLeft, ArrowRight, ArrowUpward, CircleRounded, Refresh } from "@suid/icons-material";
+import { Alert, Box, Button, Chip, CircularProgress, Divider, FormControlLabel, List, ListItemAvatar, ListItemButton, ListItemText, Modal, Paper, Switch as SWButton, Typography } from "@suid/material";
+import { red } from "@suid/material/colors";
+import green from "@suid/material/colors/green";
 import dayjs from "dayjs";
 import { Component, For, Match, Switch, createResource, createSignal } from "solid-js";
 import { toggleStream } from "../../clients/backend/streams";
 import { CameraAggregatedInfo, Event, PTZDirection, doPtzCtrl, getCameraViewInfo, getPersonInfo, getUpdatedInfo } from "../../helper/helper";
+
+const Available = () => {
+    return <div class="flex flex-row justify-center items-center gap-1">
+        <CircleRounded sx={{ color: green[500], fontSize: "12px" }} />
+        <p>Active</p>
+    </div>
+}
+
+const Unavailable = () => {
+    return <div class="flex flex-row justify-center items-center gap-1">
+        <CircleRounded sx={{ color: red[500], fontSize: "12px" }} />
+        <p>Inactive</p>
+    </div>
+}
 
 export const CameraViewerPage: Component = () => {
     const routeParams = useParams();
@@ -69,9 +85,9 @@ export const CameraViewerPage: Component = () => {
                 </div>
                 <div class="w-full h-full p-4 flex flex-col gap-4" style="flex: 3">
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }}>
-                        <div class="flex w-full h-fit flex-row justify-between items-center">
+                        <div class="flex w-full h-fit flex-row justify-between items-center gap-8">
                             <div>
-                                <Typography variant="body1">{data()!.camera.name}</Typography>
+                                <Typography variant="body1" fontWeight={500}>{data()!.camera.name}</Typography>
                                 <FormControlLabel
                                     label="Enabled"
                                     checked={data()!.camera.enabled}
@@ -89,10 +105,43 @@ export const CameraViewerPage: Component = () => {
                                     control={<SWButton size="small" inputProps={{ "aria-label": "controlled" }} defaultChecked />}
                                 />
                             </div>
+                            <div class="flex justify-between items-center">
+                                <div class="grid grid-cols-4 gap-x-4 gap-y-2 items-center">
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Edge TPU</p>
+                                        <p>{data()?.integration.withEdgeTpu ? "Yes" : "No"}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm"> Hardware Accel.</p>
+                                        <p>{data()?.integration.hardwareAccelerationType ?? "N/A"}</p>
+                                    </div >
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Log Level</p>
+                                        <p>{data()?.integration.logLevel}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Retention (days)</p>
+                                        <p>{data()?.integration.snapshotRetentionDays}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">OpenGate</p>
+                                        <p>{data()?.transcoderStatus.openGateStatus ? <Available /> : <Unavailable />}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Transcoder</p>
+                                        <p>{data()?.transcoderStatus.transcoderStatus ? <Available /> : <Unavailable />}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Autotracking</p>
+                                        <p>{data()?.transcoderStatus.autotracker ? <Available /> : <Unavailable />}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-start items-start">
+                                        <p class="font-semibold text-sm">Object Det.</p>
+                                        <p>{data()?.transcoderStatus.objectDetection ? <Available /> : <Unavailable />}</p>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="flex flex-row justify-end align-middle gap-2">
-                                <IconButton size="small" aria-label="camera-info-button">
-                                    <Visibility />
-                                </IconButton>
                                 <Button size="small" onClick={() => eventRefetch()} startIcon={<Refresh />} variant="contained">
                                     {"Refresh"}
                                 </Button>
@@ -122,14 +171,46 @@ export const CameraViewerPage: Component = () => {
                             </Switch>
                         </List>
                     </Paper>
-                    <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }} class="flex flex-row gap-4">
-                        <div class="flex flex-row gap-4 flex-1">
-                            <Button variant="contained" sx={{ width: '1rem' }} color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Left)}><ArrowLeft /></Button>
+                    <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }} class="flex flex-row gap-8 items-center">
+                        <div class="flex flex-row gap-4 h-fit">
+                            <Button variant="contained" sx={{ width: '0.5rem' }} color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Left)}><ArrowLeft /></Button>
                             <div class="flex flex-col gap-4 justify-between items-center">
                                 <Button variant="contained" fullWidth color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Up)}><ArrowUpward /></Button>
                                 <Button variant="contained" fullWidth color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Down)}><ArrowDownward /></Button>
                             </div>
                             <Button variant="contained" color="primary" disabled={isPtzCtrlInProcess()} onClick={handlePtzCtrl(PTZDirection.Right)}><ArrowRight /></Button>
+                        </div>
+                        <div class="flex flex-row justify-center items-center">
+                            <div class="grid grid-cols-4 gap-y-2 gap-x-4 items-center">
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Camera Name</p>
+                                    <p>{events()?.stats?.cameraName ?? data()!.camera.openGateCameraName}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Camera (fps)</p>
+                                    <p>{events()?.stats?.cameraFps ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Detection (fps)</p>
+                                    <p>{events()?.stats?.detectionFps ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Capture PID</p>
+                                    <p>{events()?.stats?.capturePid ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Process ID</p>
+                                    <p>{events()?.stats?.processId ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Processed (fps)</p>
+                                    <p>{events()?.stats?.processFps ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Skipped (fps)</p>
+                                    <p>{events()?.stats?.skippedFps ?? "N/A"}</p>
+                                </div>
+                            </div>
                         </div>
                     </Paper>
                 </div>
