@@ -336,15 +336,15 @@ func (t *DetectablePerson) Values() []interface{} {
 }
 
 type OpenGateCameraStats struct {
-	CameraStatId uuid.UUID `json:"camera_stat_id" db:"camera_stat_id,primary" gorm:"index"`
-	TranscoderId string    `json:"transcoder_id" db:"transcoder_id" gorm:"index"`
-	CameraName   string    `json:"camera_name" db:"camera_name"`
-	CameraFPS    float64   `json:"camera_fps" db:"camera_fps"`
-	DetectionFPS float64   `json:"detection_fps" db:"detection_fps"`
-	CapturePID   int       `json:"capture_pid" db:"capture_p_id"`
-	ProcessID    int       `json:"process_id" db:"process_id"`
-	ProcessFPS   float64   `json:"process_fps" db:"process_fps"`
-	SkippedFPS   float64   `json:"skipped_fps" db:"skipped_fps"`
+	CameraStatId uuid.UUID `json:"cameraStatId" db:"camera_stat_id,primary" gorm:"index"`
+	TranscoderId string    `json:"transcoderId" db:"transcoder_id" gorm:"index"`
+	CameraName   string    `json:"cameraName" db:"camera_name"`
+	CameraFPS    float64   `json:"cameraFps" db:"camera_fps"`
+	DetectionFPS float64   `json:"detectionFps" db:"detection_fps"`
+	CapturePID   int       `json:"capturePid" db:"capture_p_id"`
+	ProcessID    int       `json:"processId" db:"process_id"`
+	ProcessFPS   float64   `json:"processFps" db:"process_fps"`
+	SkippedFPS   float64   `json:"skippedFps" db:"skipped_fps"`
 	Timestamp    time.Time `json:"timestamp" db:"timestamp"`
 }
 
@@ -383,12 +383,12 @@ func (t *OpenGateCameraStats) Values() []interface{} {
 }
 
 type OpenGateDetectorStats struct {
-	DetectorStatId uuid.UUID `json:"detector_stat_id" db:"detector_stat_id,primary" gorm:"index"`
-	DetectorName   string    `json:"detector_name" db:"detector_name"`
-	TranscoderId   string    `json:"transcoder_id" db:"transcoder_id" gorm:"index"`
-	DetectorStart  float64   `json:"detector_start" db:"detector_start"`
-	InferenceSpeed float64   `json:"inference_speed" db:"inference_speed"`
-	ProcessID      int       `json:"process_id" db:"process_id"`
+	DetectorStatId uuid.UUID `json:"detectorStatId" db:"detector_stat_id,primary" gorm:"index"`
+	DetectorName   string    `json:"detectorName" db:"detector_name"`
+	TranscoderId   string    `json:"transcoderId" db:"transcoder_id" gorm:"index"`
+	DetectorStart  float64   `json:"detectorStart" db:"detector_start"`
+	InferenceSpeed float64   `json:"inferenceSpeed" db:"inference_speed"`
+	ProcessID      int       `json:"processId" db:"process_id"`
 	Timestamp      time.Time `json:"timestamp" db:"timestamp"`
 }
 

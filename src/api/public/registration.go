@@ -16,14 +16,6 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.DELETE("/api/cameras", DeleteCamera)
 
 		app.GET("/api/opengate/:openGateId", GetOpenGateSettings)
-		app.PUT("/api/opengate/:openGateId", UpdateOpenGateSettings)
-
-		app.GET("/api/groups/:id/cameras", GetCamerasByGroupId)
-		app.GET("/api/groups", GetCameraGroups)
-		app.POST("/api/groups", AddCameraGroup)
-		app.DELETE("/api/groups", DeleteCameraGroup)
-		app.POST("/api/groups/cameras", AddCamerasToGroup)
-		app.DELETE("/api/groups/cameras", RemoveCamerasFromGroup)
 
 		app.GET("/api/cameras/:id/streams", GetStreamInfo)
 		app.PUT("/api/cameras/:id/streams", ToggleStream)
@@ -32,6 +24,7 @@ func ServiceRegistration() func(app *gin.Engine) {
 
 		app.GET("/api/events/object_tracking", GetObjectTrackingEvent)
 		app.DELETE("/api/events/object_tracking", DeleteObjectTrackingEvent)
+		app.GET("/api/snapshots", GetSnapshotPresignedUrl)
 
 		app.GET("/api/people", GetDetectablePeople)
 		app.POST("/api/people", AddDetectablePerson)
@@ -40,7 +33,5 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.GET("/api/people/history", GetPersonHistory)
 
 		app.GET("/api/stats", GetLatestOpenGateCameraStats)
-
-		app.GET("/api/snapshots", GetSnapshotPresignedUrl)
 	}
 }
