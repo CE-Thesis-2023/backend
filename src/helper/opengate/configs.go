@@ -1,6 +1,7 @@
 package opengate
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -76,7 +77,14 @@ func (c *Configuration) YAML() ([]byte, error) {
 	if err := c.build(); err != nil {
 		return nil, err
 	}
-	return yaml.Marshal(c.c)
+	var buf bytes.Buffer
+	encoder := yaml.NewEncoder(&buf)
+	encoder.SetIndent(2)
+	defer encoder.Close()
+	if err := encoder.Encode(c.c); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (c *Configuration) buildMQTTConfiguration() error {
@@ -151,6 +159,7 @@ func (c *Configuration) buildCameras() error {
 		}
 
 		m := make(map[string]interface{})
+		m["enabled"] = camera.Enabled
 
 		ffmpeg := make(map[string]interface{})
 

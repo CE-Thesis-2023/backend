@@ -65,7 +65,7 @@ func TestOpenGateConfiguration(t *testing.T) {
 				Port:               80,
 				Username:           "admin",
 				Password:           "admin",
-				Enabled:            true,
+				Enabled:            false,
 				OpenGateCameraName: "camera_name",
 				GroupId:            "1",
 				TranscoderId:       "test-device-01",
