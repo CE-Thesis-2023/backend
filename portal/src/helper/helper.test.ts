@@ -1,4 +1,4 @@
-import { getCameraViewInfo, getListCameras, getUpdatedInfo } from "./helper";
+import { getCameraViewInfo, getListCameras, getListTranscoders, getUpdatedInfo } from "./helper";
 
 test("camera aggregated info", async () => {
     const cameraId = "ec92cdfa-a7a0-4b4c-8717-bfb26753cc5d";
@@ -19,6 +19,13 @@ test("get camera updated info", async () => {
 test("get camera list", async () => {
     const cameraIds: string[] = [];
     const result = await getListCameras(cameraIds);
+    expect(result.items.length).toBeGreaterThan(0);
+    console.log(JSON.stringify(result));
+})
+
+test("get transcoder list", async () => {
+    const transcoderIds: string[] = [];
+    const result = await getListTranscoders(transcoderIds);
     expect(result.items.length).toBeGreaterThan(0);
     console.log(JSON.stringify(result));
 })

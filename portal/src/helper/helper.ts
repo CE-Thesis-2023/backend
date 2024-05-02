@@ -227,3 +227,40 @@ export async function getListCameras(cameraIds: string[]): Promise<AggregatedLis
         items: aggregated,
     };
 }
+
+export interface ListTranscoders {
+    items: TranscoderInfo[];
+}
+
+export interface TranscoderInfo {
+    transcoder: Transcoder;
+    integration: OpenGateIntegration;
+}
+
+/**
+ * Get list of transcoders
+ * @param transcoderIds Transcoder IDs
+ * @returns 
+ */
+export async function getListTranscoders(transcoderIds: string[]): Promise<ListTranscoders> {
+    const transcoders = await getTranscoders(transcoderIds);
+    const foundIds = transcoders.map(t => t.deviceId);
+
+    const integrationMap = new Map<string, OpenGateIntegration>();
+    for (let i = 0; i < foundIds.length; i += 1) {
+        const id = foundIds[i];
+        const integration = await getOpenGateConfigurations(transcoders[i].openGateIntegrationId);
+        integrationMap.set(id, integration);
+    }
+
+    const infos: TranscoderInfo[] = transcoders.map(t => {
+        return {
+            transcoder: t,
+            integration: integrationMap.get(t.deviceId)!,
+        }
+    })
+
+    return {
+        items: infos,
+    }
+}
