@@ -101,12 +101,12 @@ func (s *PrivateService) initializeOpenGateDefaultConfigurations(ctx context.Con
 		zap.Any("device", device))
 
 	openGateIntegration := &db.OpenGateIntegration{
-		OpenGateId:            uuid.NewString(),
-		TranscoderId:          device.DeviceId,
-		Available:             false,
-		IsRestarting:          false,
-		LogLevel:              "info",
-		SnapshotRetentionDays: 7,
+		OpenGateId:               uuid.NewString(),
+		TranscoderId:             device.DeviceId,
+		HardwareAccelerationType: "cpu",
+		WithEdgeTpu:              false,
+		LogLevel:                 "info",
+		SnapshotRetentionDays:    7,
 	}
 
 	mqttConfigs := db.OpenGateMqttConfiguration{

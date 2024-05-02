@@ -17,14 +17,13 @@ type Transcoder struct {
 }
 
 type OpenGateIntegration struct {
-	OpenGateId            string `json:"openGateId" db:"open_gate_id,primary" gorm:"index"`
-	Available             bool   `json:"available" db:"available"`
-	IsRestarting          bool   `json:"isRestarting" db:"is_restarting"`
-	LogLevel              string `json:"logLevel" db:"log_level"`
-	SnapshotRetentionDays int    `json:"snapshotRetentionDays" db:"snapshot_retention_days"`
-
-	MqttId       string `json:"mqttId" db:"mqtt_id"`
-	TranscoderId string `json:"transcoderId" db:"transcoder_id" gorm:"index"`
+	OpenGateId               string `json:"openGateId" db:"open_gate_id,primary" gorm:"index"`
+	LogLevel                 string `json:"logLevel" db:"log_level"`
+	SnapshotRetentionDays    int    `json:"snapshotRetentionDays" db:"snapshot_retention_days"`
+	HardwareAccelerationType string `json:"hardwareAccelerationType" db:"hardware_acceleration_type"`
+	WithEdgeTpu              bool   `json:"withEdgeTpu" db:"with_edge_tpu"`
+	MqttId                   string `json:"mqttId" db:"mqtt_id"`
+	TranscoderId             string `json:"transcoderId" db:"transcoder_id" gorm:"index"`
 }
 
 type OpenGateMqttConfiguration struct {
@@ -218,8 +217,6 @@ func (t *OpenGateIntegration) Fields() []string {
 	fs := []string{}
 	fs = append(fs,
 		"open_gate_id",
-		"available",
-		"is_restarting",
 		"log_level",
 		"snapshot_retention_days",
 		"mqtt_id",
@@ -232,8 +229,6 @@ func (t *OpenGateIntegration) Values() []interface{} {
 	vs := []interface{}{}
 	vs = append(vs,
 		t.OpenGateId,
-		t.Available,
-		t.IsRestarting,
 		t.LogLevel,
 		t.SnapshotRetentionDays,
 		t.MqttId,

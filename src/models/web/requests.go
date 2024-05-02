@@ -21,8 +21,26 @@ type RegisterTranscoderRequest struct {
 	Name string `json:"name"`
 }
 type UpdateTranscoderRequest struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id                       string `form:"id" json:"id"`
+	Name                     string `form:"name" json:"name"`
+	LogLevel                 string `form:"logLevel" json:"logLevel" validate:"oneof=debug info warning"`
+	HardwareAccelerationType string `form:"hardwareAccelerationType" json:"hardwareAccelerationType" validate:"oneof=cpu vaapi quicksync"`
+	EdgeTpuEnabled           bool   `form:"edgeTpuEnabled" json:"edgeTpuEnabled"`
+}
+
+func (r UpdateTranscoderRequest) Patch(m *db.Transcoder, o *db.OpenGateIntegration) {
+	if r.Name != "" {
+		m.Name = r.Name
+	}
+	if o != nil {
+		if r.LogLevel != "" {
+			o.LogLevel = r.LogLevel
+		}
+		if r.HardwareAccelerationType != "" {
+			o.HardwareAccelerationType = r.HardwareAccelerationType
+		}
+		o.WithEdgeTpu = r.EdgeTpuEnabled
+	}
 }
 
 type GetCamerasRequest struct {

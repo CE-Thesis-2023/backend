@@ -28,8 +28,6 @@ func TestOpenGateConfiguration(t *testing.T) {
 	t.Run("Test NewConfiguration", func(t *testing.T) {
 		integration := &db.OpenGateIntegration{
 			OpenGateId:            "1",
-			Available:             true,
-			IsRestarting:          false,
 			LogLevel:              "info",
 			SnapshotRetentionDays: 30,
 			MqttId:                "1",

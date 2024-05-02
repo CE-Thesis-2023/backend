@@ -835,14 +835,24 @@ func (s *WebService) UpdateTranscoder(ctx context.Context, req *web.UpdateTransc
 	logger.SDebug("UpdateTranscoder: original",
 		zap.Reflect("original", transcoder))
 
-	if err := copier.Copy(transcoder, req); err != nil {
-		logger.SError("UpdateTranscoder: copy error", zap.Error(err))
+	openGateSettings, err := s.getOpenGateIntegrationById(ctx, transcoder.OpenGateIntegrationId)
+	if err != nil {
+		logger.SError("UpdateTranscoder: getOpenGateIntegrationById",
+			zap.Error(err))
 		return nil, err
 	}
+
+	req.Patch(&transcoder, openGateSettings)
+
 	if err := s.updateDevice(ctx, &transcoder); err != nil {
 		logger.SError("UpdateTranscoder: update error", zap.Error(err))
 		return nil, err
 	}
+	if err := s.updateOpenGateIntegration(ctx, openGateSettings); err != nil {
+		logger.SError("UpdateTranscoder: updateOpenGateIntegration error", zap.Error(err))
+		return nil, err
+	}
+
 	logger.SDebug("UpdatedTranscoder: updated", zap.Reflect("updated", transcoder))
 	return &transcoder, nil
 }
