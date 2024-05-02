@@ -1,8 +1,9 @@
 import { Camera, getCameras } from "../clients/backend/cameras";
-import { ObjectTrackingEvent, getObjectTrackingEvents } from "../clients/backend/object";
+import { ObjectTrackingEvent, Snapshot, getObjectTrackingEvents, getSnapshots } from "../clients/backend/object";
 import { OpenGateCameraSettings, OpenGateIntegration, getOpenGateCameraSettings, getOpenGateConfigurations } from "../clients/backend/opengate";
+import { Person, PersonHistory, PersonImage, getPeople, getPeopleImage, getPersonHistory } from "../clients/backend/people";
 import { StreamInfo, getCameraStreamInfo } from "../clients/backend/streams";
-import { CameraStats, Transcoder, TranscoderStatus, getCameraStats, getTranscoderStatus, getTranscoders } from "../clients/backend/transcoders";
+import { CameraStats, DetectorStats, Transcoder, TranscoderStatus, getCameraStats, getTranscoderStatus, getTranscoders } from "../clients/backend/transcoders";
 
 export interface CameraAggregatedInfo {
     camera: Camera;
@@ -33,8 +34,7 @@ export async function getCameraViewInfo(cameraId: string): Promise<CameraAggrega
     const integrationId = t.openGateIntegrationId;
     const integration = await getOpenGateConfigurations(integrationId);
 
-    const settingsId = c.settingsId;
-    const settings = await getOpenGateCameraSettings([settingsId]);
+    const settings = await getOpenGateCameraSettings([cameraId]);
     if (settings.length == 0) {
         throw Error("Camera settings not found");
     }
@@ -58,16 +58,76 @@ export async function getCameraViewInfo(cameraId: string): Promise<CameraAggrega
     }
 }
 
-/**
- * Get frequently updated information of cameras
- */
 export interface UpdatedInfo {
-    events: ObjectTrackingEvent[];
-    stats: CameraStats[];
+    events: Event[];
+    stats: CameraStats;
+    detectorStats: DetectorStats;
 }
 
-export async function getUpdatedInfo(cameraI): Promise<UpdatedInfo> {
-    const events = await getObjectTrackingEvents();
-    const stats = await getCameraStats();
-    return { events, stats };
+export interface Event {
+    tracking: ObjectTrackingEvent;
+    snapshot: Snapshot;
+    presignedUrl: string;
+}
+
+/**
+ * Get frequently updated information a camera
+ * @param cameraId Camera ID
+ * @param cameraName OpenGate camera name
+ * @param transcoderId Transcoder ID
+ * @returns 
+ */
+export async function getUpdatedInfo(cameraId: string, cameraName: string, transcoderId: string): Promise<UpdatedInfo> {
+    const events = await getObjectTrackingEvents([], cameraId);
+    let snapshotIds = events.map(e => e.snapshotId);
+    const snapshots = await getSnapshots(snapshotIds);
+
+    let snapshotMap: Map<string, Snapshot> = new Map<string, Snapshot>();
+    snapshots.snapshot.forEach(s => snapshotMap.set(s.snapshotId, s))
+    const presignedUrls = new Map<string, string>(Object.entries(snapshots.presignedUrl));
+
+    const aggregatedEvent: Event[] = [];
+    for (let i = 0; i < events.length; i += 1) {
+        const e = events[i];
+        aggregatedEvent[i] = {
+            tracking: e,
+            snapshot: snapshotMap.get(e.snapshotId)!,
+            presignedUrl: presignedUrls.get(e.snapshotId)!,
+        };
+    }
+
+    const stats = await getCameraStats(transcoderId, [cameraName]);
+    const detectorStats = stats.detectorStats[0];
+    const cameraStats = stats.cameraStats[0];
+
+    return {
+        events: aggregatedEvent,
+        stats: cameraStats,
+        detectorStats: detectorStats,
+    };
+}
+
+export interface PersonInfo {
+    person: Person;
+    image: PersonImage;
+    history: PersonHistory[];
+}
+
+/**
+ * Get person information
+ * @param personId Person ID
+ * @returns 
+ */
+export async function getPersonInfo(personId: string): Promise<PersonInfo> {
+    const people = await getPeople([personId]);
+    if (people.length == 0) {
+        throw Error("Person not found");
+    }
+    const image = await getPeopleImage(personId);
+    const history = await getPersonHistory([personId]);
+    return {
+        person: people[0],
+        image: image,
+        history: history,
+    }
 }

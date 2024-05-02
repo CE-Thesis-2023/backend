@@ -1,6 +1,6 @@
 import { axiosClient } from "./client";
 
-interface Person {
+export interface Person {
     personId: string;
     name: string;
     age: string;
@@ -22,7 +22,7 @@ export async function getPeople(ids: string[]): Promise<Person[]> {
     return resp.data["people"];
 }
 
-interface PeopleImage {
+export interface PersonImage {
     presignedUrl: string;
     expires: string;
 }
@@ -33,7 +33,7 @@ interface PeopleImage {
  * @param imagePath Image path
  * @returns People image
  */
-export async function getPeopleImage(personId: string): Promise<PeopleImage> {
+export async function getPeopleImage(personId: string): Promise<PersonImage> {
     const uri = `/api/people/presigned?id=${personId}`;
     const resp = await axiosClient.get(uri);
     return resp.data;
