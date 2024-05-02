@@ -2049,7 +2049,7 @@ func (s *WebService) getLatestOpenGateCameraStats(ctx context.Context, transcode
 		zap.Reflect("q", sql),
 		zap.Reflect("args", args))
 
-	var stats []db.OpenGateCameraStats
+	stats := []db.OpenGateCameraStats{}
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}
@@ -2069,7 +2069,7 @@ func (s *WebService) getLatestOpenGateDetectorStats(ctx context.Context, transco
 		zap.Reflect("q", sql),
 		zap.Reflect("args", args))
 
-	var stats []db.OpenGateDetectorStats
+	stats := []db.OpenGateDetectorStats{}
 	if err := s.db.Select(ctx, q, &stats); err != nil {
 		return nil, err
 	}

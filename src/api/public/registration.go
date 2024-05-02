@@ -10,6 +10,7 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.PUT("/api/devices", UpdateTranscoder)
 		app.GET("/api/devices/status", GetTranscoderStatus)
 		app.GET("/api/devices/healthcheck", DoDeviceHealthcheck)
+		app.GET("/api/stats", GetLatestOpenGateCameraStats)
 
 		app.GET("/api/cameras", GetCameras)
 		app.POST("/api/cameras", CreateCamera)
@@ -32,6 +33,5 @@ func ServiceRegistration() func(app *gin.Engine) {
 		app.GET("/api/people/presigned", GetDetectablePersonPresignedUrl)
 		app.GET("/api/people/history", GetPersonHistory)
 
-		app.GET("/api/stats", GetLatestOpenGateCameraStats)
 	}
 }
