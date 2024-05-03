@@ -1,5 +1,6 @@
 import createDebounce from "@solid-primitives/debounce";
-import { Add, MoreVert, Refresh } from "@suid/icons-material";
+import { createFileUploader } from "@solid-primitives/upload";
+import { Add, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, Menu, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
 import { AddDetectablePerson, addDetectablePerson } from "../../clients/backend/people";
@@ -143,6 +144,8 @@ interface AddPersonDialogProps {
 const AddPersonDialog = (props: AddPersonDialogProps) => {
     const [waitingAdd, setWaitingAdd] = createSignal<boolean>(false);
     const [formErr, setFormErr] = createSignal<string | null>(null);
+
+    const { files, selectFiles } = createFileUploader();
     const [data, setData] = createSignal<AddDetectablePerson>({
         name: "",
         age: "",
@@ -160,6 +163,8 @@ const AddPersonDialog = (props: AddPersonDialogProps) => {
         setWaitingAdd(false);
         props.onClose();
     }
+    const getBase64StringFromDataURL = (dataURL: string) =>
+        dataURL.replace('data:', '').replace(/^.+,/, '');
     return <Dialog open={props.open} onClose={props.onClose}>
         <DialogTitle>Add Camera</DialogTitle>
         <DialogContent>
@@ -205,6 +210,40 @@ const AddPersonDialog = (props: AddPersonDialogProps) => {
                     }}
                     fullWidth
                 />
+                <div class="flex flex-row justify-start items-center gap-4">
+                    <Button variant="contained" size="medium" color="primary" sx={{ marginTop: '0.75rem' }} startIcon={<UploadFile />} onClick={() => {
+                        selectFiles(async (files) => {
+                            if (files.length > 1) {
+                                setFormErr("Too many files selected");
+                                return;
+                            }
+                            const f = files[0];
+                            const typ = f.file.type;
+                            if (typ !== "image/jpeg") {
+                                setFormErr("Image is not JPEG");
+                                return;
+                            }
+                            var reader = new FileReader();
+                            reader.onloadend = function () {
+                                const res = reader.result;
+                                const encoded = getBase64StringFromDataURL(res as string);
+                                setData((prev: AddDetectablePerson) => {
+                                    return {
+                                        ...prev,
+                                        base64Image: encoded,
+                                    }
+                                });
+                            }
+                            reader.readAsDataURL(f.file);
+
+                        });
+                    }}>
+                        Upload Face Image
+                    </Button>
+                    <Typography variant="body2">
+                        {files().length > 0 ? files()[0].name : ""}
+                    </Typography>
+                </div>
             </DialogContent>
             {
                 formErr() != null &&

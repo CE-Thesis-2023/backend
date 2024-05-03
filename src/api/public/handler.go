@@ -518,9 +518,9 @@ func GetDetectablePeople(ctx *gin.Context) {
 	logger.SDebug("GetDetectablePeople: request")
 
 	queries := ctx.Query("ids")
-	ids := strings.Split(queries, ",")
-	if len(ids) == 0 {
-		ids = []string{}
+	ids := []string{}
+	if len(queries) > 0 {
+		ids = strings.Split(queries, ",")
 	}
 
 	resp, err := service.

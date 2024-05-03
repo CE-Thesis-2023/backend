@@ -50,11 +50,13 @@
   },
   "dependencies": {
     "@solid-primitives/debounce": "^1.3.0",
+    "@solid-primitives/upload": "^0.0.117",
     "@solidjs/router": "^0.13.2",
     "@suid/icons-material": "^0.7.0",
     "@suid/material": "^0.16.0",
     "@suid/vite-plugin": "^0.2.0",
     "dayjs": "^1.11.10",
+    "js-base64": "^3.7.7",
     "prismjs": "^1.29.0",
     "solid-js": "^1.8.11"
   }
