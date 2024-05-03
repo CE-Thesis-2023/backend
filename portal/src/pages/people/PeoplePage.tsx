@@ -1,15 +1,18 @@
 import createDebounce from "@solid-primitives/debounce";
 import { createFileUploader } from "@solid-primitives/upload";
-import { Add, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
-import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, Menu, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
+import { Add, Delete, Face, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
-import { AddDetectablePerson, addDetectablePerson } from "../../clients/backend/people";
+import { AddDetectablePerson, addDetectablePerson, deletePerson } from "../../clients/backend/people";
 import { FrontPagePersonInfo, getListPeople } from "../../helper/helper";
 
 export const PeoplePage: Component = () => {
     const [peopleIds, setPeopleIds] = createSignal<string[]>([]);
     const [menuAnchorEl, setMenuAnchorEl] = createSignal<HTMLElement | null>(null);
     const [menuDialogCurrentItem, setMenuDialogCurrentItem] = createSignal<FrontPagePersonInfo | null>(null);
+    const [deleteDialogStatus, setDeleteDialogStatus] = createSignal<boolean>(false);
+    const [imageDialogStatus, setImageDialogStatus] = createSignal<boolean>(false);
+    const [menuCurrentlySelectedId, setMenuCurrentlySelectedId] = createSignal<string>("");
 
     const openMenu = () => Boolean(menuAnchorEl());
     const closeMenu = () => setMenuAnchorEl(null);
@@ -23,6 +26,26 @@ export const PeoplePage: Component = () => {
             setPeopleIds(m.split(","));
         }
     }, 350);
+
+    const moreMenuItems = [
+        {
+            id: 'delete',
+            name: 'Delete',
+            icon: <Delete />,
+            onClick: () => {
+                setDeleteDialogStatus(true);
+            }
+        },
+        {
+            id: 'face',
+            name: 'Face',
+            icon: <Face />,
+            onClick: () => {
+                setImageDialogStatus(true);
+            }
+        }
+    ]
+
     const [people, { refetch: fetchPeople }] = createResource(peopleIds, getListPeople);
     return <div class="w-full h-full p-8">
         <Paper class="h-max w-full">
@@ -88,6 +111,11 @@ export const PeoplePage: Component = () => {
                                                         id="long-button"
                                                         aria-controls={openMenu() ? 'long-menu' : undefined}
                                                         aria-expanded={openMenu() ? 'true' : undefined}
+                                                        aria-haspopup="true"
+                                                        onClick={(e) => {
+                                                            setMenuDialogCurrentItem(person);
+                                                            setMenuAnchorEl(e.currentTarget);
+                                                        }}
                                                     >
                                                         <MoreVert />
                                                     </IconButton>
@@ -98,13 +126,27 @@ export const PeoplePage: Component = () => {
                                                         open={openMenu()}
                                                         onClose={() => {
                                                             setMenuDialogCurrentItem(null);
+                                                            setMenuCurrentlySelectedId("");
                                                             closeMenu();
                                                         }}
                                                         PaperProps={{
                                                             elevation: 2,
                                                         }}
                                                     >
-
+                                                        {moreMenuItems.map((item, _) => {
+                                                            return <MenuItem selected={menuCurrentlySelectedId() === item.id}
+                                                                onClick={() => {
+                                                                    setMenuCurrentlySelectedId(item.id);
+                                                                    item.onClick();
+                                                                }}>
+                                                                <ListItemIcon>
+                                                                    {item.icon}
+                                                                </ListItemIcon>
+                                                                <ListItemText>
+                                                                    {item.name}
+                                                                </ListItemText>
+                                                            </MenuItem>
+                                                        })}
                                                     </Menu>
                                                 </TableCell>
                                             </TableRow>
@@ -124,6 +166,29 @@ export const PeoplePage: Component = () => {
                         setAddPersonDialog(false);
                         closeMenu();
                         fetchPeople();
+                    }}
+                />
+            }
+            {
+                deleteDialogStatus() &&
+                <DeletePersonConfirmDialog
+                    personId={menuDialogCurrentItem()!.person.personId}
+                    open={deleteDialogStatus()}
+                    onClose={() => {
+                        setDeleteDialogStatus(false);
+                        closeMenu();
+                        fetchPeople();
+                    }}
+                />
+            }
+            {
+                imageDialogStatus() &&
+                <PersonImageDialog
+                    item={menuDialogCurrentItem()!}
+                    open={imageDialogStatus()}
+                    onClose={() => {
+                        setImageDialogStatus(false);
+                        closeMenu();
                     }}
                 />
             }
@@ -253,4 +318,55 @@ const AddPersonDialog = (props: AddPersonDialogProps) => {
             </DialogActions>
         </DialogContent>
     </Dialog >
+}
+
+
+interface DeletePersonConfirmDialogProps {
+    personId: string;
+    open: boolean;
+    onClose: () => void;
+}
+
+const DeletePersonConfirmDialog = (props: DeletePersonConfirmDialogProps) => {
+    const [waitingDelete, setWaitingDelete] = createSignal<boolean>(false);
+    const handleDelete = async () => {
+        setWaitingDelete(true);
+        await deletePerson(props.personId);
+        setWaitingDelete(false);
+        props.onClose();
+    }
+
+    return <Dialog onClose={props.onClose} open={props.open || waitingDelete()}>
+        <DialogTitle id="alert-dialog-title">
+            Delete camera?
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                {`Requested to delete person with ID: ${props.personId}, proceed?`}
+            </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onClose}>Disagree</Button>
+            <Button onClick={handleDelete} disabled={waitingDelete()}>Agree</Button>
+        </DialogActions>
+    </Dialog>
+}
+
+interface PersonImageDialogProps {
+    item: FrontPagePersonInfo;
+    onClose: () => void;
+    open: boolean;
+}
+
+const PersonImageDialog = (props: PersonImageDialogProps) => {
+    console.log(props.item);
+    return <Dialog onClose={props.onClose} open={props.open}>
+        <DialogTitle>Camera Settings</DialogTitle>
+        <DialogContent>
+            <DialogContentText>For debugging purposes</DialogContentText>
+            <DialogContent>
+                <img src={props.item.image.presignedUrl} alt="face" />
+            </DialogContent>
+        </DialogContent>
+    </Dialog>
 }

@@ -45,6 +45,7 @@ func (m *MediaHelper) initS3Client() error {
 	awsConfigs := aws.NewConfig().
 		WithEndpoint(m.s3Configs.Endpoint).
 		WithRegion(m.s3Configs.Region).
+		WithS3ForcePathStyle(true).
 		WithCredentials(credentials.NewStaticCredentials(
 			m.s3Configs.AccessKeyID,
 			m.s3Configs.Secret,

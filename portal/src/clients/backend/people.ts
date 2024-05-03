@@ -4,7 +4,6 @@ export interface Person {
     personId: string;
     name: string;
     age: string;
-    imagePath: string;
 }
 
 /**
