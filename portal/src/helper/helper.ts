@@ -145,6 +145,40 @@ export async function getPersonInfo(personId: string): Promise<PersonInfo> {
     }
 }
 
+export interface PeopleList {
+    items: FrontPagePersonInfo[];
+}
+
+export interface FrontPagePersonInfo {
+    person: Person;
+    image: PersonImage;
+}
+
+/**
+ * Get list of people
+ * @param personIds Person IDs
+ * @returns 
+ */
+export async function getListPeople(personIds: string[]): Promise<PeopleList> {
+    const people = await getPeople(personIds);
+    const peopleIds = people.map(p => p.personId);
+    const imagesAsync = peopleIds.map(id => getPeopleImage(id));
+    const images = await Promise.all(imagesAsync);
+    const imageMap = new Map<string, PersonImage>();
+    for (let i = 0; i < peopleIds.length; i += 1) {
+        imageMap.set(peopleIds[i], images[i]);
+    }
+    const frontPageInfo = people.map(p => {
+        return {
+            person: p,
+            image: imageMap.get(p.personId)!,
+        }
+    });
+
+    return {
+        items: frontPageInfo,
+    }
+}
 
 export enum PTZDirection {
     Up = 1,
