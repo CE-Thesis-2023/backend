@@ -83,7 +83,7 @@ export const CameraViewerPage: Component = () => {
                         </Match>
                     </Switch>
                 </div>
-                <div class="w-full h-full p-4 flex flex-col gap-4" style="flex: 3">
+                <div class="w-full h-full p-4 flex flex-col gap-4" style="flex: 5">
                     <Paper sx={{ width: '100%', height: "fit-content", padding: '1rem' }}>
                         <div class="flex w-full h-fit flex-row justify-between items-center gap-8">
                             <div>
