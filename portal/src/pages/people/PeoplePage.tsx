@@ -29,7 +29,7 @@ export const PeoplePage: Component = () => {
             <div class="flex flex-row justify-between items-center p-4">
                 <Typography variant="h6" component="h1">People</Typography>
                 <div class="flex flex-row items-end gap-2">
-                    <TextField id="person-id-filter" label="Camera ID" variant="standard" size="small" color="primary" margin="none" sx={{ marginRight: '1rem' }} onChange={(e) => {
+                    <TextField id="person-id-filter" label="Person ID" variant="standard" size="small" color="primary" margin="none" sx={{ marginRight: '1rem' }} onChange={(e) => {
                         const value = e.target.value;
                         filterDebouncer(value);
                     }} />
@@ -63,7 +63,6 @@ export const PeoplePage: Component = () => {
                             <Table aria-label="person-list">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell align="center">Status</TableCell>
                                         <TableCell sx={{ width: '20%' }}>Name</TableCell>
                                         <TableCell align="left">ID</TableCell>
                                         <TableCell align="left">Age</TableCell>
@@ -75,7 +74,7 @@ export const PeoplePage: Component = () => {
                                         return <>
                                             <TableRow sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                                                 <TableCell align="left">
-                                                    <Link variant="body2" underline="none" href={`/person/${person.person.personId}`}>
+                                                    <Link variant="body2" underline="none">
                                                         {person.person.name}
                                                     </Link>
                                                 </TableCell>
@@ -87,12 +86,8 @@ export const PeoplePage: Component = () => {
                                                     <IconButton
                                                         aria-label="more"
                                                         id="long-button"
-                                                        aria-controls={open() ? 'long-menu' : undefined}
-                                                        aria-expanded={open() ? 'true' : undefined}
-                                                        aria-haspopup="true"
-                                                        onClick={(e) => {
-
-                                                        }}
+                                                        aria-controls={openMenu() ? 'long-menu' : undefined}
+                                                        aria-expanded={openMenu() ? 'true' : undefined}
                                                     >
                                                         <MoreVert />
                                                     </IconButton>
@@ -165,6 +160,7 @@ const AddPersonDialog = (props: AddPersonDialogProps) => {
     }
     const getBase64StringFromDataURL = (dataURL: string) =>
         dataURL.replace('data:', '').replace(/^.+,/, '');
+
     return <Dialog open={props.open} onClose={props.onClose}>
         <DialogTitle>Add Camera</DialogTitle>
         <DialogContent>
