@@ -354,3 +354,51 @@ export async function getSummarizedPersonHistory(personId: string): Promise<Summ
     });
     return summarized;
 }
+
+export interface SummarizedEvent {
+    event: ObjectTrackingEvent;
+    snapshot: Snapshot;
+    presignedUrl: string;
+    person: Person | undefined;
+}
+
+/**
+ * Get events
+ * @param eventIds Event Ids
+ * @returns 
+ */
+export async function getListEvents(eventIds: string[]): Promise<SummarizedEvent[]> {
+    const events = await getObjectTrackingEvents(eventIds, "");
+    const snapshotIds = events.map(e => e.snapshotId);
+    const snapshots = await getSnapshots(snapshotIds);
+    const snapshotMap = new Map<string, Snapshot>();
+    snapshots.snapshot.forEach(s => snapshotMap.set(s.snapshotId, s));
+
+    const presignedUrl = snapshots.presignedUrl;
+    const presignedMap = new Map<string, string>(Object.entries(presignedUrl));
+
+
+    const personIds: string[] = [];
+    snapshots.snapshot.forEach(s => {
+        if (s.detectedPeopleId !== undefined) {
+            personIds.push(s.detectedPeopleId)
+        }
+    });
+    const people = await getPeople(personIds);
+    const peopleMap = new Map<string, Person>();
+    for (let i = 0; i < people.length; i += 1) {
+        peopleMap.set(people[i].personId, people[i]);
+    }
+
+    const summarized: SummarizedEvent[] = events.map(e => {
+        const snapshot = snapshotMap.get(e.snapshotId)!
+        return {
+            event: e,
+            snapshot: snapshot,
+            presignedUrl: presignedMap.get(e.snapshotId) ?? "",
+            person: snapshot.detectedPeopleId ? peopleMap.get(snapshot.detectedPeopleId) : undefined,
+        }
+    });
+
+    return summarized;
+}
