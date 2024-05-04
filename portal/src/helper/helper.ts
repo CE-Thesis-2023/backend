@@ -244,7 +244,10 @@ export async function getListCameras(cameraIds: string[]): Promise<AggregatedLis
     }
 
     const foundCameraIds = cameras.map(c => c.cameraId);
-    const openGateSettings = await getOpenGateCameraSettings(foundCameraIds);
+    let openGateSettings: OpenGateCameraSettings[] = [];
+    if (foundCameraIds.length > 0) {
+        openGateSettings = await getOpenGateCameraSettings(foundCameraIds);
+    }
 
     const settingsMap = new Map<string, OpenGateCameraSettings>();
     for (let i = 0; i < openGateSettings.length; i += 1) {

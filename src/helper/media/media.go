@@ -89,7 +89,7 @@ func (m *MediaHelper) BuildRTSPSourceUrl(camera db.Camera) string {
 	u.Scheme = "rtsp"
 	u.Host = camera.Ip
 	if camera.Port != 0 {
-		u.Host = fmt.Sprintf("%s:%d", camera.Ip, camera.Port)
+		u.Host = fmt.Sprintf("%s:%d", camera.Ip, 554)
 	}
 	u = u.JoinPath("/ISAPI", "/Streaming", "channels", "101")
 	u.User = url.UserPassword(camera.Username, camera.Password)

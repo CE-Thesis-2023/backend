@@ -5,7 +5,7 @@ import green from "@suid/material/colors/green";
 import red from "@suid/material/colors/red";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
 import { AddCameraParams, addCamera, deleteCamera } from "../../clients/backend/cameras";
-import { Transcoder } from "../../clients/backend/transcoders";
+import { Transcoder, getTranscoders } from "../../clients/backend/transcoders";
 import Codeblock from "../../components/Codeblock";
 import { CameraItem, getListCameras } from "../../helper/helper";
 
@@ -290,156 +290,166 @@ const AddCameraDialog = (props: AddCameraDialogProps) => {
             transcoderId: "",
         }
     );
-
-    return <Dialog open={props.open} onClose={props.onClose}>
-        <DialogTitle>Add Camera</DialogTitle>
-        <DialogContent>
-            <DialogContentText>
-                Add a new camera
-            </DialogContentText>
-            <DialogContent>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="Name"
-                    type="text"
-                    variant="filled"
-                    fullWidth
-                    required
-                    value={formValue().name}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setFormValue((prev) => {
-                            return {
-                                ...prev,
-                                name: value
-                            }
-                        });
-                    }}
-                />
-                <TextField
-                    margin="dense"
-                    id="ip"
-                    label="IP Address"
-                    type="url"
-                    variant="filled"
-                    fullWidth
-                    required
-                    value={formValue().ip}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setFormValue((prev) => {
-                            return {
-                                ...prev,
-                                ip: value
-                            }
-                        });
-                    }}
-                />
-                <TextField
-                    margin="dense"
-                    id="port"
-                    label="Port"
-                    type="number"
-                    variant="filled"
-                    value={formValue().port}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setFormValue((prev) => {
-                            return {
-                                ...prev,
-                                port: parseInt(value)
-                            }
-                        });
-                    }}
-                    fullWidth
-                />
-                <FormControl
-                    variant="filled"
-                    margin="dense"
-                    sx={{
-                        marginTop: '8px',
-                        width: '100%',
-                    }}>
-                    <InputLabel id="select-filled-label">
-                        Transcoder
-                    </InputLabel>
-                    <Select
-                        id="demo-simple-select-filled"
-                        labelId="select-filled-label"
-                        fullWidth
-                        variant="filled"
-                        value={formValue().transcoderId}
-                        onChange={(e) => {
-                            const value = e.target.value;
-                            setFormValue((prev) => {
-                                return {
-                                    ...prev,
-                                    transcoderId: value
-                                }
-                            });
-                        }}
-                    >
-                        {props.transcoders.map((transcoder, _) => {
-                            return <MenuItem value={transcoder.deviceId}>
-                                <div class="flex flex-row justify-start items-center gap-2">
-                                    {transcoder.name}
-                                    <Chip label={transcoder.deviceId} />
-                                </div>
-                            </MenuItem>
-                        })}
-                    </Select>
-                </FormControl>
-                <TextField
-                    margin="dense"
-                    id="username"
-                    label="Username"
-                    type="text"
-                    variant="filled"
-                    fullWidth
-                    required
-                    value={formValue().username}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setFormValue((prev) => {
-                            return {
-                                ...prev,
-                                username: value
-                            }
-                        });
-                    }}
-                />
-                <TextField
-                    margin="dense"
-                    id="password"
-                    label="Password"
-                    type="password"
-                    variant="filled"
-                    fullWidth
-                    required
-                    value={formValue().password}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setFormValue((prev) => {
-                            return {
-                                ...prev,
-                                password: value
-                            }
-                        });
-                    }}
-                />
-            </DialogContent>
-            {
-                formErr() != null &&
-                <DialogContentText>
-                    <Alert severity="error">{formErr()}</Alert>
-                </DialogContentText>
-            }
-            <DialogActions>
-                <Button onClick={props.onClose}>Cancel</Button>
-                <Button onClick={handleAdd} disabled={waitingAdd()}>Submit</Button>
-            </DialogActions>
-        </DialogContent>
-    </Dialog >
+    const [trancoders, { refetch: fetchTranscoders }] = createResource([], getTranscoders);
+    return <Switch>
+        <Match when={trancoders.loading}>
+            <CircularProgress color="primary" sx={{ margin: '2rem' }} />
+        </Match>
+        <Match when={trancoders.error}>
+            <Alert severity="error">{trancoders.error}</Alert>
+        </Match>
+        <Match when={trancoders() && !trancoders.loading}>
+            <Dialog open={props.open} onClose={props.onClose}>
+                <DialogTitle>Add Camera</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Add a new camera
+                    </DialogContentText>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            id="name"
+                            label="Name"
+                            type="text"
+                            variant="filled"
+                            fullWidth
+                            required
+                            value={formValue().name}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFormValue((prev) => {
+                                    return {
+                                        ...prev,
+                                        name: value
+                                    }
+                                });
+                            }}
+                        />
+                        <TextField
+                            margin="dense"
+                            id="ip"
+                            label="IP Address"
+                            type="url"
+                            variant="filled"
+                            fullWidth
+                            required
+                            value={formValue().ip}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFormValue((prev) => {
+                                    return {
+                                        ...prev,
+                                        ip: value
+                                    }
+                                });
+                            }}
+                        />
+                        <TextField
+                            margin="dense"
+                            id="port"
+                            label="Port"
+                            type="number"
+                            variant="filled"
+                            value={formValue().port}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFormValue((prev) => {
+                                    return {
+                                        ...prev,
+                                        port: parseInt(value)
+                                    }
+                                });
+                            }}
+                            fullWidth
+                        />
+                        <FormControl
+                            variant="filled"
+                            margin="dense"
+                            sx={{
+                                marginTop: '8px',
+                                width: '100%',
+                            }}>
+                            <InputLabel id="select-filled-label">
+                                Transcoder
+                            </InputLabel>
+                            <Select
+                                id="demo-simple-select-filled"
+                                labelId="select-filled-label"
+                                fullWidth
+                                variant="filled"
+                                value={formValue().transcoderId}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setFormValue((prev) => {
+                                        return {
+                                            ...prev,
+                                            transcoderId: value
+                                        }
+                                    });
+                                }}
+                            >
+                                {trancoders()!.map((transcoder, _) => {
+                                    return <MenuItem value={transcoder.deviceId}>
+                                        <div class="flex flex-row justify-start items-center gap-2">
+                                            {transcoder.name}
+                                            <Chip label={transcoder.deviceId} />
+                                        </div>
+                                    </MenuItem>
+                                })}
+                            </Select>
+                        </FormControl>
+                        <TextField
+                            margin="dense"
+                            id="username"
+                            label="Username"
+                            type="text"
+                            variant="filled"
+                            fullWidth
+                            required
+                            value={formValue().username}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFormValue((prev) => {
+                                    return {
+                                        ...prev,
+                                        username: value
+                                    }
+                                });
+                            }}
+                        />
+                        <TextField
+                            margin="dense"
+                            id="password"
+                            label="Password"
+                            type="password"
+                            variant="filled"
+                            fullWidth
+                            required
+                            value={formValue().password}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFormValue((prev) => {
+                                    return {
+                                        ...prev,
+                                        password: value
+                                    }
+                                });
+                            }}
+                        />
+                    </DialogContent>
+                    {
+                        formErr() != null &&
+                        <DialogContentText>
+                            <Alert severity="error">{formErr()}</Alert>
+                        </DialogContentText>
+                    }
+                    <DialogActions>
+                        <Button onClick={props.onClose}>Cancel</Button>
+                        <Button onClick={handleAdd} disabled={waitingAdd()}>Submit</Button>
+                    </DialogActions>
+                </DialogContent>
+            </Dialog >
+        </Match>
+    </Switch>
 }
