@@ -131,7 +131,13 @@ func (c *Configuration) buildBirdseye() error {
 func (c *Configuration) buildLogger() error {
 	logger := make(map[string]interface{})
 	logger["default"] = c.integration.LogLevel
+	logs := make(map[string]interface{})
+	logs["opengate.ptz.autotrack"] = "debug"
+	logs["opengate.ptz.onvif"] = "debug"
+	logs["opengate.ptz.sidecar"] = "debug"
+	logger["logs"] = logs
 	c.c["logger"] = logger
+
 	return nil
 }
 
@@ -195,6 +201,7 @@ func (c *Configuration) buildCameras() error {
 			"person",
 		}
 		zones["all"] = defaultZone
+		m["zones"] = zones
 
 		onvif := make(map[string]interface{})
 		onvif["host"] = camera.Ip

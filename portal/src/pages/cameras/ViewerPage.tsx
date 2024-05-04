@@ -148,7 +148,7 @@ export const CameraViewerPage: Component = () => {
                             </div>
                         </div>
                     </Paper>
-                    <Paper sx={{ width: '100%', height: "100%" }}>
+                    <Paper sx={{ width: '100%' }} class="overflow-y-scroll h-80">
                         <List>
                             <Switch>
                                 <Match when={events.loading}>
@@ -242,6 +242,7 @@ function getElapsed(startTime: string, endTime: string): number {
 const EventItem: Component<EventItemProps> = (props: EventItemProps) => {
     const { tracking, snapshot } = props.event;
     const elasped = getElapsed(tracking.startTime, tracking.endTime);
+    console.log(props.event);
 
     return <>
         <ListItemButton onClick={() => {
@@ -255,7 +256,7 @@ const EventItem: Component<EventItemProps> = (props: EventItemProps) => {
                     {"Person detected"}
                     <div class="flex flex-row justify-start items-center gap-2">
                         {tracking.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
-                        {snapshot.detectedPeopleId ? <Chip label="Face" color="primary" /> : null}
+                        {snapshot?.detectedPeopleId ? <Chip label="Face" color="primary" /> : null}
                         <Typography variant="body2">{`Duration: ${elasped}s`}</Typography>
                     </div>
                 </div>
