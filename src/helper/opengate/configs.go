@@ -104,7 +104,7 @@ func (c *Configuration) buildMQTTConfiguration() error {
 
 func (c *Configuration) buildSnapshots() error {
 	snapshots := make(map[string]interface{})
-	snapshots["enabled"] = false
+	snapshots["enabled"] = true
 
 	retain := make(map[string]interface{})
 	retain["default"] = c.integration.SnapshotRetentionDays
