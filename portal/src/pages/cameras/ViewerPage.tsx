@@ -31,7 +31,7 @@ export const CameraViewerPage: Component = () => {
             cameraId: data.camera.cameraId,
             cameraName: data.camera.openGateCameraName,
             transcoderId: data.camera.transcoderId,
-        });
+        }, 10);
     });
     const [isPtzCtrlInProcess, setIsPtzCtrlInProcess] = createSignal(false);
 

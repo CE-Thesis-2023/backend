@@ -1485,7 +1485,7 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 		return nil, err
 	}
 
-	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.CameraId, req.EventId, req.OpenGateEventId)
+	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.CameraId, req.EventId, req.OpenGateEventId, req.Limit)
 	if err != nil {
 		logger.SError("GetObjectTrackingEventById: getObjectTrackingEventById error", zap.Error(err))
 		return nil, err
@@ -1525,7 +1525,9 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId st
 	}
 	if len(limit) > 0 {
 		lim := limit[0]
-		q = q.Limit(uint64(lim))
+		if lim > 0 {
+			q = q.Limit(uint64(lim))
+		}
 	}
 
 	if len(cameraId) > 0 {

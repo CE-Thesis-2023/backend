@@ -84,8 +84,8 @@ export interface UpdatedInfoParams {
  * @param transcoderId Transcoder ID
  * @returns 
  */
-export async function getUpdatedInfo(params: UpdatedInfoParams): Promise<UpdatedInfo> {
-    const events = await getObjectTrackingEvents([], params.cameraId);
+export async function getUpdatedInfo(params: UpdatedInfoParams, limit: number): Promise<UpdatedInfo> {
+    const events = await getObjectTrackingEvents([], params.cameraId, limit);
     const aggregatedEvent: Event[] = [];
     if (events.length > 0) {
         let snapshotIds = events.map(e => e.snapshotId);
@@ -335,7 +335,7 @@ export async function getSummarizedPersonHistory(personId: string): Promise<Summ
 
     const history = await getPersonHistory([personId]);
     const eventsId = history.map(h => h.eventId);
-    const events = await getObjectTrackingEvents(eventsId, "");
+    const events = await getObjectTrackingEvents(eventsId, "", undefined);
     const person = people[0];
     const eventsMap = new Map<string, ObjectTrackingEvent>();
     for (let i = 0; i < events.length; i += 1) {
@@ -370,8 +370,8 @@ export interface SummarizedEvent {
  * @param eventIds Event Ids
  * @returns 
  */
-export async function getListEvents(eventIds: string[]): Promise<SummarizedEvent[]> {
-    const events = await getObjectTrackingEvents(eventIds, "");
+export async function getListEvents(eventIds: string[], limit: number): Promise<SummarizedEvent[]> {
+    const events = await getObjectTrackingEvents(eventIds, "", limit);
     const snapshotIds = events.map(e => e.snapshotId);
     const snapshots = await getSnapshots(snapshotIds);
     const snapshotMap = new Map<string, Snapshot>();
