@@ -252,6 +252,7 @@ type GetObjectTrackingEventByIdRequest struct {
 	EventId         []string `json:"eventId"`
 	OpenGateEventId []string `json:"openGateEventId"`
 	CameraId        string   `json:"cameraId"`
+	Limit           int   `json:"limit"`
 }
 
 type GetObjectTrackingEventByIdResponse struct {

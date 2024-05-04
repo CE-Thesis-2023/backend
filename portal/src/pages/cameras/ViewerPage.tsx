@@ -41,6 +41,8 @@ export const CameraViewerPage: Component = () => {
     const [currentItem, setCurrentItem] = createSignal<Event | null>(null);
     const [ptzError, setPtzError] = createSignal<any | null>(null);
 
+    const timer = setInterval(() => eventRefetch(routeParams.cameraId), 20000);
+
     const handlePtzCtrl = (direction: PTZDirection) => {
         return async () => {
             setIsPtzCtrlInProcess(true);
@@ -151,7 +153,7 @@ export const CameraViewerPage: Component = () => {
                     <Paper sx={{ width: '100%' }} class="overflow-y-scroll h-80">
                         <List>
                             <Switch>
-                                <Match when={events.loading}>
+                                <Match when={events.loading && events() == undefined}>
                                     <div class="flex flex-row justify-center mt-8">
                                         <CircularProgress />
                                     </div>
@@ -215,7 +217,10 @@ export const CameraViewerPage: Component = () => {
                     </Paper>
                 </div>
                 {currentItem() ?
-                    <EventInfoModal isOpen={modalOpen()} onClose={handleClose} data={currentItem()!} />
+                    <EventInfoModal isOpen={modalOpen()} onClose={() => {
+                        handleClose();
+                        setCurrentItem(null);
+                    }} data={currentItem()!} />
                     : null}
             </div>
         </Match>

@@ -3,6 +3,7 @@ package publicapi
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
@@ -423,6 +424,7 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	eventId := ctx.Query("event_id")
 	openGateEventId := ctx.Query("open_gate_event_id")
 	cameraId := ctx.Query("camera_id")
+	limit := ctx.Query("limit")
 
 	req := &web.GetObjectTrackingEventByIdRequest{}
 	if eventId != "" {
@@ -433,6 +435,14 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	}
 	if cameraId != "" {
 		req.CameraId = cameraId
+	}
+	if limit != "" {
+		l, err := strconv.Atoi(limit)
+		if err != nil {
+			custhttp.ToHTTPErr(custerror.ErrorInvalidArgument, ctx)
+			return
+		}
+		req.Limit = l
 	}
 
 	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx, req)

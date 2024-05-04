@@ -1503,7 +1503,7 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 	}, nil
 }
 
-func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId string, ids []string, openGateIds []string) ([]db.ObjectTrackingEvent, error) {
+func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId string, ids []string, openGateIds []string, limit ...int) ([]db.ObjectTrackingEvent, error) {
 	q := s.builder.Select("*").
 		From("object_tracking_events").
 		OrderBy("frame_time DESC")
@@ -1522,6 +1522,10 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId st
 			or = append(or, squirrel.Eq{"open_gate_event_id": i})
 		}
 		q = q.Where(or)
+	}
+	if len(limit) > 0 {
+		lim := limit[0]
+		q = q.Limit(uint64(lim))
 	}
 
 	if len(cameraId) > 0 {
