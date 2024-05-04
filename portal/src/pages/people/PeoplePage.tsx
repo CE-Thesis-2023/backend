@@ -3,8 +3,8 @@ import { createFileUploader } from "@solid-primitives/upload";
 import { Add, Delete, Face, History, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
-import { AddDetectablePerson, addDetectablePerson, deletePerson, getPersonHistory } from "../../clients/backend/people";
-import { FrontPagePersonInfo, getListPeople } from "../../helper/helper";
+import { AddDetectablePerson, addDetectablePerson, deletePerson } from "../../clients/backend/people";
+import { FrontPagePersonInfo, SummarizedHistory, getListPeople, getSummarizedPersonHistory } from "../../helper/helper";
 
 export const PeoplePage: Component = () => {
     const [peopleIds, setPeopleIds] = createSignal<string[]>([]);
@@ -400,11 +400,11 @@ interface PersonHistoryDialogProps {
 }
 
 const PersonHistoryDialog = (props: PersonHistoryDialogProps) => {
-    const [history, refetch] = createResource([props.item.person.personId], getPersonHistory);
-    return <Dialog onClose={props.onClose} open={props.open}>
+    const [history, refetch] = createResource(props.item.person.personId, getSummarizedPersonHistory);
+    return <Dialog onClose={props.onClose} open={props.open} maxWidth="xl">
         <DialogTitle>Person History</DialogTitle>
         <DialogContent>
-            <DialogContentText>History</DialogContentText>
+            <DialogContentText>Person: {props.item.person.name}</DialogContentText>
             <DialogContent>
                 <TableContainer component={Paper}>
                     <Table aria-label="history-table">
@@ -412,19 +412,23 @@ const PersonHistoryDialog = (props: PersonHistoryDialogProps) => {
                             <TableRow>
                                 <TableCell>History ID</TableCell>
                                 <TableCell align="right">Timestamp</TableCell>
-                                <TableCell align="right">Event ID</TableCell>
-                                <TableCell align="right">Person ID</TableCell>
+                                <TableCell align="right">Camera</TableCell>
+                                <TableCell align="right">Start Time</TableCell>
+                                <TableCell align="right">End Time</TableCell>
+                                <TableCell align="right">Snapshot</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {history()?.map((item: any) => (
+                            {history()?.map((item: SummarizedHistory) => (
                                 <TableRow>
                                     <TableCell component="th" scope="row">
-                                        {item.historyId}
+                                        {item.history.historyId}
                                     </TableCell>
-                                    <TableCell align="right">{item.timestamp}</TableCell>
-                                    <TableCell align="right">{item.eventId}</TableCell>
-                                    <TableCell align="right">{item.personId}</TableCell>
+                                    <TableCell align="right">{item.history.timestamp}</TableCell>
+                                    <TableCell align="right">{item.event.CameraName}</TableCell>
+                                    <TableCell align="right">{item.event.startTime}</TableCell>
+                                    <TableCell align="right">{item.event.endTime}</TableCell>
+                                    <TableCell align="right">{item.snapshot !== "" ? <img class="w-32 h-auto" src={item.snapshot} /> : ""}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

@@ -310,3 +310,47 @@ export async function getListTranscoders(transcoderIds: string[]): Promise<ListT
         items: infos,
     }
 }
+
+export interface SummarizedHistory {
+    history: PersonHistory;
+    event: ObjectTrackingEvent;
+    snapshot: string;
+    person: Person;
+}
+
+/**
+ * Get summarized person history
+ * @param personId Person ID
+ * @returns 
+ */
+export async function getSummarizedPersonHistory(personId: string): Promise<SummarizedHistory[]> {
+    const people = await getPeople([personId]);
+    if (people.length == 0) {
+        throw Error("Person not found");
+    }
+    let summarized: SummarizedHistory[] = [];
+
+    const history = await getPersonHistory([personId]);
+    const eventsId = history.map(h => h.eventId);
+    const events = await getObjectTrackingEvents(eventsId, "");
+    const person = people[0];
+    const eventsMap = new Map<string, ObjectTrackingEvent>();
+    for (let i = 0; i < events.length; i += 1) {
+        eventsMap.set(events[i].eventId, events[i]);
+    }
+    const snapshotIds = events.map(e => e.snapshotId);
+    const snapshots = await getSnapshots(snapshotIds);
+    const presignedUrl = snapshots.presignedUrl;
+    const presignedMap = new Map<string, string>(Object.entries(presignedUrl));
+
+    history.forEach(h => {
+        const event = eventsMap.get(h.eventId)!;
+        summarized.push({
+            history: h,
+            event: event,
+            person: person,
+            snapshot: presignedMap.get(event.snapshotId) ?? "",
+        });
+    });
+    return summarized;
+}
