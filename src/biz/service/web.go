@@ -2720,7 +2720,7 @@ func (s *WebService) asyncUploadToS3AndDetectPerson(
 }
 
 func (s *WebService) recordPersonHistory(ctx context.Context, history *db.PersonHistory) error {
-	q := s.builder.Insert("person_history").
+	q := s.builder.Insert("person_histories").
 		Columns(history.Fields()...).
 		Values(history.Values()...)
 	if err := s.db.Insert(ctx, q); err != nil {
@@ -2731,7 +2731,7 @@ func (s *WebService) recordPersonHistory(ctx context.Context, history *db.Person
 
 func (s *WebService) getPersonHistory(ctx context.Context, personId []string, historyId []string) ([]db.PersonHistory, error) {
 	q := s.builder.Select("*").
-		From("person_history").
+		From("person_histories").
 		OrderBy("timestamp DESC")
 
 	if len(personId) > 0 {

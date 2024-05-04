@@ -3,7 +3,7 @@ import { createFileUploader } from "@solid-primitives/upload";
 import { Add, Delete, Face, History, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
-import { AddDetectablePerson, addDetectablePerson, deletePerson } from "../../clients/backend/people";
+import { AddDetectablePerson, addDetectablePerson, deletePerson, getPersonHistory } from "../../clients/backend/people";
 import { FrontPagePersonInfo, getListPeople } from "../../helper/helper";
 
 export const PeoplePage: Component = () => {
@@ -202,6 +202,17 @@ export const PeoplePage: Component = () => {
                     }}
                 />
             }
+            {
+                historyDialogStatus() &&
+                <PersonHistoryDialog
+                    item={menuDialogCurrentItem()!}
+                    open={historyDialogStatus()}
+                    onClose={() => {
+                        setHistoryDialogStatus(false);
+                        closeMenu();
+                    }}
+                />
+            }
         </Paper>
     </div>
 }
@@ -389,10 +400,37 @@ interface PersonHistoryDialogProps {
 }
 
 const PersonHistoryDialog = (props: PersonHistoryDialogProps) => {
+    const [history, refetch] = createResource([props.item.person.personId], getPersonHistory);
     return <Dialog onClose={props.onClose} open={props.open}>
         <DialogTitle>Person History</DialogTitle>
         <DialogContent>
             <DialogContentText>History</DialogContentText>
+            <DialogContent>
+                <TableContainer component={Paper}>
+                    <Table aria-label="history-table">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>History ID</TableCell>
+                                <TableCell align="right">Timestamp</TableCell>
+                                <TableCell align="right">Event ID</TableCell>
+                                <TableCell align="right">Person ID</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {history()?.map((item: any) => (
+                                <TableRow>
+                                    <TableCell component="th" scope="row">
+                                        {item.historyId}
+                                    </TableCell>
+                                    <TableCell align="right">{item.timestamp}</TableCell>
+                                    <TableCell align="right">{item.eventId}</TableCell>
+                                    <TableCell align="right">{item.personId}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </DialogContent>
         </DialogContent>
     </Dialog>
 }
