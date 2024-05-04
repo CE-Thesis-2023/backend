@@ -1,6 +1,6 @@
 import createDebounce from "@solid-primitives/debounce";
 import { createFileUploader } from "@solid-primitives/upload";
-import { Add, Delete, Face, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
+import { Add, Delete, Face, History, MoreVert, Refresh, UploadFile } from "@suid/icons-material";
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
 import { AddDetectablePerson, addDetectablePerson, deletePerson } from "../../clients/backend/people";
@@ -10,9 +10,11 @@ export const PeoplePage: Component = () => {
     const [peopleIds, setPeopleIds] = createSignal<string[]>([]);
     const [menuAnchorEl, setMenuAnchorEl] = createSignal<HTMLElement | null>(null);
     const [menuDialogCurrentItem, setMenuDialogCurrentItem] = createSignal<FrontPagePersonInfo | null>(null);
+    const [menuCurrentlySelectedId, setMenuCurrentlySelectedId] = createSignal<string>("");
+
     const [deleteDialogStatus, setDeleteDialogStatus] = createSignal<boolean>(false);
     const [imageDialogStatus, setImageDialogStatus] = createSignal<boolean>(false);
-    const [menuCurrentlySelectedId, setMenuCurrentlySelectedId] = createSignal<string>("");
+    const [historyDialogStatus, setHistoryDialogStatus] = createSignal<boolean>(false);
 
     const openMenu = () => Boolean(menuAnchorEl());
     const closeMenu = () => setMenuAnchorEl(null);
@@ -42,6 +44,14 @@ export const PeoplePage: Component = () => {
             icon: <Face />,
             onClick: () => {
                 setImageDialogStatus(true);
+            }
+        },
+        {
+            id: 'history',
+            name: "History",
+            icon: <History />,
+            onClick: () => {
+                setHistoryDialogStatus(true);
             }
         }
     ]
@@ -361,12 +371,28 @@ interface PersonImageDialogProps {
 const PersonImageDialog = (props: PersonImageDialogProps) => {
     console.log(props.item);
     return <Dialog onClose={props.onClose} open={props.open}>
-        <DialogTitle>Camera Settings</DialogTitle>
+        <DialogTitle>Person Information</DialogTitle>
         <DialogContent>
-            <DialogContentText>For debugging purposes</DialogContentText>
+            <DialogContentText>{props.item.person.name}</DialogContentText>
             <DialogContent>
                 <img src={props.item.image.presignedUrl} alt="face" />
             </DialogContent>
+        </DialogContent>
+    </Dialog>
+}
+
+
+interface PersonHistoryDialogProps {
+    item: FrontPagePersonInfo;
+    onClose: () => void;
+    open: boolean;
+}
+
+const PersonHistoryDialog = (props: PersonHistoryDialogProps) => {
+    return <Dialog onClose={props.onClose} open={props.open}>
+        <DialogTitle>Person History</DialogTitle>
+        <DialogContent>
+            <DialogContentText>History</DialogContentText>
         </DialogContent>
     </Dialog>
 }
