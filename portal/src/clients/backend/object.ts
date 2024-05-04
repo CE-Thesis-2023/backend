@@ -27,14 +27,30 @@ export interface ObjectTrackingEvent {
  */
 export async function getObjectTrackingEvents(ids: string[], cameraId: string, limit: number | undefined): Promise<ObjectTrackingEvent[]> {
     let uri = "/api/events/object_tracking";
+    let queryCount = 0;
     if (ids.length > 0) {
-        uri += '?ids=' + ids.join(',');
+        if (queryCount > 0) {
+            uri += '&ids=' + ids.join(',');
+        } else {
+            uri += '?ids=' + ids.join(',');
+        }
+        queryCount++;
     }
     if (cameraId.length > 0 && cameraId != null) {
-        uri += '?camera_id=' + cameraId;
+        if (queryCount > 0) {
+            uri += '&camera_id=' + cameraId;
+        } else {
+            uri += '?camera_id=' + cameraId;
+        }
+        queryCount++;
     }
     if (limit != null) {
-        uri += '?limit=' + limit;
+        if (queryCount > 0) {
+            uri += '&limit=' + limit;
+        } else {
+            uri += '?limit=' + limit;
+        }
+        queryCount++;
     }
     const resp = await axiosClient.get(uri);
     return resp.data["objectTrackingEvents"];

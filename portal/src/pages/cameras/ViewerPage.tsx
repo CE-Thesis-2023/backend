@@ -41,7 +41,7 @@ export const CameraViewerPage: Component = () => {
     const [currentItem, setCurrentItem] = createSignal<Event | null>(null);
     const [ptzError, setPtzError] = createSignal<any | null>(null);
 
-    const timer = setInterval(() => eventRefetch(routeParams.cameraId), 20000);
+    const timer = setInterval(() => eventRefetch(routeParams.cameraId), 10000);
 
     const handlePtzCtrl = (direction: PTZDirection) => {
         return async () => {
