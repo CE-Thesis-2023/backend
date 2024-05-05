@@ -87,9 +87,11 @@ func (s *ComputerVisionService) Search(ctx context.Context, req *SearchRequest) 
 
 func (s *ComputerVisionService) doVectorSearch(ctx context.Context, req *SearchRequest, resp interface{}) error {
 	q := s.builder.Select("*").From("detectable_people")
-	q = q.Suffix(fmt.Sprintf("ORDER BY embedding <-> '%s' LIMIT %d",
-		helper.ToPgvector(req.Vector).
-			String(),
+	vt := helper.ToPgvector(req.Vector).
+		String()
+	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.8 ORDER BY embedding <-> '%s' LIMIT %d",
+		vt,
+		vt,
 		req.TopKResult))
 	if err := s.db.Select(ctx, q, resp); err != nil {
 		return custerror.FormatInternalError("failed to search vector: %v", err)

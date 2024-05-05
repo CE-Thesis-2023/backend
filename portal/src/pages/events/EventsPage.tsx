@@ -35,7 +35,7 @@ export const EventsPage: Component = () => {
         },
     ]
 
-    const [events, { refetch: fetchEvents }] = createResource(eventIds, getListEvents);
+    const [events, { refetch: fetchEvents }] = createResource(eventIds, (ids: string[]) => getListEvents(ids, 99));
     return <div class="w-full h-full p-8">
         <Paper class="h-max w-full">
             <div class="flex flex-row justify-between items-center p-4">
