@@ -339,15 +339,30 @@ export async function getSummarizedPersonHistory(personId: string): Promise<Summ
     const person = people[0];
     const eventsMap = new Map<string, ObjectTrackingEvent>();
     for (let i = 0; i < events.length; i += 1) {
-        eventsMap.set(events[i].eventId, events[i]);
+        eventsMap.set(events[i].snapshotId, events[i]);
     }
-    const snapshotIds = events.map(e => e.snapshotId);
+
+    const snapshotIds: string[] = [];
+    events.forEach(e => {
+        if (e.snapshotId != undefined) {
+            snapshotIds.push(e.snapshotId);
+        }
+    });
     const snapshots = await getSnapshots(snapshotIds);
+    const snapshotMap = new Map<string, Snapshot>();
+    snapshots.snapshot.forEach(s => snapshotMap.set(s.snapshotId, s));
+
     const presignedUrl = snapshots.presignedUrl;
     const presignedMap = new Map<string, string>(Object.entries(presignedUrl));
-
     history.forEach(h => {
-        const event = eventsMap.get(h.eventId)!;
+        const snapshot = snapshotMap.get(h.eventId);
+        if (snapshot == undefined) {
+            return;
+        }
+        const event = eventsMap.get(snapshot?.snapshotId);
+        if (event == undefined) {
+            return;
+        }
         summarized.push({
             history: h,
             event: event,
@@ -355,6 +370,7 @@ export async function getSummarizedPersonHistory(personId: string): Promise<Summ
             snapshot: presignedMap.get(event.snapshotId) ?? "",
         });
     });
+
     return summarized;
 }
 
@@ -404,4 +420,10 @@ export async function getListEvents(eventIds: string[], limit: number): Promise<
     });
 
     return summarized;
+}
+
+export interface SummarizedTranscoderInfo {
+    transcoder: Transcoder;
+    status: TranscoderStatus;
+    integration: OpenGateIntegration;
 }

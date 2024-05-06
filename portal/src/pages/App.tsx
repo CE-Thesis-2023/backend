@@ -1,5 +1,5 @@
 import { A } from "@solidjs/router";
-import { CameraFront, EventAvailable, GroupOutlined, PeopleAlt } from "@suid/icons-material";
+import { CameraFront, Devices, EventAvailable, GroupOutlined, PeopleAlt } from "@suid/icons-material";
 import MenuIcon from "@suid/icons-material/Menu";
 import SourceIcon from "@suid/icons-material/Source";
 import {
@@ -67,6 +67,13 @@ export const App: ParentComponent = (props) => {
             icon: <EventAvailable />,
             route: "/events"
         },
+        {
+            id: 'transcoders',
+            name: "Transcoders",
+            title: "Portal - Transcoder",
+            icon: <Devices />,
+            route: "/devices"
+        }
     ]
 
     const items = () => <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(true)}>

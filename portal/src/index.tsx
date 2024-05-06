@@ -7,6 +7,7 @@ import { CameraViewerPage } from './pages/cameras/ViewerPage';
 import { EventsPage } from './pages/events/EventsPage';
 import { GroupsPage } from './pages/groups/GroupsPage';
 import { PeoplePage } from './pages/people/PeoplePage';
+import { TranscoderPage } from './pages/transcoders/Transcoder';
 
 const root = document.getElementById('root');
 
@@ -21,5 +22,6 @@ render(() => <Router root={App}>
   <Route path="/people" component={PeoplePage} />
   <Route path="/groups" component={GroupsPage} />
   <Route path="/events" component={EventsPage} />
+  <Route path="/devices" component={TranscoderPage} />
   <Route path="/cameras/:cameraId" component={CameraViewerPage} />
 </Router>, root!);

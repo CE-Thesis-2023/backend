@@ -248,10 +248,10 @@ const AddPersonDialog = (props: AddPersonDialogProps) => {
         dataURL.replace('data:', '').replace(/^.+,/, '');
 
     return <Dialog open={props.open} onClose={props.onClose}>
-        <DialogTitle>Add Camera</DialogTitle>
+        <DialogTitle>Add Person</DialogTitle>
         <DialogContent>
             <DialogContentText>
-                Add a new camera
+                Add a new person
             </DialogContentText>
             <DialogContent>
                 <TextField
@@ -406,34 +406,47 @@ const PersonHistoryDialog = (props: PersonHistoryDialogProps) => {
         <DialogContent>
             <DialogContentText>Person: {props.item.person.name}</DialogContentText>
             <DialogContent>
-                <TableContainer component={Paper}>
-                    <Table aria-label="history-table">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>History ID</TableCell>
-                                <TableCell align="right">Timestamp</TableCell>
-                                <TableCell align="right">Camera</TableCell>
-                                <TableCell align="right">Start Time</TableCell>
-                                <TableCell align="right">End Time</TableCell>
-                                <TableCell align="right">Snapshot</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {history()?.map((item: SummarizedHistory) => (
-                                <TableRow>
-                                    <TableCell component="th" scope="row">
-                                        {item.history.historyId}
-                                    </TableCell>
-                                    <TableCell align="right">{item.history.timestamp}</TableCell>
-                                    <TableCell align="right">{item.event.CameraName}</TableCell>
-                                    <TableCell align="right">{item.event.startTime}</TableCell>
-                                    <TableCell align="right">{item.event.endTime}</TableCell>
-                                    <TableCell align="right">{item.snapshot !== "" ? <img class="w-32 h-auto" src={item.snapshot} /> : ""}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
+                <Switch>
+                    <Match when={history.loading}>
+                        <div class="flex flex-row justify-center align-middle w-full">
+                            <CircularProgress color="primary" sx={{ margin: '2rem' }} />
+                        </div>
+                    </Match>
+                    <Match when={history.error}>
+                        <p>Error when retrieving data: {history.error}</p>
+                    </Match>
+                    <Match when={history() && !history.loading}>
+                        <TableContainer component={Paper}>
+                            <Table aria-label="history-table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>History ID</TableCell>
+                                        <TableCell align="right">Timestamp</TableCell>
+                                        <TableCell align="right">Camera</TableCell>
+                                        <TableCell align="right">Start Time</TableCell>
+                                        <TableCell align="right">End Time</TableCell>
+                                        <TableCell align="right">Snapshot</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {history()?.map((item: SummarizedHistory) => (
+                                        <TableRow>
+                                            <TableCell component="th" scope="row">
+                                                {item.history.historyId}
+                                            </TableCell>
+                                            <TableCell align="right">{item.history.timestamp}</TableCell>
+                                            <TableCell align="right">{item.event.CameraName}</TableCell>
+                                            <TableCell align="right">{item.event.startTime}</TableCell>
+                                            <TableCell align="right">{item.event.endTime}</TableCell>
+                                            <TableCell align="right">{item.snapshot !== "" ? <img class="w-32 h-auto" src={item.snapshot} /> : ""}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Match>
+
+                </Switch>
             </DialogContent>
         </DialogContent>
     </Dialog>
