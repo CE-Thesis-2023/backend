@@ -16,6 +16,8 @@ services:
     # pull_policy: always
     volumes:
       - ./configs.json:/configs/configs.json:ro
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 #     networks:
 #       - server
 # networks:

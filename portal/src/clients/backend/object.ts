@@ -1,3 +1,4 @@
+import { default as duration } from 'dayjs/plugin/duration';
 import { axiosClient } from "./client";
 
 export interface ObjectTrackingEvent {
@@ -25,30 +26,54 @@ export interface ObjectTrackingEvent {
  * @param ids Event IDs
  * @returns Object tracking events
  */
-export async function getObjectTrackingEvents(ids: string[], cameraId: string, limit: number | undefined): Promise<ObjectTrackingEvent[]> {
+export async function getObjectTrackingEvents(options:
+    {
+        ids: string[],
+        cameraId: string,
+        limit: number | undefined,
+        within: number | undefined,
+        latest: boolean | undefined
+    }): Promise<ObjectTrackingEvent[]> {
     let uri = "/api/events/object_tracking";
     let queryCount = 0;
-    if (ids.length > 0) {
+    if (options.ids.length > 0) {
         if (queryCount > 0) {
-            uri += '&ids=' + ids.join(',');
+            uri += '&ids=' + options.ids.join(',');
         } else {
-            uri += '?ids=' + ids.join(',');
+            uri += '?ids=' + options.ids.join(',');
         }
         queryCount++;
     }
-    if (cameraId.length > 0 && cameraId != null) {
+    if (options.cameraId.length > 0 && options.cameraId != null) {
         if (queryCount > 0) {
-            uri += '&camera_id=' + cameraId;
+            uri += '&camera_id=' + options.cameraId;
         } else {
-            uri += '?camera_id=' + cameraId;
+            uri += '?camera_id=' + options.cameraId;
         }
         queryCount++;
     }
-    if (limit != null) {
+    if (options.limit != undefined) {
         if (queryCount > 0) {
-            uri += '&limit=' + limit;
+            uri += '&limit=' + options.limit;
         } else {
-            uri += '?limit=' + limit;
+            uri += '?limit=' + options.limit;
+        }
+        queryCount++;
+    }
+    if (options.within != undefined) {
+        if (queryCount > 0) {
+            uri += '&within=' + options.within + "s";
+        } else {
+            uri += '?within=' + options.within + "s";
+        }
+        queryCount++;
+    }
+    if (options.latest != undefined) {
+        let str = options.latest ? 'true' : 'false';
+        if (queryCount > 0) {
+            uri += '&latest=' + str;
+        } else {
+            uri += '?latest=' + str;
         }
         queryCount++;
     }

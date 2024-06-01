@@ -39,9 +39,9 @@ export const EventsPage: Component = () => {
     return <div class="w-full h-full p-8">
         <Paper class="h-max w-full">
             <div class="flex flex-row justify-between items-center p-4">
-                <Typography variant="h6" component="h1">People</Typography>
+                <Typography variant="h6" component="h1">Events</Typography>
                 <div class="flex flex-row items-end gap-2">
-                    <TextField id="person-id-filter" label="Person ID" variant="standard" size="small" color="primary" margin="none" sx={{ marginRight: '1rem' }} onChange={(e) => {
+                    <TextField id="person-id-filter" label="Event ID" variant="standard" size="small" color="primary" margin="none" sx={{ marginRight: '1rem' }} onChange={(e) => {
                         const value = e.target.value;
                         filterDebouncer(value);
                     }} />

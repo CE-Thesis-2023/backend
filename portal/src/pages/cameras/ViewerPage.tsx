@@ -5,9 +5,16 @@ import { Alert, Box, Button, Chip, CircularProgress, Divider, FormControlLabel, 
 import { red } from "@suid/material/colors";
 import green from "@suid/material/colors/green";
 import dayjs from "dayjs";
+import 'dayjs/locale/en';
+import { default as duration } from 'dayjs/plugin/duration';
+import { default as relativeTime } from 'dayjs/plugin/relativeTime';
 import { Component, For, Match, Switch, createResource, createSignal } from "solid-js";
 import { toggleStream } from "../../clients/backend/streams";
 import { CameraAggregatedInfo, Event, PTZDirection, doPtzCtrl, getCameraViewInfo, getPersonInfo, getUpdatedInfo } from "../../helper/helper";
+
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+dayjs.locale('en');
 
 const Available = () => {
     return <div class="flex flex-row justify-center items-center gap-1">
@@ -31,7 +38,10 @@ export const CameraViewerPage: Component = () => {
             cameraId: data.camera.cameraId,
             cameraName: data.camera.openGateCameraName,
             transcoderId: data.camera.transcoderId,
-        }, 10);
+        },
+            10,
+            true,
+            600); // 10 minutes
     });
     const [isPtzCtrlInProcess, setIsPtzCtrlInProcess] = createSignal(false);
 
@@ -150,7 +160,7 @@ export const CameraViewerPage: Component = () => {
                             </div>
                         </div>
                     </Paper>
-                    <Paper sx={{ width: '100%' }} class="overflow-y-scroll h-80">
+                    <Paper sx={{ width: '100%' }} class="overflow-y-scroll h-96">
                         <List>
                             <Switch>
                                 <Match when={events.loading && events() == undefined}>
@@ -201,8 +211,10 @@ export const CameraViewerPage: Component = () => {
                                     <p>{events()?.stats?.capturePid ?? "N/A"}</p>
                                 </div>
                                 <div class="flex flex-col justify-start items-start">
-                                    <p class="font-semibold text-sm">Process ID</p>
-                                    <p>{events()?.stats?.processId ?? "N/A"}</p>
+                                    <p class="font-semibold text-sm">Last Updated</p>
+                                    <p>{events()?.stats?.timestamp ?
+                                        getElapsed(events()!.stats!.timestamp, "").humanize(false) :
+                                        "N/A"}</p>
                                 </div>
                                 <div class="flex flex-col justify-start items-start">
                                     <p class="font-semibold text-sm">Processed (fps)</p>
@@ -211,6 +223,10 @@ export const CameraViewerPage: Component = () => {
                                 <div class="flex flex-col justify-start items-start">
                                     <p class="font-semibold text-sm">Skipped (fps)</p>
                                     <p>{events()?.stats?.skippedFps ?? "N/A"}</p>
+                                </div>
+                                <div class="flex flex-col justify-start items-start">
+                                    <p class="font-semibold text-sm">Inference Time (ms)</p>
+                                    <p>{events()?.detectorStats?.inferenceSpeed ?? "N/A"}</p>
                                 </div>
                             </div>
                         </div>
@@ -232,22 +248,23 @@ interface EventItemProps {
     onClick: (item: Event) => void;
 }
 
-function getEndTime(endTime: string): number {
-    return endTime ?
-        dayjs(endTime).second() :
-        dayjs(Date.now()).second();
+function getEndTime(endTime: string): dayjs.Dayjs {
+    if (endTime != null) {
+        return dayjs(endTime);
+    }
+    return dayjs(Date.now());
 }
 
-function getElapsed(startTime: string, endTime: string): number {
+function getElapsed(startTime: string, endTime: string): duration.Duration {
     const currentTime = getEndTime(endTime);
-    return currentTime -
-        dayjs(startTime).second();
+    const start = dayjs(startTime);
+    const dur = currentTime.diff(start, 'second');
+    return dayjs.duration(dur);
 }
 
 const EventItem: Component<EventItemProps> = (props: EventItemProps) => {
     const { tracking, snapshot } = props.event;
     const elasped = getElapsed(tracking.startTime, tracking.endTime);
-    console.log(props.event);
 
     return <>
         <ListItemButton onClick={() => {
@@ -262,7 +279,7 @@ const EventItem: Component<EventItemProps> = (props: EventItemProps) => {
                     <div class="flex flex-row justify-start items-center gap-2">
                         {tracking.label === "person" ? <Chip label="Person" /> : <Chip label="Object" color="secondary" />}
                         {snapshot?.detectedPeopleId ? <Chip label="Face" color="primary" /> : null}
-                        <Typography variant="body2">{`Duration: ${elasped}s`}</Typography>
+                        <Typography variant="body2">{`Duration: ${elasped.humanize(false)}`}</Typography>
                     </div>
                 </div>
             } secondary={

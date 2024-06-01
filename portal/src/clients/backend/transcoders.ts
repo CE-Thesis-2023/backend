@@ -105,8 +105,8 @@ export interface DetectorStats {
 }
 
 export interface Stats {
-    cameraStats: CameraStats[];
-    detectorStats: DetectorStats[];
+    cameraStats: CameraStats;
+    detectorStats: DetectorStats;
 }
 
 /**

@@ -12,11 +12,27 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
+    ThemeProvider,
     Toolbar,
-    Typography
+    Typography,
+    createTheme
 } from "@suid/material";
+import { red } from "@suid/material/colors";
 import { ParentComponent } from "solid-js";
 import { createMutable } from "solid-js/store";
+
+const theme = createTheme({
+    palette: {
+        primary: {
+            // Purple and green play nicely together.
+            main: red[900],
+        },
+        secondary: {
+            // This is green.A700 as hex.
+            main: red[200],
+        },
+    },
+});
 
 export const App: ParentComponent = (props) => {
     const state = createMutable({
@@ -87,28 +103,30 @@ export const App: ParentComponent = (props) => {
         </List>
     </Box>
 
-    return <div class="flex flex-col h-full">
-        <div class="flex">
-            <Box sx={{ flexGrow: 1 }}>
-                <AppBar position="static">
-                    <Toolbar>
-                        <IconButton
-                            size="large" edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={toggleDrawer(!state.drawer)}>
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography variant="h6" component={"div"} sx={{ flexGrow: 1 }}>
-                            Portal
-                        </Typography>
-                        <IconButton color="inherit" aria-label="github-ref" size="small" >
-                            <SourceIcon />
-                        </IconButton>
-                    </Toolbar>
-                </AppBar>
-            </Box>
-            <Drawer anchor="left" open={state.drawer} onClose={toggleDrawer(false)}>{items()}</Drawer>
+    return <ThemeProvider theme={theme}>
+        <div class="flex flex-col h-full">
+            <div class="flex">
+                <Box sx={{ flexGrow: 1 }}>
+                    <AppBar position="static">
+                        <Toolbar>
+                            <IconButton
+                                size="large" edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }} onClick={toggleDrawer(!state.drawer)}>
+                                <MenuIcon />
+                            </IconButton>
+                            <Typography variant="h6" component={"div"} sx={{ flexGrow: 1 }}>
+                                Portal
+                            </Typography>
+                            <IconButton color="inherit" aria-label="github-ref" size="small" >
+                                <SourceIcon />
+                            </IconButton>
+                        </Toolbar>
+                    </AppBar>
+                </Box>
+                <Drawer anchor="left" open={state.drawer} onClose={toggleDrawer(false)}>{items()}</Drawer>
+            </div>
+            <main class="flex-1">
+                {props.children}
+            </main>
         </div>
-        <main class="flex-1">
-            {props.children}
-        </main>
-    </div>
+    </ThemeProvider>
 }

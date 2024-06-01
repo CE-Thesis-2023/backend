@@ -1,6 +1,6 @@
 import createDebounce from "@solid-primitives/debounce";
 import { Add, CheckCircleRounded, CircleRounded, Delete, MoreVert, Refresh, Settings } from "@suid/icons-material";
-import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, IconButton, InputLabel, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Select, Switch as SwitchButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import green from "@suid/material/colors/green";
 import red from "@suid/material/colors/red";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
@@ -288,6 +288,7 @@ const AddCameraDialog = (props: AddCameraDialogProps) => {
             username: "",
             password: "",
             transcoderId: "",
+            autotracking: false,
         }
     );
     const [trancoders, { refetch: fetchTranscoders }] = createResource([], getTranscoders);
@@ -436,6 +437,22 @@ const AddCameraDialog = (props: AddCameraDialogProps) => {
                                     }
                                 });
                             }}
+                        />
+                        <FormControlLabel
+                            label="PTZ Auto-tracking"
+                            control={
+                                <SwitchButton
+                                    value={formValue()?.autotracking ?? false}
+                                    onChange={(e) => {
+                                        const value = e.target.checked;
+                                        setFormValue((prev) => {
+                                            return {
+                                                ...prev,
+                                                autotracking: value
+                                            }
+                                        });
+                                    }}
+                                />}
                         />
                     </DialogContent>
                     {

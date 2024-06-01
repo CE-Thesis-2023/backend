@@ -39,5 +39,7 @@ EXPOSE 9000
 EXPOSE 9001
 
 ENV CONFIG_FILE_PATH=/configs/configs.json
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Ho_Chi_Minh
 
 CMD [ "./main" ]

@@ -37,6 +37,7 @@ export interface AddCameraParams {
     password: string;
 
     transcoderId: string;
+    autotracking: boolean;
 }
 
 /**

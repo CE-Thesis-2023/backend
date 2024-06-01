@@ -1,6 +1,6 @@
 import createDebounce from "@solid-primitives/debounce";
 import { MoreVert, Refresh, Update } from "@suid/icons-material";
-import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, InputLabel, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
+import { Alert, Box, Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, IconButton, InputLabel, Link, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@suid/material";
 import { Component, Match, Show, Switch, createResource, createSignal } from "solid-js";
 import { UpdateTranscoder, updateTranscoder } from "../../clients/backend/transcoders";
 import { TranscoderInfo, getListTranscoders } from "../../helper/helper";
@@ -297,25 +297,22 @@ const UpdateDeviceDialog = (props: UpdateDeviceDialogProps) => {
                         </MenuItem>
                     </Select>
                 </FormControl>
-                <FormControl variant="filled"
-                    margin="dense"
-                    sx={{
-                        marginTop: '8px',
-                        width: '100%',
-                    }}>
-                    <InputLabel id="tpu-label">
-                        Coral Edge TPU
-                    </InputLabel>
-                    <Checkbox aria-label="tpu-enabled" checked={data().edgeTpuEnabled} onChange={(e) => {
-                        const value = e.target.checked;
-                        setData((prev) => {
-                            return {
-                                ...prev,
-                                edgeTpuEnabled: value
-                            }
-                        });
-                    }} />
-                </FormControl>
+                <FormControlLabel
+                    label="Edge TPU Enabled"
+                    control={
+                        <Checkbox
+                            checked={data().edgeTpuEnabled} onChange={(e) => {
+                                const value = e.target.checked;
+                                setData((prev) => {
+                                    return {
+                                        ...prev,
+                                        edgeTpuEnabled: value
+                                    }
+                                });
+                            }}
+                        />
+                    }
+                />
             </DialogContent>
             {
                 formErr() != null &&
