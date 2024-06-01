@@ -116,6 +116,7 @@ type Camera struct {
 	GroupId            string `json:"groupId" db:"group_id,omitempty"`
 	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty" gorm:"index"`
 	SettingsId         string `json:"settingsId" db:"settings_id,omitempty"`
+	IsTestCamera       bool   `json:"isTestCamera" db:"is_test_camera"`
 }
 
 type OpenGateCameraSettings struct {

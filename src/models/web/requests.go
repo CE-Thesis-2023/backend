@@ -52,11 +52,12 @@ type GetCamerasResponse struct {
 }
 
 type AddCameraRequest struct {
-	Name     string `json:"name"`
-	Ip       string `json:"ip"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Name         string `json:"name"`
+	Ip           string `json:"ip"`
+	Port         int    `json:"port"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	IsTestCamera bool   `json:"isTestCamera"`
 
 	TranscoderId string `json:"transcoderId"`
 }
@@ -252,7 +253,7 @@ type GetObjectTrackingEventByIdRequest struct {
 	EventId         []string `json:"eventId"`
 	OpenGateEventId []string `json:"openGateEventId"`
 	CameraId        string   `json:"cameraId"`
-	Limit           int   `json:"limit"`
+	Limit           int      `json:"limit"`
 }
 
 type GetObjectTrackingEventByIdResponse struct {
