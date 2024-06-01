@@ -177,6 +177,14 @@ func (c *Configuration) buildCameras() error {
 		m := make(map[string]interface{})
 		m["enabled"] = camera.Enabled
 
+		defer func() {
+			cameras[camera.OpenGateCameraName] = m
+		}()
+
+		if !camera.Enabled {
+			continue
+		}
+
 		ffmpeg := make(map[string]interface{})
 
 		inputs := make([]map[string]interface{}, 0, 1)
@@ -208,21 +216,22 @@ func (c *Configuration) buildCameras() error {
 		onvif["port"] = camera.Port
 		onvif["user"] = camera.Username
 		onvif["password"] = camera.Password
-		onvif["isapi_fallback"] = true
-
-		isapiSidecar := make(map[string]interface{})
-		isapiSidecar["host"] = "localhost"
-		isapiSidecar["port"] = 5600
-		onvif["isapi_sidecar"] = isapiSidecar
-
 		autotracking := make(map[string]interface{})
-		autotracking["enabled"] = true
-		autotracking["zooming"] = "disabled"
-		autotracking["track"] = []string{
-			"person",
-		}
-		autotracking["required_zones"] = []string{
-			"all",
+		autotracking["enabled"] = camera.Autotracking
+		if camera.Autotracking {
+			autotracking["zooming"] = "disabled"
+			autotracking["track"] = []string{
+				"person",
+			}
+			autotracking["required_zones"] = []string{
+				"all",
+			}
+
+			onvif["isapi_fallback"] = true
+			isapiSidecar := make(map[string]interface{})
+			isapiSidecar["host"] = "localhost"
+			isapiSidecar["port"] = 5600
+			onvif["isapi_sidecar"] = isapiSidecar
 		}
 		onvif["autotracking"] = autotracking
 		m["onvif"] = onvif
@@ -235,13 +244,13 @@ func (c *Configuration) buildCameras() error {
 
 		mqtt := make(map[string]interface{})
 		mqtt["enabled"] = configs.MqttEnabled
-		mqtt["timestamp"] = configs.Timestamp
-		mqtt["bounding_box"] = configs.BoundingBox
-		mqtt["crop"] = configs.Crop
-		mqtt["required_zones"] = []string{"all"}
+		if configs.MqttEnabled {
+			mqtt["timestamp"] = configs.Timestamp
+			mqtt["bounding_box"] = configs.BoundingBox
+			mqtt["crop"] = configs.Crop
+			mqtt["required_zones"] = []string{"all"}
+		}
 		m["mqtt"] = mqtt
-
-		cameras[camera.OpenGateCameraName] = m
 	}
 
 	c.c["cameras"] = cameras

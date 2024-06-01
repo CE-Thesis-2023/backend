@@ -116,18 +116,19 @@ type Camera struct {
 	GroupId            string `json:"groupId" db:"group_id,omitempty"`
 	TranscoderId       string `json:"transcoderId" db:"transcoder_id,omitempty" gorm:"index"`
 	SettingsId         string `json:"settingsId" db:"settings_id,omitempty"`
-	IsTestCamera       bool   `json:"isTestCamera" db:"is_test_camera"`
+	Autotracking       bool   `json:"autotracking" db:"autotracking,omitempty"`
 }
 
 type OpenGateCameraSettings struct {
-	SettingsId  string `json:"settingsId" db:"settings_id,primary" gorm:"index"`
-	Height      int    `json:"height" db:"height"`
-	Width       int    `json:"width" db:"width"`
-	Fps         int    `json:"fps" db:"fps"`
-	MqttEnabled bool   `json:"mqttEnabled" db:"mqtt_enabled"`
-	Timestamp   bool   `json:"timestamp" db:"timestamp"`
-	BoundingBox bool   `json:"boundingBox" db:"bounding_box"`
-	Crop        bool   `json:"crop" db:"crop"`
+	SettingsId   string `json:"settingsId" db:"settings_id,primary" gorm:"index"`
+	Height       int    `json:"height" db:"height"`
+	Width        int    `json:"width" db:"width"`
+	Fps          int    `json:"fps" db:"fps"`
+	MqttEnabled  bool   `json:"mqttEnabled" db:"mqtt_enabled"`
+	Timestamp    bool   `json:"timestamp" db:"timestamp"`
+	BoundingBox  bool   `json:"boundingBox" db:"bounding_box"`
+	Crop         bool   `json:"crop" db:"crop"`
+	Autotracking bool   `json:"autotracking" db:"autotracking"`
 
 	OpenGateId string `json:"openGateId" db:"open_gate_id"`
 	CameraId   string `json:"cameraId" db:"camera_id"`

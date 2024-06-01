@@ -57,7 +57,7 @@ type AddCameraRequest struct {
 	Port         int    `json:"port"`
 	Username     string `json:"username"`
 	Password     string `json:"password"`
-	IsTestCamera bool   `json:"isTestCamera"`
+	Autotracking bool   `json:"autotracking"`
 
 	TranscoderId string `json:"transcoderId"`
 }

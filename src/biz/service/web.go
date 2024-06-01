@@ -256,16 +256,17 @@ func (s *WebService) AddCamera(ctx context.Context, req *web.AddCameraRequest) (
 
 func (s *WebService) initializeDefaultOpenGateCameraSettings(ctx context.Context, camera *db.Camera, transcoder *db.Transcoder) (*db.OpenGateCameraSettings, error) {
 	settings := db.OpenGateCameraSettings{
-		SettingsId:  uuid.NewString(),
-		CameraId:    camera.CameraId,
-		Height:      480,
-		Width:       640,
-		Fps:         5,
-		MqttEnabled: true,
-		Timestamp:   true,
-		BoundingBox: true,
-		Crop:        true,
-		OpenGateId:  transcoder.OpenGateIntegrationId,
+		SettingsId:   uuid.NewString(),
+		CameraId:     camera.CameraId,
+		Height:       320,
+		Width:        320,
+		Fps:          5,
+		MqttEnabled:  true,
+		Timestamp:    true,
+		BoundingBox:  true,
+		Crop:         true,
+		Autotracking: camera.Autotracking,
+		OpenGateId:   transcoder.OpenGateIntegrationId,
 	}
 
 	return &settings,
