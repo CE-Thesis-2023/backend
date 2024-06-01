@@ -388,8 +388,8 @@ type DeleteDetectablePersonRequest struct {
 }
 
 type GetLatestOpenGateStatsResponse struct {
-	CameraStats   []db.OpenGateCameraStats   `json:"cameraStats"`
-	DetectorStats []db.OpenGateDetectorStats `json:"detectorStats"`
+	CameraStats   db.OpenGateCameraStats   `json:"cameraStats"`
+	DetectorStats db.OpenGateDetectorStats `json:"detectorStats"`
 }
 
 type GetSnapshotPresignedUrlRequest struct {

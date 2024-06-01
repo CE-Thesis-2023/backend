@@ -2016,9 +2016,18 @@ func (s *WebService) GetLatestOpenGateCameraStats(ctx context.Context, req *web.
 		return nil, err
 	}
 
+	cameraStat := db.OpenGateCameraStats{}
+	if len(cameraStats) > 0 {
+		cameraStat = cameraStats[0]
+	}
+	detectorStat := db.OpenGateDetectorStats{}
+	if len(detectorStats) > 0 {
+		detectorStat = detectorStats[0]
+	}
+
 	return &web.GetLatestOpenGateStatsResponse{
-		CameraStats:   cameraStats,
-		DetectorStats: detectorStats,
+		CameraStats:   cameraStat,
+		DetectorStats: detectorStat,
 	}, nil
 }
 
