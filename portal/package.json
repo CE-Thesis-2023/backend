@@ -6,7 +6,7 @@
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "serve": "vite preview",
+    "serve": "vite preview --port 3000 --strictPort --host 0.0.0.0",
     "test": "jest"
   },
   "type": "module",
