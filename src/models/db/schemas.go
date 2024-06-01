@@ -37,11 +37,12 @@ type OpenGateMqttConfiguration struct {
 }
 
 type ObjectTrackingEvent struct {
-	EventId         string `json:"eventId" db:"event_id,primary" gorm:"index"`
-	OpenGateEventId string `json:"openGateEventId" db:"open_gate_event_id" gorm:"index"`
-	EventType       string `json:"eventType" db:"event_type"`
+	EventId         string    `json:"eventId" db:"event_id,primary" gorm:"index"`
+	OpenGateEventId string    `json:"openGateEventId" db:"open_gate_event_id" gorm:"index"`
+	EventType       string    `json:"eventType" db:"event_type"`
+	LastUpdated     time.Time `json:"lastUpdated" db:"last_updated" gorm:"index"`
 
-	CameraId      string     `json:"cameraId" db:"camera_id"`
+	CameraId      string     `json:"cameraId" db:"camera_id" gorm:"index"`
 	CameraName    string     `json:"CameraName" db:"camera_name"`
 	FrameTime     *time.Time `json:"frameTime" db:"frame_time"`
 	Label         string     `json:"label" db:"label"`

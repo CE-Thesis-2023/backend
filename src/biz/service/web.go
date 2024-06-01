@@ -1486,7 +1486,14 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 		return nil, err
 	}
 
-	trackingEvents, err := s.getObjectTrackingEventById(ctx, req.CameraId, req.EventId, req.OpenGateEventId, req.Limit)
+	trackingEvents, err := s.getObjectTrackingEventById(
+		ctx,
+		req.CameraId,
+		req.EventId,
+		req.OpenGateEventId,
+		&req.Limit,
+		&req.IsLastestFirst,
+		&req.Within)
 	if err != nil {
 		logger.SError("GetObjectTrackingEventById: getObjectTrackingEventById error", zap.Error(err))
 		return nil, err
@@ -1504,7 +1511,14 @@ func (s *WebService) GetObjectTrackingEventById(ctx context.Context, req *web.Ge
 	}, nil
 }
 
-func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId string, ids []string, openGateIds []string, limit ...int) ([]db.ObjectTrackingEvent, error) {
+func (s *WebService) getObjectTrackingEventById(
+	ctx context.Context,
+	cameraId string,
+	ids []string,
+	openGateIds []string,
+	limit *int,
+	isLastestFirst *bool,
+	within *time.Duration) ([]db.ObjectTrackingEvent, error) {
 	q := s.builder.Select("*").
 		From("object_tracking_events").
 		OrderBy("frame_time DESC")
@@ -1524,10 +1538,20 @@ func (s *WebService) getObjectTrackingEventById(ctx context.Context, cameraId st
 		}
 		q = q.Where(or)
 	}
-	if len(limit) > 0 {
-		lim := limit[0]
-		if lim > 0 {
-			q = q.Limit(uint64(lim))
+	if limit != nil {
+		if *limit > 0 {
+			q = q.Limit(uint64(*limit))
+		}
+	}
+	if isLastestFirst != nil {
+		if *isLastestFirst {
+			q = q.OrderBy("last_updated DESC")
+		}
+	}
+	if within != nil {
+		if *within > 0 {
+			curr := time.Now()
+			q = q.Where("last_updated > ?", curr.Add(-*within))
 		}
 	}
 
@@ -1594,7 +1618,14 @@ func (s *WebService) DeleteObjectTrackingEvent(ctx context.Context, req *web.Del
 		return err
 	}
 
-	_, err := s.getObjectTrackingEventById(ctx, "", []string{req.EventId}, nil)
+	_, err := s.getObjectTrackingEventById(
+		ctx,
+		"",
+		[]string{req.EventId},
+		[]string{},
+		nil,
+		nil,
+		nil)
 	if err != nil {
 		logger.SError("commandService.DeleteObjectTrackingEvent: getObjectTrackingEventById error",
 			zap.Error(err))
@@ -2542,7 +2573,14 @@ func (s *WebService) UpsertSnapshot(ctx context.Context, req *web.UpsertSnapshot
 }
 
 func (s *WebService) updateEventSnapshotReference(ctx context.Context, openGateEventId string, snapshotId string) error {
-	events, err := s.getObjectTrackingEventById(ctx, "", nil, []string{openGateEventId})
+	events, err := s.getObjectTrackingEventById(
+		ctx,
+		"",
+		nil,
+		[]string{openGateEventId},
+		nil,
+		nil,
+		nil)
 	if err != nil {
 		logger.SError("updateEventSnapshotReference: getEventByOpenGateEventId",
 			zap.Error(err))

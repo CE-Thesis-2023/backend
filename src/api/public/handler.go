@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/biz/service"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
@@ -425,6 +426,8 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 	openGateEventId := ctx.Query("open_gate_event_id")
 	cameraId := ctx.Query("camera_id")
 	limit := ctx.Query("limit")
+	isLastestFirst := ctx.Query("lastest")
+	within := ctx.Query("within")
 
 	req := &web.GetObjectTrackingEventByIdRequest{}
 	if eventId != "" {
@@ -443,6 +446,17 @@ func GetObjectTrackingEvent(ctx *gin.Context) {
 			return
 		}
 		req.Limit = l
+	}
+	if isLastestFirst != "" {
+		req.IsLastestFirst = isLastestFirst == "true"
+	}
+	if within != "" {
+		dur, err := time.ParseDuration(within)
+		if err != nil {
+			custhttp.ToHTTPErr(custerror.ErrorInvalidArgument, ctx)
+			return
+		}
+		req.Within = dur
 	}
 
 	resp, err := service.GetWebService().GetObjectTrackingEventById(ctx, req)

@@ -250,10 +250,12 @@ type DeleteTranscoderRequest struct {
 }
 
 type GetObjectTrackingEventByIdRequest struct {
-	EventId         []string `json:"eventId"`
-	OpenGateEventId []string `json:"openGateEventId"`
-	CameraId        string   `json:"cameraId"`
-	Limit           int      `json:"limit"`
+	EventId         []string      `json:"eventId"`
+	OpenGateEventId []string      `json:"openGateEventId"`
+	CameraId        string        `json:"cameraId"`
+	Limit           int           `json:"limit"`
+	Within          time.Duration `json:"within"`
+	IsLastestFirst  bool          `json:"isLastestFirst"`
 }
 
 type GetObjectTrackingEventByIdResponse struct {

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"path/filepath"
+	"time"
 
 	"github.com/CE-Thesis-2023/backend/src/helper/media"
 	"github.com/CE-Thesis-2023/backend/src/helper/opengate"
@@ -254,6 +255,7 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 	dbEvent.EventId = uuid.NewString()
 	dbEvent.EventType = req.Event.Type
 	dbEvent.CameraId = cameras[0].CameraId
+	dbEvent.LastUpdated = time.Now()
 
 	if err := s.webService.addObjectTrackingEvent(ctx, dbEvent); err != nil {
 		logger.SDebug("AddEvent: addEventToDatabase", zap.Error(err))
@@ -278,7 +280,13 @@ func (s *PrivateService) AddObjectTrackingEvent(ctx context.Context, req *web.Ad
 
 func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web.UpdateObjectTrackingEventRequest) error {
 	objectTrackingEvent, err := s.webService.getObjectTrackingEventById(
-		ctx, "", []string{req.EventId}, nil)
+		ctx,
+		"",
+		[]string{req.EventId},
+		nil,
+		nil,
+		nil,
+		nil)
 	if err != nil {
 		return err
 	}
@@ -298,6 +306,7 @@ func (s *PrivateService) UpdateObjectTrackingEvent(ctx context.Context, req *web
 	event.CameraId = objectTrackingEvent[0].CameraId
 	event.EventId = objectTrackingEvent[0].EventId
 	event.EventType = req.Event.Type
+	event.LastUpdated = time.Now()
 
 	if err := s.webService.updateObjectTrackingEvent(ctx, event); err != nil {
 		logger.SDebug("UpdateEvent: updateEventInDatabase", zap.Error(err))
