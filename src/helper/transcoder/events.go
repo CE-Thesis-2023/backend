@@ -238,6 +238,10 @@ func msgToEnabled(msg []byte) bool {
 		return true
 	case "OFF":
 		return false
+	case "online":
+		return true
+	case "offline":
+		return false
 	default:
 		return false
 	}
