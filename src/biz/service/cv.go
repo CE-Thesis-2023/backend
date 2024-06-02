@@ -10,9 +10,11 @@ import (
 	"github.com/CE-Thesis-2023/backend/src/helper"
 	custdb "github.com/CE-Thesis-2023/backend/src/internal/db"
 	custerror "github.com/CE-Thesis-2023/backend/src/internal/error"
+	"github.com/CE-Thesis-2023/backend/src/internal/logger"
 	"github.com/CE-Thesis-2023/backend/src/models/db"
 	"github.com/Kagami/go-face"
 	"github.com/Masterminds/squirrel"
+	"go.uber.org/zap"
 )
 
 type ComputerVisionService struct {
@@ -87,15 +89,20 @@ func (s *ComputerVisionService) Search(ctx context.Context, req *SearchRequest) 
 
 func (s *ComputerVisionService) doVectorSearch(ctx context.Context, req *SearchRequest, resp interface{}) error {
 	q := s.builder.Select("*").From("detectable_people")
-	vt := helper.ToPgvector(req.Vector).
-		String()
-	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.8 ORDER BY embedding <-> '%s' LIMIT %d",
+	vt := helper.ToPgvector(req.Vector).String()
+	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.2 ORDER BY embedding <-> '%s' LIMIT %d",
 		vt,
 		vt,
 		req.TopKResult))
+	sqlQ, args, _ := q.ToSql()
+	logger.SInfo("doVectorSearch query",
+		zap.String("query", sqlQ),
+		zap.Any("args", args))
 	if err := s.db.Select(ctx, q, resp); err != nil {
 		return custerror.FormatInternalError("failed to search vector: %v", err)
 	}
+	logger.SDebug("doVectorSearch result",
+		zap.Any("result", resp))
 	return nil
 }
 

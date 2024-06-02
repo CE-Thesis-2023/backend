@@ -35,6 +35,8 @@ func (p *transcoderEventProcessor) OpenGateObjectTrackingEvent(ctx context.Conte
 			zap.Error(err))
 		return err
 	}
+	logger.SDebug("processor.OpenGateObjectTrackingEvent",
+		zap.Any("transcoderId", transcoderId))
 
 	switch detectionEvent.Type {
 	case "new":

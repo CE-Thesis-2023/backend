@@ -2722,6 +2722,7 @@ func (s *WebService) asyncUploadToS3AndDetectPerson(
 	if needDetection {
 		go func() {
 			defer wg.Done()
+			logger.SDebug("asyncUploadToS3AndDetectPerson: detect")
 			detectionResp, err := s.cvs.Detect(ctx, &DetectRequest{
 				Base64Image: base64Image,
 			})
@@ -2734,12 +2735,16 @@ func (s *WebService) asyncUploadToS3AndDetectPerson(
 					zap.String("snapshotId", snapshotId))
 				return
 			}
+			logger.SDebug("asyncUploadToS3AndDetectPerson: search",
+				zap.Int("faces", len(detectionResp)))
 			recognizeResp, err := s.cvs.Search(ctx, &SearchRequest{
 				Vector: detectionResp[0].
 					Descriptor,
 				TopKResult: 1,
 			})
 			if err != nil {
+				logger.SError("asyncUploadToS3AndDetectPerson: search error",
+					zap.Error(err))
 				detectionError = err
 				return
 			}
