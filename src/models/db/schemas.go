@@ -76,6 +76,7 @@ func (s *ObjectTrackingEvent) Fields() []string {
 		"start_time",
 		"end_time",
 		"snapshot_id",
+		"last_updated",
 	)
 	return fs
 }
@@ -99,6 +100,7 @@ func (s *ObjectTrackingEvent) Values() []interface{} {
 		s.StartTime,
 		s.EndTime,
 		s.SnapshotId,
+		s.LastUpdated,
 	)
 	return vs
 }
