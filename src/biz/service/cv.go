@@ -81,16 +81,13 @@ func (s *ComputerVisionService) Search(ctx context.Context, req *SearchRequest) 
 	if err := s.doVectorSearch(ctx, req, &faces); err != nil {
 		return nil, err
 	}
-	if len(faces) == 0 {
-		return nil, custerror.FormatNotFound("no matching person found")
-	}
 	return faces, nil
 }
 
 func (s *ComputerVisionService) doVectorSearch(ctx context.Context, req *SearchRequest, resp interface{}) error {
 	q := s.builder.Select("*").From("detectable_people")
 	vt := helper.ToPgvector(req.Vector).String()
-	q = q.Suffix(fmt.Sprintf("WHERE embedding <#> '%s' < 0.5 LIMIT %d",
+	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.45 LIMIT %d",
 		vt,
 		req.TopKResult))
 	sqlQ, args, _ := q.ToSql()
