@@ -12,7 +12,7 @@ export interface CameraAggregatedInfo {
     integration: OpenGateIntegration;
     settings: OpenGateCameraSettings;
     streamInfo: StreamInfo;
-    transcoderStatus: TranscoderStatus;
+    transcoderStatus: TranscoderStatus | undefined;
 }
 
 /**
@@ -44,10 +44,10 @@ export async function getCameraViewInfo(cameraId: string): Promise<CameraAggrega
     const streamInfo = await getCameraStreamInfo(cameraId);
 
     const transcoderStatus = await getTranscoderStatus([transcoderId], [cameraId]);
-    if (transcoderStatus.length == 0) {
-        throw Error("Transcoder status not found");
+    let status: TranscoderStatus | undefined = undefined;
+    if (transcoderStatus.length > 0) {
+        status = transcoderStatus[0];
     }
-    const status = transcoderStatus[0];
 
     return {
         camera: c,

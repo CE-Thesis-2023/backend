@@ -137,19 +137,19 @@ export const CameraViewerPage: Component = () => {
                                     </div>
                                     <div class="flex flex-col justify-start items-start">
                                         <p class="font-semibold text-sm">OpenGate</p>
-                                        <p>{data()?.transcoderStatus.openGateStatus ? <Available /> : <Unavailable />}</p>
+                                        <p>{data()?.transcoderStatus?.openGateStatus ? <Available /> : <Unavailable />}</p>
                                     </div>
                                     <div class="flex flex-col justify-start items-start">
                                         <p class="font-semibold text-sm">Transcoder</p>
-                                        <p>{data()?.transcoderStatus.transcoderStatus ? <Available /> : <Unavailable />}</p>
+                                        <p>{data()?.transcoderStatus?.transcoderStatus ? <Available /> : <Unavailable />}</p>
                                     </div>
                                     <div class="flex flex-col justify-start items-start">
                                         <p class="font-semibold text-sm">Autotracking</p>
-                                        <p>{data()?.transcoderStatus.autotracker ? <Available /> : <Unavailable />}</p>
+                                        <p>{data()?.transcoderStatus?.autotracker ? <Available /> : <Unavailable />}</p>
                                     </div>
                                     <div class="flex flex-col justify-start items-start">
                                         <p class="font-semibold text-sm">Object Det.</p>
-                                        <p>{data()?.transcoderStatus.objectDetection ? <Available /> : <Unavailable />}</p>
+                                        <p>{data()?.transcoderStatus?.objectDetection ? <Available /> : <Unavailable />}</p>
                                     </div>
                                 </div>
                             </div>
