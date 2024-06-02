@@ -177,11 +177,8 @@ func (c *Configuration) buildCameras() error {
 		m := make(map[string]interface{})
 		m["enabled"] = camera.Enabled
 
-		defer func() {
-			cameras[camera.OpenGateCameraName] = m
-		}()
-
 		if !camera.Enabled {
+			cameras[camera.CameraId] = m
 			continue
 		}
 
@@ -251,6 +248,8 @@ func (c *Configuration) buildCameras() error {
 			mqtt["required_zones"] = []string{"all"}
 		}
 		m["mqtt"] = mqtt
+
+		cameras[camera.CameraId] = m
 	}
 
 	c.c["cameras"] = cameras

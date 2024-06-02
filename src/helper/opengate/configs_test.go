@@ -57,6 +57,18 @@ func TestOpenGateConfiguration(t *testing.T) {
 				Crop:         true,
 				Autotracking: false,
 			},
+			{
+				OpenGateId:   "2",
+				CameraId:     "2",
+				Height:       320,
+				Width:        320,
+				Fps:          5,
+				MqttEnabled:  true,
+				Timestamp:    true,
+				BoundingBox:  true,
+				Crop:         true,
+				Autotracking: false,
+			},
 		}
 		cameras := []db.Camera{
 			{
@@ -68,6 +80,19 @@ func TestOpenGateConfiguration(t *testing.T) {
 				Password:           "admin",
 				Enabled:            true,
 				OpenGateCameraName: "camera_name",
+				GroupId:            "1",
+				TranscoderId:       "test-device-01",
+				SettingsId:         "1",
+			},
+			{
+				CameraId:           "2",
+				Name:               "camera_name2",
+				Ip:                 "103.165.134.12",
+				Port:               80,
+				Username:           "admin",
+				Password:           "admin",
+				Enabled:            true,
+				OpenGateCameraName: "camera_name2",
 				GroupId:            "1",
 				TranscoderId:       "test-device-01",
 				SettingsId:         "1",
