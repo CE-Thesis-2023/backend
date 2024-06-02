@@ -178,7 +178,7 @@ func (c *Configuration) buildCameras() error {
 		m["enabled"] = camera.Enabled
 
 		if !camera.Enabled {
-			cameras[camera.CameraId] = m
+			cameras[camera.OpenGateCameraName] = m
 			continue
 		}
 
@@ -249,7 +249,7 @@ func (c *Configuration) buildCameras() error {
 		}
 		m["mqtt"] = mqtt
 
-		cameras[camera.CameraId] = m
+		cameras[camera.OpenGateCameraName] = m
 	}
 
 	c.c["cameras"] = cameras
