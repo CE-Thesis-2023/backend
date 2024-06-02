@@ -90,7 +90,7 @@ func (s *ComputerVisionService) Search(ctx context.Context, req *SearchRequest) 
 func (s *ComputerVisionService) doVectorSearch(ctx context.Context, req *SearchRequest, resp interface{}) error {
 	q := s.builder.Select("*").From("detectable_people")
 	vt := helper.ToPgvector(req.Vector).String()
-	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.5 LIMIT %d",
+	q = q.Suffix(fmt.Sprintf("WHERE embedding <#> '%s' < 0.5 LIMIT %d",
 		vt,
 		req.TopKResult))
 	sqlQ, args, _ := q.ToSql()
