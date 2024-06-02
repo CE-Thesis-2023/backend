@@ -1551,7 +1551,7 @@ func (s *WebService) getObjectTrackingEventById(
 	if within != nil {
 		if *within > 0 {
 			curr := time.Now()
-			q = q.Where("last_updated > ?", curr.Add(-*within))
+			q = q.Where("last_updated > ?", curr.Add(-*within).UTC())
 		}
 	}
 
