@@ -174,13 +174,12 @@ func (c *Configuration) buildCameras() error {
 			continue
 		}
 
-		m := make(map[string]interface{})
-		m["enabled"] = camera.Enabled
-
 		if !camera.Enabled {
-			cameras[camera.OpenGateCameraName] = m
 			continue
 		}
+
+		m := make(map[string]interface{})
+		m["enabled"] = camera.Enabled
 
 		ffmpeg := make(map[string]interface{})
 
