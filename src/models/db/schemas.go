@@ -174,6 +174,7 @@ func (t *Camera) Fields() []string {
 		"transcoder_id",
 		"group_id",
 		"settings_id",
+		"autotracking",
 	)
 	return fs
 }
@@ -192,6 +193,7 @@ func (t *Camera) Values() []interface{} {
 		t.TranscoderId,
 		t.GroupId,
 		t.SettingsId,
+		t.Autotracking,
 	)
 	return vs
 }
@@ -281,6 +283,7 @@ func (t *OpenGateCameraSettings) Fields() []string {
 		"crop",
 		"open_gate_id",
 		"camera_id",
+		"autotracking",
 	)
 	return fs
 }
@@ -298,6 +301,7 @@ func (t *OpenGateCameraSettings) Values() []interface{} {
 		t.Crop,
 		t.OpenGateId,
 		t.CameraId,
+		t.Autotracking,
 	)
 	return vs
 }

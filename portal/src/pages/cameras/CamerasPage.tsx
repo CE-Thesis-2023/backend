@@ -95,6 +95,7 @@ export const CamerasPage: Component = () => {
                                         <TableCell align="left">ID</TableCell>
                                         <TableCell align="left">IP Address</TableCell>
                                         <TableCell align="left">Transcoder</TableCell>
+                                        <TableCell align="center">Autotracking</TableCell>
                                         <TableCell align="center"></TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -115,6 +116,7 @@ export const CamerasPage: Component = () => {
                                                 </TableCell>
                                                 <TableCell align="left">{camera.camera.ip}</TableCell>
                                                 <TableCell align="left">{camera.transcoder?.name}</TableCell>
+                                                <TableCell align="center">{camera.camera.autotracking ? "Enabled" : "Disabled"}</TableCell>
                                                 <TableCell align="center">
                                                     <IconButton
                                                         aria-label="more"

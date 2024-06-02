@@ -12,6 +12,7 @@ export interface Camera {
     groupId: string;
     transcoderId: string;
     settingsId: string;
+    autotracking: boolean;
 }
 
 /**
