@@ -102,7 +102,7 @@ func (m *MediaHelper) BuildRTSPSourceUrl(camera db.Camera) string {
 func (m *MediaHelper) BuildWebRTCViewStream(streamName string) string {
 	configs := m.configs
 	url := &url.URL{}
-	url.Scheme = "http"
+	url.Scheme = "https"
 	url.Host = fmt.Sprintf("%s:%d",
 		configs.MediaUrl,
 		configs.PublishPorts.WebRTC)
