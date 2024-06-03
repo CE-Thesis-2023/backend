@@ -1090,6 +1090,7 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 		CameraId: camera.CameraId,
 		Pan:      req.Pan,
 		Tilt:     req.Tilt,
+		Duration: 2,
 	}
 	response := map[string]string{}
 	reqReplyRequest := custmqtt.RequestReplyRequest{
@@ -1101,7 +1102,7 @@ func (s *WebService) sendRemoteControlCommand(ctx context.Context, req *web.Remo
 		},
 		Request:    ptzCtrlRequest,
 		Reply:      response,
-		MaxTimeout: time.Second * 3,
+		MaxTimeout: time.Second * 4,
 	}
 	if err := s.reqreply.Request(ctx, &reqReplyRequest); err != nil {
 		return custerror.FormatInternalError("request-reply error: %s", err)

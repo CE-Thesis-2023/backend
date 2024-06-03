@@ -73,27 +73,42 @@ func (r *SearchRequest) validate() error {
 
 }
 
+type SearchResult struct {
+	Distance float32 ``
+	db.DetectablePerson
+}
+
 func (s *ComputerVisionService) Search(ctx context.Context, req *SearchRequest) ([]db.DetectablePerson, error) {
 	if err := req.validate(); err != nil {
 		return nil, custerror.FormatInvalidArgument("invalid search request: %v", err)
 	}
-	faces := make([]db.DetectablePerson, req.TopKResult)
-	if err := s.doVectorSearch(ctx, req, &faces); err != nil {
+	results := make([]SearchResult, req.TopKResult)
+	if err := s.doVectorSearch(ctx, req, &results); err != nil {
 		return nil, err
+	}
+	faces := make([]db.DetectablePerson, len(results))
+	for i, r := range results {
+		faces[i] = r.DetectablePerson
 	}
 	return faces, nil
 }
 
 func (s *ComputerVisionService) doVectorSearch(ctx context.Context, req *SearchRequest, resp interface{}) error {
-	q := s.builder.Select("*").From("detectable_people")
 	vt := helper.ToPgvector(req.Vector).String()
-	q = q.Suffix(fmt.Sprintf("WHERE embedding <-> '%s' < 0.45 LIMIT %d",
-		vt,
-		req.TopKResult))
-	sqlQ, args, _ := q.ToSql()
-	logger.SInfo("doVectorSearch query",
-		zap.String("query", sqlQ),
-		zap.Any("args", args))
+	selectExpr := fmt.Sprintf("person_id, name, age, image_path, 1 - (embedding <=> '%s') AS distance", vt)
+	subQuery := s.builder.
+		Select(selectExpr).
+		From("detectable_people")
+	subQuery = subQuery.
+		OrderBy("distance DESC").
+		Limit(3)
+	q := s.builder.
+		Select("*").
+		FromSelect(subQuery, "subq")
+	q = q.
+		Where("subq.distance > 0.90").
+		OrderBy("subq.distance DESC").
+		Limit(uint64(req.TopKResult))
 	if err := s.db.Select(ctx, q, resp); err != nil {
 		return custerror.FormatInternalError("failed to search vector: %v", err)
 	}
